@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Menus.Api/Menus.Api.csproj" />
+    <Project Path="src/Menus.Application/Menus.Application.csproj" />
+    <Project Path="src/Menus.Client/Menus.Client.csproj" />
+    <Project Path="src/Menus.Domain/Menus.Domain.csproj" />
+    <Project Path="src/Menus.Infrastructure/Menus.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Menus.Application.Tests/Menus.Application.Tests.csproj" />
+    <Project Path="tests/Menus.Client.Tests/Menus.Client.Tests.csproj" />
+    <Project Path="tests/Menus.Domain.Tests/Menus.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -8,11 +8,11 @@ Proyecto conjunto de las asignaturas **Bases de Datos II** e **Ingeniería de So
 
 | Integrante | Rol | GitHub |
 |---|---|---|
-| _(completar)_ | Project Manager | @QuiquiMatCom2004 |
-| _(completar)_ | | |
-| _(completar)_ | | |
-| _(completar)_ | | |
-| _(completar)_ | | |
+| Enrique Alejandro Gonzalez Moreira | Project Manager | @QuiquiMatCom2004 |
+| Javier Fontes Basabe | | @FontesHabana|
+| Heily Rodriguez Rodriguez | | @heilyrodriguez225|
+| Ernesto Alejandro Soler Choong | | @solerch5510|
+| Mauricio Brindon Carbo | | @Mackandal04 |
 
 ## Arquitectura
 
@@ -31,11 +31,11 @@ Clean Architecture (Onion) en 4 capas — Dominio, Aplicación, Infraestructura,
 | Contenedores | Docker + Docker Compose |
 | Testing | xUnit + Moq/NSubstitute (backend), bUnit (frontend) |
 
-## Estructura del repositorio (objetivo)
+## Estructura del repositorio
 
 ```
 /src
-  /Menus.Domain          # Entidades, reglas de negocio, interfaces (Repository, IUnitOfWork, Strategy)
+  /Menus.Domain          # Entidades, reglas de negocio, interfaces (IRepository, IUnitOfWork, Strategy)
   /Menus.Application      # Casos de uso, orquestación
   /Menus.Infrastructure    # Implementación de repositorios, EF Core, driver Mongo, Redis
   /Menus.Api               # Presentación — API REST, endpoints de comando y de consulta (CQRS-lite)
@@ -47,12 +47,10 @@ Clean Architecture (Onion) en 4 capas — Dominio, Aplicación, Infraestructura,
 docker-compose.yml
 ```
 
-> Esta estructura aún no existe en el repositorio — se agrega en el commit de scaffolding inicial del código, posterior a este commit de bootstrap.
-
 ## Cómo levantar el sistema
 
 Requisitos previos:
-- [.NET SDK](https://dotnet.microsoft.com/download) (versión a confirmar con el scaffolding inicial)
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download) (LTS)
 - [Docker](https://docs.docker.com/get-docker/) y Docker Compose
 
 Pasos:
@@ -64,7 +62,7 @@ cp .env.example .env   # completar valores locales, nunca versionar .env
 docker compose up --build
 ```
 
-> El `docker-compose.yml` (servicios `api`, `postgres`, `mongo`, `redis`, `client`) se añade junto con el scaffolding inicial del código — este README se actualiza en ese mismo commit.
+Servicios que levanta `docker-compose.yml`: `api` (ASP.NET Core), `client` (Blazor WebAssembly servido por nginx), `postgres`, `mongo`, `redis`.
 
 ## Flujo de trabajo del equipo
 

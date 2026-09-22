@@ -1,0 +1,42 @@
+# --- Entornos y secretos ---
+.env
+.env.*
+!.env.example
+
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+.vs/
+artifacts/
+*.pdb
+
+# --- Blazor WebAssembly ---
+wwwroot/dist/
+publish/
+
+# --- Tests / cobertura ---
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Logs ---
+*.log
+logs/
+
+# --- NuGet ---
+*.nupkg
+packages/
+
+# --- Editor / SO ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

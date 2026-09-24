@@ -2,17 +2,17 @@
 
 Sistema web para la gestión de la generación automática de menús nutricionales en una institución de salud — administra alimentos y platos, dietas, nutricionistas, pacientes, y el flujo de generación, validación y valoración de menús.
 
-Proyecto conjunto de las asignaturas **Bases de Datos II** e **Ingeniería de Software**, Séptimo Semestre, Ciencias de la Computación — Curso 2026-2027.
+Proyecto conjunto de las asignaturas **Bases de Datos II** e **Ingeniería de Software**, Quinto Semestre, Ciencias de la Computación — Curso 2026-2027.
 
 ## Equipo — Team-Bales
 
 | Integrante | Rol | GitHub |
 |---|---|---|
 | Enrique Alejandro Gonzalez Moreira | Project Manager | @QuiquiMatCom2004 |
-| Javier Fontes Basabe | | @FontesHabana|
-| Heily Rodriguez Rodriguez | | @heilyrodriguez225|
-| Ernesto Alejandro Soler Choong | | @solerch5510|
-| Mauricio Brindon Carbo | | @Mackandal04 |
+| Javier Fontes Basabe | QA | @FontesHabana|
+| Heily Rodriguez Rodriguez | Data Base Engineer | @heilyrodriguez225|
+| Ernesto Alejandro Soler Choong | Backend Engineer| @solerch5510|
+| Mauricio Brindon Carbo | Frontend Engineer | @Mackandal04 |
 
 ## Arquitectura
 

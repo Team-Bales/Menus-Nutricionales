@@ -1,20 +1,6 @@
 # Análisis de dominio — Gestión para la generación automática de menús nutricionales
 
-**Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
-**Fuente:** `1_Gestión_para_la_generación_automática_de_menús_nutricionales.pdf` (enunciado oficial del proyecto de curso)
-**Alcance de este documento:** primera fase del modelado de datos: glosario de dominio, barrido línea a línea del enunciado, inventario cerrado de entidades / nomencladores / actores / relaciones candidatas, y decisiones de modelado que quedan abiertas para discutir con el equipo y el profesor antes de fijar el MER definitivo.
-
----
-
-## 0. Metodología del barrido
-
-El análisis se hizo leyendo el enunciado dos veces: una primera lectura completa para entender el problema, y una segunda, fragmento por fragmento, sobre las secciones "Descripción del problema" y "Funcionalidades" (las únicas con contenido de dominio; los apartados de organización del curso y los requisitos particulares de Ingeniería de Software quedan fuera porque no describen datos a modelar).
-
-En la segunda lectura cada sustantivo o frase relevante se clasificó en una de seis categorías — entidad, nomenclador, actor, atributo, relación o dato derivado — y se le asignó la cita textual (línea del PDF) que la sustenta. La regla seguida es estricta: **si un candidato no tiene una cita textual que lo respalde, no entra al inventario cerrado como hecho; entra como decisión abierta.** Esto evita que una interpretación razonable pero no escrita en el enunciado se cuele como si fuera un requisito. Las referencias de línea usan la numeración del texto extraído del PDF y pueden variar en uno o dos renglones según el visor, pero el párrafo y el fragmento citado son siempre verificables contra el original.
-
----
-
-## 1. Glosario de dominio
+## Glosario de dominio
 
 Términos del enunciado con su definición consensuada en el dominio de la dietética hospitalaria.
 
@@ -25,7 +11,7 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 | **Plato** | Elemento del banco administrado junto a los alimentos; el enunciado lo describe como "compuesto por múltiples ingredientes". | Entidad (o subtipo de Alimento — *decisión abierta D1*) |
 | **Ingrediente** | Alimento que entra en la composición de un plato. | Rol de Alimento en la composición |
 | **Banco (de alimentos y platos)** | Catálogo agregado de alimentos y platos disponibles sobre el que trabajan los nutricionistas. | Concepto agregado (no entidad) |
-| **Dieta** | Plan con identificador único, nombre, programa de atención al que corresponde y lista de restricciones y grupos nutricionales a cubrir durante el tratamiento. | Entidad |
+| **Dieta** | Plan con identificador único, nombre, programa de atención al que corresponde, y restricciones y grupos nutricionales a cubrir durante el tratamiento — estos dos últimos como relaciones N:M, no como atributos (el MERX de la cátedra prohíbe atributos multivaluados/compuestos). | Entidad |
 | **Plan de alimentación / tratamiento** | Horizonte temporal de la distribución de grupos nutricionales cubiertos; usado como sinónimo del ciclo de la dieta. | Sinónimo de Dieta (no entidad aparte) |
 | **Grupo nutricional** | Catálogo de clasificación de alimentos; el enunciado lo llama explícitamente **"nomenclador del sistema"**. | Nomenclador |
 | **Tipo de preparación** | Categoría del alimento/plato; valores explícitos: *entrante, plato fuerte, postre, bebida*. | Nomenclador (valores dados) |
@@ -43,14 +29,12 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 | **Revalorización nutricional** | Solicitud virtual del paciente que especifica al nutricionista ejecutor; se registra su resultado manual. | Entidad |
 | **Consumo** | Registro de cada menú servido a un paciente (fecha de consumo, aceptación). Un mismo paciente puede recibir el mismo menú en fechas distintas, así que la identidad depende de paciente + menú + fecha, no solo de paciente + menú. | Entidad débil |
 | **Ficha nutricional ampliada** | Documento de macronutrientes, micronutrientes, alérgenos y modo de preparación; estructura **variable por alimento**. Se gestiona de forma independiente del modelo relacional. | Atributo-documento (NoSQL) |
-| **Parámetros de generación** | Criterios almacenados junto al menú: proporción de alimentos por tipo de preparación, cobertura de grupos nutricionales, cantidad total de alimentos. | Atributo multivaluado/documento |
+| **Parámetros de generación** | Criterios almacenados junto al menú: proporción de alimentos por tipo de preparación y cobertura de grupos nutricionales (relaciones `Distribuye`/`Cubre` de Menú), más la cantidad total de alimentos (atributo escalar de Menú). | Concepto compuesto sin representación única — 1 atributo + 2 relaciones (el MERX no admite atributos multivaluados/compuestos) |
 | **Disponibilidad calórica** | Dato consultado de forma reiterada sobre la dieta; derivado de niveles calóricos de los alimentos. | Dato derivado |
 | **Desempeño nutricional del paciente** | Indicador por menú/dieta/sala; base de las tasas de aceptación y rechazo. | Indicador derivado |
 | **Tasa de aceptación / rechazo** | Proporción sobre el atributo `Aceptación` del consumo. | Indicador derivado |
 
----
-
-## 2. Barrido línea a línea del enunciado
+## Barrido línea a línea del enunciado
 
 Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenclador · **[A]** actor · **[At]** atributo · **[R]** relación · **[Doc]** atributo documento · **[Der]** derivado/analítico · **[Fuera]** fuera de alcance del MER.
 
@@ -74,7 +58,7 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 | 11 | "Cada nutricionista … podrá ingresar alimentos y platos al banco existente" | 29 | **[R]** Describe/Ingresa (Nutricionista → Alimento/Plato) · "banco" = concepto agregado |
 | 12 | "clasificarlos por grupo nutricional y por tipo de preparación (entrante, plato fuerte, postre o bebida)" | 30-31 | **[N]** Tipo de preparación **con valores cerrados: entrante / plato fuerte / postre / bebida** · **[R]** Clasifica |
 | 13 | "otorgarle el nivel calórico (bajo, medio o alto)" | 31 | **[N]** Nivel calórico **con valores cerrados: bajo / medio / alto** · **[R]** Nivela |
-| 14 | "generar menús de forma automática a partir de los alimentos seleccionados" | 31 | **[R]** Crea (Nutricionista → Menú) · el menú se arma **a partir de alimentos**, no se menciona explícitamente que se arme a partir de platos (relevante para D1 y para la relación `Incluye`, ver §3.4) |
+| 14 | "generar menús de forma automática a partir de los alimentos seleccionados" | 31 | **[R]** Crea (Nutricionista → Menú) · el menú se arma **a partir de alimentos**, no se menciona explícitamente que se arme a partir de platos (relevante para D1 y para la relación `Incluye`, ver la tabla de relaciones candidatas más abajo) |
 | 15 | "ver menús de otros nutricionistas que atienden la misma dieta" | 32 | **[R]** Autoriza/Atiende (Nutricionista ↔ Dieta) |
 
 ### Descripción del problema — Párrafo 3 (líneas 33-34)
@@ -95,7 +79,7 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 | # | Fragmento | Línea(s) | Candidatos detectados |
 |---|---|---|---|
 | 22 | "No siempre aquellos nutricionistas que agregan alimentos son los que crean el menú, esta labor es desempeñada por un nutricionista específico" | 38 | Confirma textualmente que el rol de "quien registra alimentos" y el de "quien crea el menú" son roles distintos, no solo una posibilidad inferida |
-| 23 | "criterios como la proporción de alimentos por tipo de preparación, la cobertura de los grupos nutricionales y la cantidad total de alimentos, cuya parametrización es almacenada junto al menú generado" | 38-40 | **[Doc/At multivaluado]** Parámetros de generación, atributo de Menú |
+| 23 | "criterios como la proporción de alimentos por tipo de preparación, la cobertura de los grupos nutricionales y la cantidad total de alimentos, cuya parametrización es almacenada junto al menú generado" | 38-40 | Parámetros de generación — no es un atributo válido en este MERX (prohíbe multivaluados/compuestos): `CantidadTotalAlimentos` **[At]** escalar de Menú; proporción y cobertura pasan a **[R]** `Distribuye(Menú,TipoPreparación;Proporción)` y `Cubre(Menú,GrupoNutricional)` |
 | 24 | "el jefe de nutrición es quien revisa y aprueba el menú generado, aunque también puede indicar la confección de otro bajo sus criterios" | 40-41 | **[A?]** Jefe de nutrición (*D2*) · **[R]** Valida/Aprueba · indicio de que puede existir **más de un menú generado para la misma dieta** cuando el primero se rechaza (relevante para *D8*) |
 
 ### Descripción del problema — Párrafo 6, atributos de Dieta y Nutricionista (líneas 42-45)
@@ -103,7 +87,7 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 |---|---|---|---|
 | 25 | "Cada dieta tendrá un identificador único, su nombre" | 42 | **[At]** Dieta(id, nombre) |
 | 26 | "el programa de atención al que corresponde" | 42 | **[N?]** Programa de atención (*D4*) · **[R]** Corresponde |
-| 27 | "la lista de restricciones o grupos nutricionales a cubrir a lo largo del tratamiento" | 42-43 | **[At multivaluado]** Restricciones · **[At multivaluado]** Grupos a cubrir — el enunciado los redacta como dos listas separadas (ver *D6*) |
+| 27 | "la lista de restricciones o grupos nutricionales a cubrir a lo largo del tratamiento" | 42-43 | Restricciones y grupos a cubrir — el enunciado los redacta como dos listas separadas (ver *D6*); ambas se modelan como **[R]** N:M, no como atributos (el MERX no admite multivaluados/compuestos): `Restringe(Dieta,RestricciónAlimentaria)` y `Cubre(Dieta,GrupoNutricional)` |
 | 28 | "De cada nutricionista se almacenará su identificador único, nombre, especialidad, y las dietas para las cuales está autorizado a generar o validar menús" | 43-45 | **[At]** Nutricionista(id, nombre, especialidad) · **[N]** Especialidad · **[R]** Autoriza (Nutricionista ↔ Dieta) |
 
 ### Descripción del problema — Párrafo 7, atributos de Paciente (líneas 49-50)
@@ -138,20 +122,18 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 | F6b | "comparar el desempeño … de los pacientes que solicitaron una revalorización con el promedio general de valoraciones de sus respectivas salas" | 80-82 | **[E]** Sala como agregado en reportes · **[At]** Revalorización ligada a Valoración por sala |
 | — | "exportar la información mostrada a ficheros con formato PDF … poder ordenar cada columna de los resultados" | 83-85 | **[Fuera]** requisitos de interfaz/UI, no de dominio |
 
----
-
-## 3. Inventario de entidades, nomencladores y actores candidatos (lista cerrada)
+## Inventario de entidades, nomencladores y actores candidatos (lista cerrada)
 
 Resultado del barrido: todo candidato del enunciado cae en una de las cuatro listas siguientes. No hay candidatos adicionales con evidencia textual.
 
-### 3.1 Entidades
+### Entidades
 
 | # | Entidad | Atributos principales (según el enunciado) | Evidencia (líneas) | Naturaleza |
 |---|---|---|---|---|
 | E1 | **Alimento** | Id, Nombre, GrupoNutricional, TipoPreparación, NivelCalórico | 23-24, 29-31, 51-57 | Fuerte. Núcleo del sistema. |
 | E2 | **Plato** | mismos atributos base que Alimento (a confirmar en D1) | 23-24, 29, 54-55 | Fuerte con composición (o ISA — *D1*). |
 | E3 | **Dieta** | Id, Nombre | 24, 42-43 | Fuerte. |
-| E4 | **Menú** | Id, FechaCreación, Parámetros de generación | 22-23, 31, 35, 68-69 | Fuerte (generado, no necesariamente servido aún). |
+| E4 | **Menú** | Id, FechaCreación, CantidadTotalAlimentos | 22-23, 31, 35, 38-40, 68-69 | Fuerte (generado, no necesariamente servido aún). Proporción por tipo de preparación y cobertura de grupos nutricionales son relaciones, no atributos (el MERX no admite multivaluados/compuestos). |
 | E5 | **Nutricionista** | Id, Nombre, Especialidad | 25, 29-32, 38, 40-41, 43-45 | Fuerte + actor. |
 | E6 | **Paciente** | Id, Nombre, Edad | 26, 35-36, 49-50 | Fuerte + actor. |
 | E7 | **Sala** | Id, Nombre | 49, 80-82 | Fuerte (mínima). |
@@ -159,7 +141,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | E9 | **Revalorización nutricional** | FechaSolicitud, Resultado | 36-37 | Fuerte; solicitada por un paciente y ejecutada por un nutricionista. |
 | E10 | **Consumo** | FechaConsumo (parte de la clave), Aceptación | 35, 74-75 | **Débil** — identificada por Paciente + Menú + FechaConsumo. |
 
-### 3.2 Nomencladores (catálogos cerrados)
+### Nomencladores (catálogos cerrados)
 
 | # | Nomenclador | Valores | Evidencia (líneas) |
 |---|---|---|---|
@@ -170,7 +152,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | N5 | **Programa de atención** *(decisión D4)* | no enumerados | 42 |
 | N6 | **Especialidad** (de Nutricionista) | no enumerados | 44 |
 
-### 3.3 Actores candidatos
+### Actores candidatos
 
 | # | Actor | Acciones según el enunciado | Tratamiento en el MER |
 |---|---|---|---|
@@ -180,7 +162,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | A4 | **Administrador del sistema** | Evita duplicados de alimentos; impide asignación doble | No es dato de dominio, es un rol de mantenimiento de la aplicación (*D3*) |
 | A5 | **Revisor** (F3) | Valida menús con fecha y observaciones | Rol asociado a la relación `Valida` (coincide con A3) |
 
-### 3.4 Relaciones candidatas
+### Relaciones candidatas
 
 > **Convención adoptada:** un atributo se deja en la relación solo cuando el hecho depende intrínsecamente del par de entidades relacionadas (por ejemplo, la cantidad de un ingrediente en un plato, o la fecha y observaciones de una validación puntual). Cuando el hecho es 1:1 respecto a una de las entidades — como la fecha de creación de un menú o la fecha de solicitud de una revalorización — se modela como atributo nativo de esa entidad y no de la relación, para no duplicar información. Por esa razón `FechaCreación` vive en Menú y `FechaSolicitud`/`Resultado` viven en Revalorización, no en las relaciones `Crea` o `Solicita`.
 
@@ -197,6 +179,9 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Compone | Plato → Alimento | 54-55 | N:M | **Cantidad** |
 | Corresponde | Dieta → Programa de atención | 42 | N:1 | — |
 | Cubre | Dieta ↔ Grupo nutricional | 42-43 | N:M | — |
+| Restringe | Dieta ↔ Restricción alimentaria | 27, 42-43 | N:M | — |
+| Distribuye | Menú ↔ Tipo de preparación | 38-40 | N:M | **Proporción** |
+| Cubre | Menú ↔ Grupo nutricional | 38-40 | N:M | — |
 | Pertenece | Paciente → Sala | 49 | N:1 | — |
 | Inscribe | Paciente ↔ Dieta | 49-50 | N:M | — |
 | Asigna | Menú → Paciente | 35 | **1:1** (un menú se asigna a un único paciente; restricción explícita en línea 33-34 que el administrador debe hacer cumplir) | — |
@@ -206,22 +191,19 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Solicita | Paciente → Revalorización | 36 | 1:N | — |
 | Ejecuta | Nutricionista → Revalorización | 36 | 1:N | — |
 
+**Nota sobre la `Cubre` repetida:** aparece dos veces en la tabla con participantes distintos (Dieta↔GrupoNutricional y Menú↔GrupoNutricional) porque ambas expresan el mismo hecho — "cubre este grupo nutricional" — sobre dos entidades distintas del dominio; no es una relación única compartida, son dos ocurrencias independientes del mismo verbo relacional aplicado a dos entidades distintas.
+
 **Nota sobre `Incluye`:** la única evidencia textual directa (línea 31) dice que el menú se genera "a partir de los alimentos seleccionados", sin mencionar platos. Antes se asumía también `Menú → Plato`, pero esa relación no tiene respaldo textual propio; queda condicionada a cómo se resuelva D1 (si el plato termina siendo un alimento compuesto, entra al menú igual que cualquier alimento a través de `Incluye`; si se mantiene como catálogo aparte, habría que decidir si el menú puede incluir platos directamente o solo a través de sus alimentos componentes).
 
----
+## Atributos especiales
 
-## 4. Atributos especiales
+> **Corrección aplicada:** el MERX de la cátedra prohíbe los atributos multivaluados y compuestos (`Atributos.pdf`). De las cuatro filas que esta sección tenía en la versión aprobada por el PR #1, tres no son atributos: son relaciones N:M (`Cubre`, `Restringe`, `Distribuye`, ver la tabla de relaciones candidatas). Solo la ficha nutricional sigue siendo un caso especial, porque no es un atributo multivaluado sino un documento externo gestionado en otro motor de almacenamiento (MongoDB, issue #8) — una categoría distinta a la que esta prohibición no aplica.
 
 | Atributo | Modo | Justificación textual |
 |---|---|---|
 | Ficha nutricional ampliada | **Documento (NoSQL), gestor aparte** | Líneas 51-57: estructura variable, anidada, no normalizable; "no debe modelarse junto al resto de las tablas". |
-| Parámetros de generación | **Multivaluado/documento** en Menú | Líneas 38-40, F1: criterios simultáneos; "parametrización almacenada junto al menú". |
-| Restricciones de la dieta | **Multivaluado** | Líneas 42-43: "lista de restricciones". |
-| Grupos nutricionales a cubrir | **Multivaluado** (distinto del anterior) | Líneas 42-43: "o grupos nutricionales a cubrir". El esbozo vigente los fusiona: revisar (*D6*). |
 
----
-
-## 5. Decisiones abiertas
+## Decisiones abiertas
 
 ### D1 — ¿Plato es especialización de Alimento o entidad con composición propia?
 
@@ -254,12 +236,12 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 
 **Evidencia:** línea 27 (criterio de adaptación del menú) y 42-43 ("lista de restricciones o grupos nutricionales a cubrir").
 
-- **Nomenclador (recomendada):** catálogo de tipos (sin gluten, hiposódica, etc.) más un atributo multivaluado en Dieta. La compatibilidad alimento-restricción se resuelve contrastando la restricción contra los alérgenos de la ficha nutricional (líneas 51-52), no mediante una relación directa nueva.
+- **Nomenclador (recomendada):** catálogo de tipos (sin gluten, hiposódica, etc.) relacionado con Dieta mediante `Restringe(Dieta, RestricciónAlimentaria)` N:M — no un atributo multivaluado, corregido porque el MERX de la cátedra prohíbe los atributos multivaluados/compuestos. La compatibilidad alimento-restricción se resuelve contrastando la restricción contra los alérgenos de la ficha nutricional (líneas 51-52), no mediante una relación adicional distinta de `Restringe`.
 - **Entidad:** solo si la restricción necesitara atributos propios (severidad, contraindicaciones) o se quisiera asociar directamente a Alimento/Plato.
 
 ### D6 — "Lista de restricciones" frente a "grupos nutricionales a cubrir"
 
-La línea 42-43 los enuncia como dos listas distintas; conviene confirmar si se mantienen como dos atributos multivaluados independientes (más fiel al enunciado) o se fusionan en uno (más simple de implementar). Requiere coherencia con el diagrama que finalmente se dibuje.
+La línea 42-43 los enuncia como dos listas distintas; conviene confirmar si se mantienen como dos relaciones N:M independientes — `Cubre(Dieta,GrupoNutricional)` y `Restringe(Dieta,RestricciónAlimentaria)` — (más fiel al enunciado) o se fusiona el nomenclador en uno solo (más simple de implementar). Requiere coherencia con el diagrama que finalmente se dibuje.
 
 ### D7 — "Plan de alimentación / tratamiento"
 
@@ -272,21 +254,19 @@ Terminología que el enunciado usa como sinónimo del ciclo de la dieta (líneas
 - **Sin atributo explícito (recomendada, más simple):** un menú se considera "final"/aprobado si existe un registro en `Valida` con resultado positivo; no se necesita un atributo `Estado` adicional, basta con derivarlo de la relación de validación.
 - **Con atributo `Estado` en Menú:** necesario si el jefe puede rechazar un menú explícitamente (no solo ignorarlo y pedir uno nuevo), y ese rechazo debe quedar registrado como tal para trazabilidad o para las consultas de F2 y F5. El enunciado no dice explícitamente que el rechazo se registre, así que esto queda abierto para confirmar con el equipo.
 
----
-
-## 6. Resumen ejecutivo de la lista cerrada
+## Resumen ejecutivo de la lista cerrada
 
 | Tipo | Lista final |
 |---|---|
 | **Entidades (10)** | Alimento, Plato, Dieta, Menú, Nutricionista, Paciente, Sala, Valoración Nutricional, Revalorización, Consumo (débil) |
 | **Nomencladores (6)** | Grupo nutricional, Tipo de preparación, Nivel calórico, Restricción alimentaria*, Programa de atención*, Especialidad |
 | **Actores (5)** | Nutricionista, Paciente, Jefe de nutrición (rol), Administrador del sistema (externo al dominio), Revisor (rol de `Valida`) |
-| **Relaciones (19, incluida la identificadora)** | ver §3.4 — 18 relaciones ordinarias + `Consume` como relación identificadora de la entidad débil Consumo |
-| **Atributos especiales** | Ficha nutricional (documento NoSQL), Parámetros de generación (multivaluado), Restricciones y Grupos a cubrir (multivaluados, D6) |
+| **Relaciones (22, incluida la identificadora)** | ver la tabla de relaciones candidatas — 21 relaciones ordinarias (incluye `Restringe`, `Distribuye` y `Cubre(Menú,·)`, agregadas al corregir los atributos multivaluados/compuestos) + `Consume` como relación identificadora de la entidad débil Consumo |
+| **Atributos especiales** | Ficha nutricional ampliada (documento NoSQL, issue #8) — es el único caso; los que antes figuraban aquí como multivaluados (Parámetros de generación, Restricciones, Grupos a cubrir) son relaciones N:M (el MERX no admite atributos multivaluados/compuestos) |
 | **Derivados (no entidades)** | Disponibilidad calórica, desempeño nutricional, tasas de aceptación/rechazo, ranking de alimentos, criterios de equilibrio, reportes F1-F6 |
 
 \* Nomenclador condicionado a las decisiones D5/D4.
 
-## 7. Conclusiones y siguientes pasos
+## Conclusiones y siguientes pasos
 
-El barrido cubre íntegramente las secciones "Descripción del problema" y "Funcionalidades" del enunciado; no quedan fragmentos con contenido de dominio sin clasificar. La lista cerrada de 10 entidades, 6 nomencladores, 5 actores y 19 relaciones puede tomarse como base estable para dibujar el MER, siempre que el equipo resuelva antes las ocho decisiones abiertas (D1-D8) — en particular D1, porque determina si Plato y Alimento son dos entidades con una relación de composición o una jerarquía de especialización, lo cual cambia la forma de varias relaciones (`Incluye`, `Describe`, `Clasifica`, `Nivela`). Se recomienda llevar D1, D2, D3 y D8 a la próxima reunión con el profesor, ya que son las que más impacto tienen sobre el diagrama y las que peor se resuelven por consenso interno del equipo sin una referencia externa.
+El barrido cubre íntegramente las secciones "Descripción del problema" y "Funcionalidades" del enunciado; no quedan fragmentos con contenido de dominio sin clasificar. La lista cerrada de 10 entidades, 6 nomencladores, 5 actores y 22 relaciones puede tomarse como base estable para dibujar el MER, siempre que el equipo resuelva antes las decisiones abiertas (D1-D8) — en particular D1, porque determina si Plato y Alimento son dos entidades con una relación de composición o una jerarquía de especialización, lo cual cambia la forma de varias relaciones (`Incluye`, `Describe`, `Clasifica`, `Nivela`). Se recomienda llevar D1, D2, D3 y D8 a la próxima reunión con el profesor, ya que son las que más impacto tienen sobre el diagrama y las que peor se resuelven por consenso interno del equipo sin una referencia externa.

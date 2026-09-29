@@ -51,6 +51,12 @@ El MERX del proyecto probablemente va a necesitar generalización/especializaci�
   - Cuando la cardinalidad exacta no está especificada, se adopta la menos restrictiva, `(0,*)`, salvo que el enunciado del proyecto indique explícitamente lo contrario para ese caso.
 - **Grado:** binaria (el caso general), unaria/recursiva (dos líneas del mismo rombo hacia el mismo rectángulo, cada una con su propia cardinalidad y rol), o n-aria (el rombo se conecta directamente a las n entidades participantes, sin intermediarios).
 
+> **Regla de dirección:** el par dibujado junto a una entidad A **no** describe la participación propia de A. Describe cuántas instancias de A se asocian a **una sola instancia fija de la entidad opuesta**. Para hallarlo: se fija una instancia de la entidad del otro extremo y se cuenta cuántas instancias de A pueden asociarse a ella.
+>
+> Ejemplo sin ambigüedad posible: `Paciente — Pertenece — Sala`. La etiqueta junto a `Paciente` responde "¿cuántos pacientes hay por cada sala?" → muchos, `(0,*)`. La etiqueta junto a `Sala` responde "¿cuántas salas hay por cada paciente?" → una, `(1,1)`. Correcto: `Paciente (0,*) — Pertenece — (1,1) Sala`.
+>
+> Antes de dibujar cualquier cardinalidad, verificar con esta regla.
+
 > **Convención adoptada:** en el contenido revisado convive, para la cardinalidad, una notación con coma (`0,*`) junto a una variante con dos puntos (`0:M`), incluso combinadas dentro de un mismo material. Se fija la notación con coma, `(mínimo, máximo)`, como la única válida para este proyecto, por ser la de mayor rigor teórico; la variante con dos puntos no debe usarse.
 
 ---

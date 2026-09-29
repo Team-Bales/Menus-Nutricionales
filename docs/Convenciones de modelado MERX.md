@@ -10,9 +10,9 @@
 
 **draw.io**, tal como adelantaba el propio issue.
 
-El MERX del proyecto probablemente va a necesitar generalización/especialización (ver §6 y la decisión abierta D1 del glosario) y, en menor medida, agregación (§3). Ninguna de las dos tiene una primitiva nativa en Mermaid con la semántica exacta que exige este modelo (discriminador propio para partición disjunta, atributo heredado marcado con borde punteado, rectángulo de agregación envolvente), por lo que draw.io evita tener que forzar esas construcciones.
+La notación del curso incluye generalización/especialización (§6) y agregación (§3), construcciones que el MERX puede requerir. Ninguna de las dos tiene una primitiva nativa en Mermaid con la semántica exacta que exige este modelo (discriminador propio para partición disjunta, atributo heredado marcado con borde punteado, rectángulo de agregación envolvente), por lo que draw.io evita tener que forzar esas construcciones.
 
-**Versionado:** el archivo fuente editable `.drawio` se guarda en `docs/diagramas/`, junto con su exportación a `.svg` para poder consultar el diagrama sin necesidad de abrir la herramienta.
+**Versionado:** el archivo fuente editable `.drawio` de cada submodelo se guarda en `docs/Submodelos Relacionales del MERX/`.
 
 ---
 
@@ -38,7 +38,7 @@ El MERX del proyecto probablemente va a necesitar generalización/especializaci�
 |---|---|---|
 | Entidad fuerte | Rectángulo de borde simple | `Alimento`, `Dieta`, `Paciente` |
 | Entidad débil | Rectángulo de **borde doble** — depende de otra entidad para identificarse | `Consumo` (identificado por Paciente + Menú + Fecha, ya señalado así en el glosario) |
-| Agregación | Rectángulo de borde simple que **envuelve** una relación completa (dos entidades + su rombo) | Se emplea cuando esa relación necesita atributos propios o participar como extremo de otra relación. No hay un caso confirmado todavía en el dominio; queda disponible para cuando algún submodelo lo requiera. |
+| Agregación | Rectángulo de borde simple que **envuelve** una relación completa (dos entidades + su rombo), con su nombre escrito dentro, abajo a la derecha. Hereda como llave la de la relación que envuelve (atributos heredados, §5). | Se emplea cuando esa relación necesita atributos propios o participar como extremo de otra relación. Caso en el dominio: `Composición` (issue #5), que envuelve `Plato`—`Compone`—`Alimento` para registrar `Cantidad`. |
 
 ---
 
@@ -87,7 +87,7 @@ Esta restricción ya tiene aplicación directa sobre el dominio del proyecto:
 - **Especialización simple** (una sola subclase, sin discriminador): línea directa entre superclase y subclase con el símbolo ISA. Solo se dibuja si la subclase aporta atributos o relaciones propias; si no aporta nada, no hace falta modelarla aparte.
 - **Especialización por partición** (dos o más subclases disjuntas): se agrega un discriminador en forma de **hexágono alargado** — distinto de un rombo de relación — etiquetado con el atributo que distingue las subclases. Cada rama lleva también el símbolo ISA antes de entrar a su rectángulo.
 
-**Relevancia inmediata para el proyecto:** la decisión abierta D1 del glosario del dominio (issue #1) — si `Plato` termina siendo una especialización de `Alimento` en vez de una entidad separada con relación `Compone` — es la que determina si algún submodelo va a necesitar esta notación. Si D1 se resuelve hacia especialización, se aplica tal como queda descrito arriba.
+**Aplicación en el proyecto:** la decisión D1 del glosario del dominio (issue #1) se resolvió modelando `Plato` como entidad separada de `Alimento`, relacionada por composición (`Compone`), y no como especialización. Con esa decisión, y con la del jefe de nutrición como rol de `Nutricionista` sin entidad propia, ningún submodelo requiere por ahora esta notación; se mantiene disponible para el caso de que alguno la necesite.
 
 ---
 
@@ -123,4 +123,4 @@ Casos donde el contenido de Bases de Datos I no define una convención y el equi
 
 ## 9. Conclusiones y siguientes pasos
 
-La notación queda fijada con base directa en lo estudiado en Bases de Datos I, sin recurrir a convenciones genéricas ajenas al curso salvo en el único punto donde el contenido no alcanza (E1, §7), dejado explícitamente abierto en vez de resuelto por conveniencia. Los submodelos (issues #5, #6, #7) y su consolidación (issue #9) deben ajustarse a este documento; en particular, el submodelo que resuelva D1 del glosario es el que decide si la sección 6 (ISA) termina teniendo aplicación en el proyecto.
+La notación queda fijada con base directa en lo estudiado en Bases de Datos I, sin recurrir a convenciones genéricas ajenas al curso salvo en el único punto donde el contenido no alcanza (E1, §7), dejado explícitamente abierto en vez de resuelto por conveniencia. Los submodelos (issues #5, #6, #7) y su consolidación (issue #9) deben ajustarse a este documento. La sección 6 (ISA) no tiene aplicación con las decisiones actuales del glosario, pero se conserva por si algún submodelo llegara a requerirla.

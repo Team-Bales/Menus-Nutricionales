@@ -41,7 +41,9 @@ Cada restricción cita la línea del enunciado o la sección de la consulta form
 | R7-06 | Cada alimento tiene a lo sumo un registro de consumo por asignación: la terna (`MenúId`, `PacienteId`, `AlimentoId`) identifica cada ocurrencia de `Consumo`. | línea 35; consulta 4, §7-A | PK compuesta |
 | R7-07 | Un alimento, un plato o un grupo nutricional aparece a lo sumo una vez en un mismo menú: los pares de `Incluye` (`MenúId`, `AlimentoId`), (`MenúId`, `PlatoId`) y de `Cubre` (`MenúId`, `GrupoNutricionalId`) son únicos. | consulta 2, §8 («cada aparición de un alimento en un menú es identificable») | PK compuesta |
 
-> **Convención adoptada (R7-04):** la llave heredada de `Validación` no incluye la fecha, así que un mismo revisor no puede validar dos veces el mismo menú. Es suficiente para el historial que pide la consulta 3: cuando el jefe de nutrición rechaza un menú, «indica la confección de otro» (línea 41), es decir, la nueva iteración es un menú nuevo con su propia validación. Si el equipo necesitara revisiones repetidas del mismo par, el curso exige modelar FECHA como entidad (`Atributos.pdf`, §2).
+> **Convención adoptada (R7-04):** la llave heredada de `Validación` no incluye la fecha, así que un mismo revisor no puede validar dos veces el mismo menú. Es suficiente para el historial que pide la consulta 3: cuando el jefe de nutrición rechaza un menú, «indica la confección de otro» (línea 41), es decir, la nueva iteración es un menú nuevo con su propia validación. Si el equipo necesitara revisiones repetidas del mismo par, la fecha tendría que pasar a formar parte de la identidad, según la heurística de fecha de las convenciones de modelado (§5).
+
+> **Convención adoptada (R7-06):** como `Consume` solo relaciona la asignación con `Alimento`, el consumo de un plato incluido en el menú se registra por cada alimento que lo compone (vía `Compone`, submodelo #5). Si un mismo alimento llega al menú por más de una vía —directamente y dentro de un plato, o dentro de varios platos—, se registra una sola vez, con una única aceptación: la tasa de aceptación que piden las consultas 4 y 6 es por alimento, no por la vía por la que llegó al menú.
 
 ### 2.2 Referenciales
 
@@ -87,14 +89,14 @@ Cada restricción cita la línea del enunciado o la sección de la consulta form
 
 | # | Restricción | Evidencia | Mecanismo |
 |---|---|---|---|
-| R7-25 | Un nutricionista no valida un menú que él mismo creó. | líneas 38–41; consulta 1, §7-C | trigger (`BEFORE INSERT` en `Validación`) |
+| R7-25 | Un nutricionista no valida un menú que él mismo creó. | decisión del equipo, a partir de la separación de roles de las líneas 38–41 y la consulta 1, §7-C | trigger (`BEFORE INSERT` en `Validación`) |
 | R7-26 | La fecha de validación no es anterior a la fecha de creación del menú validado. | decisión del equipo | trigger |
 | R7-27 | La parametrización de un menú (`CantidadTotalAlimentos`, `EsAutomático`, `Distribución`, `Cubre`) no cambia después de creado el menú. | líneas 39–40; consulta 1, §7-D y §8 | capa de aplicación + trigger (`BEFORE UPDATE OR DELETE`) |
 | R7-28 | La suma de las proporciones de un menú es 1. | decisión del equipo | trigger diferido |
 | R7-29 | El paciente que solicita una revalorización es el mismo de la valoración que revisa. | línea 36; consulta 6, §7-E | trigger |
 | R7-30 | La valoración generada por una revalorización evalúa la misma asignación que la valoración revisada y la emite el nutricionista que ejecutó la revalorización. | consulta 6, §7-D; la autoría, decisión del equipo | trigger |
 
-**R7-25.** La consulta 1 (§7-C) responde «No» a si el creador de un menú es el mismo que lo revisa: el enunciado separa al «nutricionista específico» que genera el menú (líneas 38–39) de quien «revisa y aprueba» (línea 40). Se verifica comparando el `NutricionistaId` de la validación con el creador registrado en `Crea`.
+**R7-25.** La consulta 1 (§7-C) responde «No» a si el creador de un menú es el mismo que lo revisa: el enunciado separa al «nutricionista específico» que genera el menú (líneas 38–39) de quien «revisa y aprueba» (línea 40). Esa separación es de roles; ni el enunciado ni la consulta prohíben expresamente que una misma persona cree y valide un menú, por lo que la restricción se adopta como decisión del equipo, en favor de que la validación sea independiente. Se verifica comparando el `NutricionistaId` de la validación con el creador registrado en `Crea`.
 
 **R7-27.** La consulta 1 exige que la parametrización sea «inmutable una vez generado» el menú, para que la auditoría no cambie si luego cambian los criterios. Un menú que necesite otros parámetros es un menú nuevo, coherente con R7-04. El trigger rechaza las modificaciones y los borrados sobre esas filas; la eliminación completa del menú queda regida por R7-14.
 
@@ -105,8 +107,8 @@ Cada restricción cita la línea del enunciado o la sección de la consulta form
 ## 4. Lo que deliberadamente no se restringe
 
 - **La composición real de un menú no se contrasta con su parametrización.** Un menú puede incluir un número de alimentos distinto de `CantidadTotalAlimentos`, o proporciones distintas de las de `Distribución`, y puede no cubrir los grupos requeridos por su dieta o contener grupos que ella restringe. La consulta 5 existe precisamente para verificar «si los criterios de equilibrio fueron cumplidos» (líneas 76–77), y su conjunto de prueba pide menús con desviaciones intencionadas; si la base las impidiera, la consulta no tendría nada que detectar.
-- **El estado final de un menú no se almacena.** Un menú es final si tiene al menos una validación con `Aprobado` verdadero (consulta 2, §7-A). Un menú puede tener validaciones de varios revisores, incluso con dictámenes distintos.
-- **No hay fechas en la asignación, el consumo ni la valoración.** El único ancla temporal es `Menú.FechaCreación` (consulta 4, §7-D; consulta 6, §7-F).
+- **El estado final de un menú no se almacena.** Un menú es final si su validación más reciente —la de mayor `FechaValidación`, registrada con fecha y hora (consulta 3, §2)— tiene `Aprobado` verdadero (consulta 2, §7-A). Un menú puede tener validaciones de varios revisores, incluso con dictámenes distintos; prevalece la última. El criterio de la validación más reciente es decisión del equipo.
+- **No hay fechas en la asignación, el consumo ni la valoración.** El ancla temporal de estos hechos es `Menú.FechaCreación` (consulta 4, §7-D; consulta 6, §7-F). Dentro de una misma asignación, el orden entre una valoración y la que la revaloriza se deduce de la cadena `Revalora`–`Genera`: la generada es posterior a la revisada. Así se sostiene la serie de «valoraciones más recientes» (línea 58).
 - **Una asignación puede no tener consumos ni valoraciones:** `(0,*)` del lado de `Alimento` en `Consume` y de `Valoración` en `Evalúa`. Un paciente asignado sin consumo registrado queda fuera del denominador de la tasa de aceptación (consulta 4, §7-B).
 - **El consumo no registra cantidades**, solo la aceptación por alimento (consulta 2, §7-D; consulta 4, §7-A).
 - **El jefe de nutrición no es una subclase de `Nutricionista`.** Cualquier nutricionista autorizado para la dieta puede validar (consulta 3, §7-B).
@@ -119,19 +121,19 @@ Se registran para la consolidación del issue #11; su definición corresponde a 
 
 | Restricción | Submodelos | Estado |
 |---|---|---|
-| Quien crea un menú (`Crea`) está autorizado para su dieta (`Atiende`, líneas 43–45). | #6, #7 | Pendiente de consolidar |
-| Quien valida un menú (`Valida`) está autorizado para su dieta (`Atiende`, líneas 43–45; consulta 3, §7-B). | #6, #7 | Pendiente de consolidar |
+| Quien crea un menú (`Crea`) está autorizado para su dieta (`Autoriza`, líneas 43–45). | #6, #7 | Pendiente de consolidar |
+| Quien valida un menú (`Valida`) está autorizado para su dieta (`Autoriza`, líneas 43–45; consulta 3, §7-B). | #6, #7 | Pendiente de consolidar |
 | Un paciente solo recibe menús de dietas en las que está inscrito (`Asigna` ⇒ `Inscribe`, línea 49). | #6, #7 | Pendiente de consolidar |
-| Solo se registra consumo de alimentos que están en el menú asignado, directamente (`Incluye`) o dentro de un plato incluido (`Compone`). | #5, #7 | Pendiente: la consulta 4 fija el consumo por (paciente, menú, alimento), pero no resuelve la descomposición de un plato (mismo punto abierto que el submodelo #5) |
-| Autor del alimento en la parte B de la consulta 6: el submodelo #5 lo llama `Describe` y el MERX completo `Ingresa`. | #5, #7 | Pendiente de alinear el nombre |
-| Restricciones de una dieta sobre los grupos nutricionales: el MERX completo ya usa `Restringe(Dieta, GrupoNutricional)`, conforme a la consulta 5 (§7-C). | #5, #6 | Aplicado en el MERX completo |
+| Solo se registra consumo de alimentos que están en el menú asignado, directamente (`Incluye`) o dentro de un plato incluido (`Compone`). | #5, #7 | Pendiente de consolidar. La descomposición de un plato en sus alimentos queda resuelta en este submodelo (convención adoptada de R7-06) |
+| Autor del alimento en la parte B de la consulta 6. | #5, #7 | Resuelto en el submodelo #5, que lo modela como `Describe` (la relación `Describe/Ingresa` del glosario) |
+| Restricciones de una dieta sobre los grupos nutricionales: el glosario (§6) fija `Restringe(Dieta, RestricciónAlimentaria)` con su nomenclador, mientras que la consulta 5 (§7-C) propone una relación tipificada `Dieta`–`GrupoNutricional` (requerido/restringido). | #5, #6 | Pendiente de alinear |
 | Eliminación de un nutricionista, paciente o dieta que tiene menús, validaciones, asignaciones, valoraciones o revalorizaciones. | #6, #7 | Pendiente: política de borrado entre submodelos |
 
 ---
 
 ## 6. Decisiones del equipo tomadas en este documento
 
-Restricciones sin cita directa en el enunciado ni en las consultas, adoptadas por el equipo: el tope por revisor de R7-04, R7-14, los límites de R7-15 y R7-16, la opcionalidad de `Observaciones` en R7-20, R7-26, R7-28 y la autoría de la valoración generada en R7-30.
+Restricciones sin cita directa en el enunciado ni en las consultas, adoptadas por el equipo: el tope por revisor de R7-04, el registro único por alimento de R7-06, R7-14, los límites de R7-15 y R7-16, la opcionalidad de `Observaciones` en R7-20, R7-25, R7-26, R7-28, la autoría de la valoración generada en R7-30 y el criterio de la validación más reciente para el estado final de un menú (§4).
 
 Quedan abiertas dos decisiones:
 

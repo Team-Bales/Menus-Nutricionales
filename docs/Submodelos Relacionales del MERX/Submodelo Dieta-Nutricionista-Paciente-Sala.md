@@ -16,18 +16,18 @@
 | Entidad de frontera | `GrupoNutricional` (issue #5), solo como extremo de `Cubre` |
 | Relaciones | `Corresponde` (`Dieta`, `ProgramaDeAtención`); `Cubre` (`Dieta`, `GrupoNutricional`); `Restringe` (`Dieta`, `RestricciónAlimentaria`); `Autoriza` (`Nutricionista`, `Dieta`); `Inscribe` (`Paciente`, `Dieta`); `Pertenece` (`Paciente`, `Sala`); `Ejerce` (`Nutricionista`, `Especialidad`) |
 
-`GrupoNutricional` se incorpora como entidad de frontera del submodelo #5 —donde se declara nomenclador y se le dan sus atributos— porque este submodelo lo necesita como extremo de `Cubre`; en el diagrama aparece solo el rectángulo, sin atributos duplicados. `Especialidad` se modela como nomenclador y no como atributo de `Nutricionista`, conforme al patrón nomenclador de las convenciones de modelado (§5) y a la decisión del glosario (§6): «Programa de atención — Nomenclador. Sin atributos propios», y por extensión lo mismo para `RestricciónAlimentaria` y `Especialidad`.
+`GrupoNutricional` se incorpora como entidad de frontera del submodelo #5 —donde se declara nomenclador y se le dan sus atributos— porque este submodelo lo necesita como extremo de `Cubre`; en el diagrama aparece solo el rectángulo, sin atributos duplicados. `ProgramaDeAtención` y `RestricciónAlimentaria` se modelan como nomencladores porque así lo decide el glosario (§6), y `Especialidad` porque el glosario la cataloga como nomenclador (§4.2, N6). En los tres casos se aplica el patrón nomenclador de las convenciones de modelado (§5): ninguno queda como atributo de `Dieta` o de `Nutricionista`.
 
 **Correspondencia con el glosario del dominio:**
 
-- El glosario (§4.1, E3, E5, E6, E7) enumera `Dieta(id, nombre)`, `Nutricionista(id, nombre, especialidad)`, `Paciente(id, nombre, edad)` y `Sala(id, nombre)`. Se conservan esos atributos con esa jerarquía; `Especialidad` y `Sala`, pese a tener datos propios, no son entidades débiles: cada una se identifica por su propio identificador.
+- El glosario (§4.1, E3, E5, E6, E7) enumera `Dieta(id, nombre)`, `Nutricionista(id, nombre, especialidad)`, `Paciente(id, nombre, edad)` y `Sala(id, nombre)`. Se conservan esos atributos, salvo `especialidad`, que pasa a ser la relación `Ejerce` con el nomenclador `Especialidad`.
 - El glosario (§4.4) registra `Corresponde` (`Dieta` → `Programa de atención`, N:1), `Cubre` (`Dieta` ↔ `Grupo nutricional`, N:M), `Restringe` (`Dieta` ↔ `Restricción alimentaria`, N:M), `Autoriza/Atiende` (`Nutricionista` ↔ `Dieta`, N:M), `Inscribe` (`Paciente` ↔ `Dieta`, N:M) y `Pertenece` (`Paciente` → `Sala`, N:1). Se conservan esos nombres y esos participantes. `Ejerce` (`Nutricionista` ↔ `Especialidad`) traduce la mención del enunciado «su especialidad» como dato del nutricionista (línea 44) al patrón nomenclador.
 - `Autoriza` se nombra con el verbo del glosario, que recoge la formulación «las dietas para las cuales está autorizado a generar o validar menús» (líneas 44-45). La relación representa ese conjunto de autorizaciones, no la acción de autorizar.
 - `Autoriza` y `Inscribe` son N:M en el glosario, y así se dibujan: `(0,*)` en ambos extremos.
 
 **Lo que este submodelo deja fuera, y por qué:**
 
-- **Usuario, Contraseña y Rol** no se modelan. El glosario (§4.3) no incluye al usuario como candidato del dominio; el acceso a la aplicación es una responsabilidad de la capa de aplicación, y las funcionalidades F1-F6 no consultan credenciales ni permisos como dato. El único dato de acceso mencionado en el enunciado es la contraseña, y no interviene en ninguna consulta.
+- **Usuario, Contraseña y Rol** no se modelan. El glosario (§4.3) no incluye al usuario como candidato del dominio; el acceso a la aplicación es una responsabilidad de la capa de aplicación, y las funcionalidades F1-F6 no consultan credenciales ni permisos como dato.
 - **Administrador** no se modela. El glosario (§6) lo declara fuera del MERX: es un rol de mantenimiento de la aplicación (evitar alimentos duplicados, impedir la asignación doble de un menú), no un dato de dominio.
 - **`Jefe de nutrición`** no se modela como entidad ni como especialización. El glosario (§6) lo declara rol de `Nutricionista` sin datos propios: la aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Observaciones)` (issue #7). La información que aporta este submodelo es un tipo de restricción, no una relación: una aprobación exige que el aprobador sea un `Nutricionista` autorizado en la dieta (§3, R6-22).
 
@@ -77,7 +77,7 @@ Las cardinalidades se leen con la convención de dirección de las convenciones 
 | R6-14 | `Edad` es mayor o igual que cero. | línea 49 | CHECK (`Edad >= 0`) |
 | R6-15 | `Nombre` es obligatorio y no vacío en `Dieta`, `Nutricionista`, `Paciente`, `Sala` y en los tres nomencladores. | decisión del equipo | NOT NULL + CHECK |
 | R6-16 | `Nombre` es único dentro de cada nomenclador: no hay dos programas de atención, dos restricciones alimentarias ni dos especialidades con el mismo nombre. | decisión del equipo | UNIQUE |
-| R6-17 | `Edad` es un número entero no negativo. | decisión del equipo | dominio entero con CHECK (`Edad >= 0`) |
+| R6-17 | `Edad` se registra como un número entero de años. | decisión del equipo | tipo entero |
 
 > **Convención adoptada (R6-16):** la unicidad del nombre en los nomencladores es la contrapartida de usar el patrón nomenclador (convenciones de modelado, §5): el nombre es la clave con que se reconoce un valor del catálogo en el diálogo con el usuario, y su duplicación lo volvería ambiguo. El enunciado no enumera los valores de estos tres catálogos —a diferencia de `TipoPreparación` y `NivelCalórico`— así que no se exige catálogo cerrado, solo unicidad.
 
@@ -90,7 +90,7 @@ Las cardinalidades se leen con la convención de dirección de las convenciones 
 | R6-20 | Cada nutricionista ejerce exactamente una especialidad: `(1,1)` del lado de `Especialidad` en `Ejerce`. | línea 44 | FK NOT NULL en `Nutricionista` |
 | R6-21 | Toda dieta cubre al menos un grupo nutricional: `(1,*)` del lado de `GrupoNutricional` en `Cubre`. | líneas 42-43; el mínimo, decisión del equipo | capa de aplicación + trigger diferido |
 
-**R6-18, R6-19 y R6-20 — carácter obligatorio.** El enunciado presenta el programa de atención, la sala y la especialidad como un dato propio y singular de cada dieta, cada paciente y cada nutricionista: «el programa de atención al que corresponde» (línea 42), «su nombre, edad, sala a la que pertenece» (línea 49), «su identificador único, nombre, especialidad» (líneas 43-45). La obligatoriedad se implementa bajando la FK a la entidad fuerte, no dibujando el mínimo en el rombo: la columna no admite nulos y una dieta sin programa no llega a existir.
+**R6-18, R6-19 y R6-20 — carácter obligatorio.** El enunciado presenta el programa de atención, la sala y la especialidad como un dato propio y singular de cada dieta, cada paciente y cada nutricionista: «el programa de atención al que corresponde» (línea 42), «su nombre, edad, sala a la que pertenece» (línea 49), «su identificador único, nombre, especialidad» (líneas 43-45). En el diagrama se expresa con el `(1,1)` dibujado junto al nomenclador o a `Sala`; en la implementación, con una FK NOT NULL en la entidad: la columna no admite nulos y, por ejemplo, una dieta sin programa de atención no llega a existir.
 
 **R6-21 — cobertura mínima.** El enunciado describe la dieta como el conjunto de «restricciones o grupos nutricionales a cubrir a lo largo del tratamiento» (líneas 42-43). Una dieta sin ningún grupo que cubrir no tendría sentido operativo: no delimitaría qué debe generar la generación automática de menús. El enunciado enuncia las dos listas sin fijar un mínimo para ninguna; el equipo fija el mínimo en `1` solo para los grupos que la dieta se compromete a cubrir, y deja en `0` el de las restricciones.
 
@@ -109,7 +109,7 @@ Estas restricciones no restringen los datos almacenados por el submodelo, sino *
 
 **R6-22.** El enunciado acota el alcance de la autoridad del nutricionista: almacena «las dietas para las cuales está autorizado a generar o validar menús» (líneas 43-45), y confirma que puede «ver menús de otros nutricionistas que atienden la misma dieta» (línea 32). Es decir, la autoridad se verifica **por dieta**, no por autor: un nutricionista puede generar y validar menús de cualquier dieta en la que esté autorizado, aunque esos menús los haya creado otro. La base de datos guarda la autorización (`Autoriza`) pero no la acción de generar o validar (`Crea`, `Valida`); por eso la comprobación se hace en la capa de aplicación: antes de crear o de validar un menú, el nutricionista autenticado debe tener una fila en `Autoriza` para la dieta a la que ese menú corresponde. La misma comprobación aplica al rol de jefe de nutrición (R6-22 y §0), que no es una entidad: se valida contra el `Nutricionista` que lo ejerce.
 
-**R6-23.** El enunciado dice que el paciente «accederá a los menús que le son asignados» (línea 35) y registra «las dietas en las que está inscrito» (líneas 49-50). La asignación de un menú a un paciente es un hecho del #7 (1:1, línea 33-34), pero su corrección depende de este submodelo: un paciente no puede recibir un menú de una dieta en la que no está inscrito. La verificación es análoga a R6-22: antes de asignar un menú a un paciente, debe existir una fila en `Inscribe` para la dieta del menú y para ese paciente. La segunda mitad de la restricción —que la asignación de un mismo menú a dos pacientes distintos no ocurra— es del #7 y se registra en §5.
+**R6-23.** El enunciado dice que los pacientes «podrán acceder a los menús que le son asignados» (línea 35) y registra «las dietas en las que está inscrito» (líneas 49-50). La asignación de un menú a un paciente es un hecho del #7, pero su corrección depende de este submodelo: un paciente no puede recibir un menú de una dieta en la que no está inscrito. La verificación es análoga a R6-22: antes de asignar un menú a un paciente, debe existir una fila en `Inscribe` para la dieta del menú y para ese paciente. Las demás reglas de la asignación —qué pares (menú, paciente) se admiten y cómo se registra el consumo— las define el #7, conforme a la consulta 4 (§7-A y §7-D).
 
 Ambas restricciones se expresan mejor como una consulta de existencia sobre las tablas de interconexión (`EXISTS` sobre `Autoriza` e `Inscribe`) que como una regla declarativa: el dato que las hace cumplir —el menú— pertenece al #7 y no tiene representación en este submodelo.
 
@@ -122,7 +122,7 @@ Ambas restricciones se expresan mejor como una consulta de existencia sobre las 
 - **Los nombres de las entidades no son únicos.** El enunciado fija el identificador como único (líneas 42, 44, 49) pero no el nombre; se admite, por tanto, que dos dietas, dos pacientes, dos nutricionistas o dos salas compartan nombre sin que ello confunda al modelo, que los distingue por su identificador. La unicidad de nombre solo se exige en los nomencladores (R6-16).
 - **`Especialidad` no se deriva de `Autoriza` ni al revés.** Un nutricionista puede estar autorizado en una dieta ajena a su especialidad, y su especialidad no acota sus autorizaciones. Ninguna funcionalidad del enunciado (F1-F6) exige esa correspondencia.
 - **`Sala` no depende de `Dieta`:** un paciente pertenece a una sala y está inscrito en varias dietas, sin que su sala restrinja las dietas. La sala se usa como agregado en el reporte F6b (líneas 80-82), no como criterio de inscripción.
-- **El traslado de un paciente entre salas no se modela como historial.** `Pertenece` es 1:1 con FK NOT NULL en `Paciente` (R6-19); un traslado se representa actualizando la fila del paciente, y no queda constancia de la sala anterior.
+- **El traslado de un paciente entre salas no se modela como historial.** `Pertenece` es N:1, con FK NOT NULL en `Paciente` (R6-19); un traslado se representa actualizando la fila del paciente, y no queda constancia de la sala anterior.
 
 ---
 
@@ -134,10 +134,10 @@ Se registran para la consolidación del issue #11; su definición corresponde a 
 |---|---|---|
 | Generación de menús por dieta: `Crea(Nutricionista, Menú)` y `Generado para(Menú, Dieta)`, con `Incluye` hacia alimentos y platos. | #6, #7 | Documentado en el glosario |
 | Validación y aprobación del menú: `Valida(Nutricionista, Menú; FechaValidación, Observaciones)` y el rol de jefe de nutrición que la ejerce. | #6, #7 | Documentado en el glosario (§6) |
-| Asignación de un menú a un paciente (1:1) y su identidad en `Consumo` (paciente + menú + fecha). | #6, #7 | La asignación 1:1 está fijada en el glosario (líneas 33-34); la identidad de `Consumo` se define en #7 |
+| Asignación de un menú a un paciente y registro de su consumo. | #6, #7 | Los define el #7, conforme a la consulta 4 (§7-A y §7-D) |
 | Cobertura de grupos: verificar, al generar un menú para una dieta, que la cobertura de grupos del menú incluye los grupos declarados en `Cubre(Dieta, GrupoNutricional)`. | #5, #6, #7 | Pendiente: la generación del menú y sus parámetros de cobertura son del #7; este submodelo aporta la lista de grupos que la dieta exige |
 | Compatibilidad de las restricciones alimentarias de una dieta con los alérgenos de los alimentos y platos del menú. | #6, #7 | Pendiente: los alérgenos viven en la ficha nutricional ampliada, gestionada fuera del modelo relacional (issue #8) |
-| Valoraciones y revalorizaciones por dieta, y el promedio por sala del reporte F6b. | #6, submodelo por asignar | Fuera de este submodelo: la definición de `Valoración` y `Revalorización` corresponde al submodelo que las reclama |
+| Valoraciones y revalorizaciones por dieta, y el promedio por sala del reporte F6b. | #6, #7 | Fuera de este submodelo: `Valoración` y `Revalorización` se definen en el #7 |
 | Eliminación de un paciente o de un nutricionista con inscripciones o autorizaciones, y de una dieta con esas mismas ocurrencias. | #6, #7 | Pendiente: la política de borrado entre submodelos no está decidida (R6-13 la aplica dentro de este submodelo) |
 
 ---

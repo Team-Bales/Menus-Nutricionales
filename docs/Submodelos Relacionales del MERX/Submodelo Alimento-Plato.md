@@ -112,9 +112,9 @@ Se registran para la consolidación del issue #11; su definición corresponde a 
 
 | Restricción | Submodelos | Estado |
 |---|---|---|
-| Composición de un menú en alimentos y platos (`Incluye`), y su conteo en las consultas 2 y 6: alimentos incluidos directamente más los alimentos de los platos incluidos, vía `Compone`. | #5, #7 | Documentado en el glosario |
-| Registro del consumo cuando el menú incluye un plato: a qué alimentos se imputa la aceptación o el rechazo. | #5, #7 | Pendiente: la consulta 4 fija el consumo por (paciente, menú, alimento), pero no resuelve la descomposición de un plato |
-| Restricciones de una dieta sobre los grupos nutricionales: `Restringe(Dieta, RestricciónAlimentaria)` según el glosario frente a una relación tipificada `Dieta`–`GrupoNutricional` según la consulta 5 (§7-C). | #5, #6 | Pendiente de alinear |
+| Composición de un menú en alimentos y platos (`Incluye`), y su conteo en las consultas 2 y 6: alimentos incluidos directamente más los alimentos de los platos incluidos, vía `Compone`. | #5, #7 | Modelado en el #7 (`Incluye` hacia `Alimento` y hacia `Plato`) |
+| Registro del consumo cuando el menú incluye un plato: a qué alimentos se imputa la aceptación o el rechazo. | #5, #7 | Resuelto en el #7: el consumo de un plato se registra por cada alimento que lo compone (convención adoptada de R7-06) |
+| Restricciones de una dieta sobre los grupos nutricionales: `Restringe(Dieta, RestricciónAlimentaria)` según el glosario frente a una relación tipificada `Dieta`–`GrupoNutricional` según la consulta 5 (§7-C). | #5, #6 | Resuelto en la consolidación (#9, D9-1): se conserva `Restringe` y se agrega `Excluye(RestricciónAlimentaria, GrupoNutricional)` |
 | Eliminación de un nutricionista que tiene alimentos o platos descritos. | #5, #6 | Pendiente: política de borrado entre submodelos |
 
 ---

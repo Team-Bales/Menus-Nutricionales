@@ -12,7 +12,9 @@
 
 La notación del curso incluye generalización/especialización (§6) y agregación (§3), construcciones que el MERX puede requerir. Ninguna de las dos tiene una primitiva nativa en Mermaid con la semántica exacta que exige este modelo (discriminador propio para partición disjunta, atributo heredado marcado con borde punteado, rectángulo de agregación envolvente), por lo que draw.io evita tener que forzar esas construcciones.
 
-**Versionado:** el archivo fuente editable `.drawio` de cada submodelo se guarda en `docs/Submodelos Relacionales del MERX/`.
+**Versionado:** el archivo fuente editable `.drawio` de cada submodelo se guarda en `docs/Submodelos Relacionales del MERX/`; el MERX consolidado (issue #9), con su documento de decisiones, en `docs/MERX consolidado/`.
+
+**Formato:** Times New Roman 30 en figuras y 25 en cardinalidades. Los submodelos y la versión imprimible del MERX consolidado usan páginas A4 verticales, separadas en páginas de entidades —donde se dibujan los atributos— y páginas de relaciones; la versión completa del MERX consolidado ocupa una sola hoja A0 horizontal.
 
 ---
 
@@ -22,13 +24,15 @@ La notación del curso incluye generalización/especialización (§6) y agregaci
 |---|---|---|
 | Entidad / relación | PascalCase, singular, español | `Alimento`, `GrupoNutricional`, `Compone` |
 | Relación | Verbo en infinitivo o presente | `Crea`, `Valida`, `Incluye`, `Compone` |
-| Atributo | PascalCase | `FechaCreación`, `NivelCalórico` |
+| Atributo | PascalCase | `FechaCreación`, `CantidadTotalAlimentos` |
 | Atributo llave/identificador | Sufijo `Id` | `AlimentoId`, `DietaId` |
 | Multi-palabra | Sin guion bajo ni espacio (PascalCase ya separa) | `TipoPreparación` |
 
 > **Convención adoptada:** se usa PascalCase en vez de las mayúsculas con que se dibujan las entidades en el material de referencia, para mantener consistencia con los nombres ya fijados en el glosario del dominio (issue #1). Es una diferencia puramente tipográfica, no de fondo, y no afecta la lectura ni la evaluación del diagrama.
 >
 > Para la llave se usa el sufijo `Id` (`AlimentoId`) en vez de la abreviatura de una sola letra (`#A`, `#P`...): esa abreviatura resulta ambigua entre entidades del dominio que comparten inicial (por ejemplo, Dieta y Desempeño, o Consumo y Cobertura), así que se descarta en favor del nombre real del atributo.
+>
+> Una relación se identifica por su nombre **y** sus participantes: el mismo verbo puede repetirse entre pares distintos (`Pertenece`, `Tiene`, `Corresponde`, `Cubre`), como ya hacía el glosario con `Cubre`.
 
 ---
 
@@ -37,8 +41,10 @@ La notación del curso incluye generalización/especialización (§6) y agregaci
 | Tipo | Notación | Ejemplo en el dominio |
 |---|---|---|
 | Entidad fuerte | Rectángulo de borde simple | `Alimento`, `Dieta`, `Paciente` |
-| Entidad débil | Rectángulo de **borde doble** — depende de otra entidad para identificarse | `Consumo` (identificado por Paciente + Menú + Fecha, ya señalado así en el glosario) |
-| Agregación | Rectángulo de borde simple que **envuelve** una relación completa (dos entidades + su rombo), con su nombre escrito dentro, abajo a la derecha. Hereda como llave la de la relación que envuelve (atributos heredados, §5). | Se emplea cuando esa relación necesita atributos propios o participar como extremo de otra relación. Caso en el dominio: `Composición` (issue #5), que envuelve `Plato`—`Compone`—`Alimento` para registrar `Cantidad`. |
+| Entidad débil | Rectángulo de **borde doble** — depende de otra entidad para identificarse | Ninguna en el MERX consolidado: `Consumo`, que el glosario señalaba como débil, quedó como agregación al fijarse su identidad por (paciente, menú, alimento) sin fecha (consulta 4, §7-A y §7-D). |
+| Agregación | Rectángulo de borde simple que **envuelve** una relación completa (dos entidades + su rombo), con su nombre escrito dentro, abajo a la derecha, o en otra esquina interior si líneas o figuras ocupan esa. Hereda como llave la de la relación que envuelve (atributos heredados, §5). | Se emplea cuando esa relación necesita atributos propios o participar como extremo de otra relación. Casos en el dominio: `Composición` (issue #5), que envuelve `Plato`—`Compone`—`Alimento` para registrar `Cantidad`; `Distribución`, `Validación` y `Asignación` (issue #7); y `Consumo` (issue #7), que envuelve a la agregación `Asignación` junto con `Alimento`. |
+
+> **Convención adoptada — diagrama integrado:** cuando una entidad participa en más de una agregación, se dibuja otra vez dentro de cada agregación que la necesita, porque una misma figura no puede quedar dentro de varias cajas sin que sus bordes se crucen. Los atributos se dibujan en una sola aparición; las demás son rectángulos sin atributos que representan la misma entidad y pueden llevar relaciones. Es el caso de `Menú` y `Alimento` en el MERX consolidado (issue #9, decisión D9-4). La cardinalidad de una entidad que está dentro de una agregación se escribe sobre su línea, justo fuera del borde de la caja.
 
 ---
 
@@ -72,12 +78,12 @@ La notación del curso incluye generalización/especialización (§6) y agregaci
 **Restricción de atomicidad — no existen los atributos multivaluados ni compuestos.** El MERX de este curso exige que todo atributo sea atómico. Toda propiedad que pueda tomar más de un valor a la vez, o que tenga subcampos propios, se modela como **entidad más relación**, nunca como un atributo-lista o un atributo con estructura interna.
 
 Esta restricción ya tiene aplicación directa sobre el dominio del proyecto:
-- `Restricción alimentaria` y `Grupo nutricional a cubrir` no son atributos-lista de `Dieta`, sino entidades conectadas por relaciones N:M — la relación `Cubre` con `GrupoNutricional` ya está planteada así en el glosario; falta la relación equivalente para `Restricción alimentaria`.
-- `Parámetros de generación` de `Menú` tampoco es un atributo único: se descompone en un atributo simple (`CantidadTotalAlimentos`) más relaciones con atributo propio hacia los nomencladores que ya existen en el modelo (`TipoPreparación`, `GrupoNutricional`). Este ajuste ya fue comunicado al equipo responsable del issue #7.
+- `Restricción alimentaria` y `Grupo nutricional a cubrir` no son atributos-lista de `Dieta`, sino entidades conectadas por relaciones N:M: `Cubre` con `GrupoNutricional` y `Restringe` con `RestricciónAlimentaria` (issue #6).
+- `Parámetros de generación` de `Menú` tampoco es un atributo único: se descompone en un atributo simple (`CantidadTotalAlimentos`), la agregación `Distribución` hacia `TipoPreparación` y la relación `Cubre` hacia `GrupoNutricional` (issue #7).
 
-**Patrón "nomenclador":** cuando un atributo debería restringirse a un catálogo cerrado de valores válidos, se modela como entidad independiente referenciada, no como texto libre — patrón ya aplicado en el dominio a `GrupoNutricional`, `TipoPreparación` y `NivelCalórico`.
+**Patrón "nomenclador":** cuando un atributo debería restringirse a un catálogo cerrado de valores válidos, se modela como entidad independiente referenciada, no como texto libre. En el MERX consolidado hay siete: `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `ProgramaDeAtención`, `RestricciónAlimentaria`, `Especialidad` y `ResultadoNutricional`.
 
-**Heurística fecha — ¿atributo o entidad?** Si el hecho puede repetirse en el tiempo entre el mismo par de participantes, la fecha pasa a formar parte de la identidad (entidad débil, o llave de la relación); si el hecho ocurre una sola vez, la fecha queda como atributo simple. Es el mismo razonamiento ya aplicado a `Consumo` (Paciente + Menú + Fecha) en el glosario.
+**Heurística fecha — ¿atributo o entidad?** Si el hecho puede repetirse en el tiempo entre el mismo par de participantes, la fecha pasa a formar parte de la identidad (entidad débil, o llave de la relación); si el hecho ocurre una sola vez, la fecha queda como atributo simple. Así se resolvió en la consulta 4 (§7-D): como un menú se asigna una sola vez a cada paciente, ni la asignación ni el consumo llevan fecha en su identidad, y el ancla temporal es `Menú.FechaCreación`.
 
 ---
 
@@ -87,7 +93,7 @@ Esta restricción ya tiene aplicación directa sobre el dominio del proyecto:
 - **Especialización simple** (una sola subclase, sin discriminador): línea directa entre superclase y subclase con el símbolo ISA. Solo se dibuja si la subclase aporta atributos o relaciones propias; si no aporta nada, no hace falta modelarla aparte.
 - **Especialización por partición** (dos o más subclases disjuntas): se agrega un discriminador en forma de **hexágono alargado** — distinto de un rombo de relación — etiquetado con el atributo que distingue las subclases. Cada rama lleva también el símbolo ISA antes de entrar a su rectángulo.
 
-**Aplicación en el proyecto:** la decisión D1 del glosario del dominio (issue #1) se resolvió modelando `Plato` como entidad separada de `Alimento`, relacionada por composición (`Compone`), y no como especialización. Con esa decisión, y con la del jefe de nutrición como rol de `Nutricionista` sin entidad propia, ningún submodelo requiere por ahora esta notación; se mantiene disponible para el caso de que alguno la necesite.
+**Aplicación en el proyecto:** la decisión D1 del glosario del dominio (issue #1) se resolvió modelando `Plato` como entidad separada de `Alimento`, relacionada por composición (`Compone`), y no como especialización. Con esa decisión, y con la del jefe de nutrición como rol de `Nutricionista` sin entidad propia, ni los submodelos ni el MERX consolidado requieren esta notación; se mantiene disponible para el caso de que el modelo llegue a necesitarla.
 
 ---
 
@@ -110,6 +116,7 @@ Casos donde el contenido de Bases de Datos I no define una convención y el equi
 | Entidad fuerte | Rectángulo, borde simple |
 | Entidad débil | Rectángulo, borde doble |
 | Agregación | Rectángulo envolvente, borde simple |
+| Entidad repetida en otra agregación | Mismo rectángulo, sin atributos |
 | Relación | Rombo, borde simple |
 | Relación identificadora | Rombo, borde doble |
 | Cardinalidad | `(mínimo, máximo)` en el extremo de cada entidad |
@@ -123,4 +130,4 @@ Casos donde el contenido de Bases de Datos I no define una convención y el equi
 
 ## 9. Conclusiones y siguientes pasos
 
-La notación queda fijada con base directa en lo estudiado en Bases de Datos I, sin recurrir a convenciones genéricas ajenas al curso salvo en el único punto donde el contenido no alcanza (E1, §7), dejado explícitamente abierto en vez de resuelto por conveniencia. Los submodelos (issues #5, #6, #7) y su consolidación (issue #9) deben ajustarse a este documento. La sección 6 (ISA) no tiene aplicación con las decisiones actuales del glosario, pero se conserva por si algún submodelo llegara a requerirla.
+La notación queda fijada con base directa en lo estudiado en Bases de Datos I, sin recurrir a convenciones genéricas ajenas al curso salvo en el único punto donde el contenido no alcanza (E1, §7), dejado explícitamente abierto en vez de resuelto por conveniencia. Los submodelos (issues #5, #6, #7) y su consolidación (issue #9) se ajustan a este documento; las decisiones propias de la consolidación están en `docs/MERX consolidado/MERX consolidado.md`. La sección 6 (ISA) no tiene aplicación en el modelo actual, pero se conserva por si llegara a requerirse.

@@ -96,38 +96,38 @@ Ficha extensa y anidada: bloques con subobjetos, arreglos de pasos y desglose po
     "vitaminas": { "aUg": 310, "cMg": 22, "b12Ug": 0.6 },
     "minerales": { "hierroMg": 3.9, "calcioMg": 64, "sodioMg": 620, "potasioMg": 780 }
   },
-  "alergenos": ["gluten", "apio"],
+  "alergenos": ["apio"],
   "modoPreparacion": {
     "tecnica": "guiso",
     "tiempoTotalMin": 55,
     "pasos": [
-      { "orden": 1, "descripcion": "Sofreír la cebolla y el apio en aceite.", "tiempoMin": 8 },
+      { "orden": 1, "descripcion": "Cocinar la cebolla y el apio a fuego medio.", "tiempoMin": 8 },
       { "orden": 2, "descripcion": "Añadir el pollo troceado y dorar.", "tiempoMin": 10 },
-      { "orden": 3, "descripcion": "Incorporar el arroz y el caldo; cocer a fuego lento.", "tiempoMin": 35 },
+      { "orden": 3, "descripcion": "Incorporar el arroz, cubrir con agua y cocer a fuego lento.", "tiempoMin": 35 },
       { "orden": 4, "descripcion": "Reposar antes de servir.", "tiempoMin": 2 }
     ]
   },
   "ingredientes": [
-    { "alimentoId": 15, "nombre": "Pollo", "cantidad": 150, "unidad": "g",
+    { "alimentoId": 15, "nombre": "Pollo",
       "aporte": { "energiaKcal": 248, "proteinasG": 27.0, "grasasG": 9.0 } },
-    { "alimentoId": 23, "nombre": "Arroz", "cantidad": 80, "unidad": "g",
+    { "alimentoId": 23, "nombre": "Arroz",
       "aporte": { "energiaKcal": 208, "carbohidratosG": 46.0, "proteinasG": 4.3 } },
-    { "alimentoId": 31, "nombre": "Cebolla", "cantidad": 60, "unidad": "g",
+    { "alimentoId": 31, "nombre": "Cebolla",
       "aporte": { "energiaKcal": 24, "carbohidratosG": 5.6 } },
-    { "alimentoId": 34, "nombre": "Apio", "cantidad": 30, "unidad": "g",
+    { "alimentoId": 34, "nombre": "Apio",
       "aporte": { "energiaKcal": 6, "fibraG": 0.5 } }
   ],
   "actualizadoEn": { "$date": "2026-09-30T10:20:00Z" }
 }
 ```
 
-**Sobre `ingredientes`.** La composición del plato vive en PostgreSQL (`Compone`, con `Cantidad`, submodelo #5), y esa es la fuente de verdad. El arreglo `ingredientes` no la reemplaza: es el **desglose nutricional** de cada ingrediente dentro del plato, que es justamente lo que vuelve la ficha «más extensa y anidada» (línea 55). Cada elemento lleva `alimentoId` para poder contrastarlo con `Compone` (regla F-06 del documento 2); `nombre` es solo una copia de lectura para mostrar la ficha sin consultar PostgreSQL.
+**Sobre `ingredientes`.** La composición del plato vive en PostgreSQL (`Compone`, con `Cantidad`, submodelo #5), y esa es la fuente de verdad. El arreglo `ingredientes` no la reemplaza: es el **desglose nutricional** de cada ingrediente dentro del plato, que es justamente lo que vuelve la ficha «más extensa y anidada» (línea 55). Cada elemento lleva `alimentoId` para poder contrastarlo con `Compone` (regla R8-06 del documento 2); `nombre` es solo una copia de lectura para mostrar la ficha sin consultar PostgreSQL. La cantidad de cada ingrediente **no** se repite en la ficha: se lee de `Composición` (`Cantidad`), así que la ficha no puede contradecirla.
 
 ---
 
 ## 5. Validación de la colección
 
-MongoDB permite validar con `$jsonSchema` sin imponer una estructura fija. El validador exige solo lo que toda ficha comparte y deja libre el resto (`additionalProperties` no se restringe en los bloques variables):
+MongoDB permite validar con `$jsonSchema` sin imponer una estructura fija. El validador exige solo lo que toda ficha comparte, más la coherencia entre la tabla de origen y el tipo, y deja libre el resto (`additionalProperties` no se restringe en los bloques variables). MongoDB implementa el draft 4 de JSON Schema, donde `exclusiveMinimum` es booleano y acompaña a `minimum`:
 
 ```javascript
 db.createCollection("fichas_nutricionales", {
@@ -148,7 +148,7 @@ db.createCollection("fichas_nutricionales", {
         porcionReferencia: {
           bsonType: "object",
           required: ["cantidad", "unidad"],
-          properties: { cantidad: { bsonType: ["int", "double"], exclusiveMinimum: 0 } }
+          properties: { cantidad: { bsonType: ["int", "double"], minimum: 0, exclusiveMinimum: true } }
         },
         macronutrientes: { bsonType: "object" },
         micronutrientes: { bsonType: "object" },
@@ -163,7 +163,17 @@ db.createCollection("fichas_nutricionales", {
           }
         },
         actualizadoEn: { bsonType: "date" }
-      }
+      },
+      // R8-03: un alimento lleva ficha simple y sin desglose; un plato, ficha compuesta
+      anyOf: [
+        {
+          properties: { origen: { properties: { tabla: { enum: ["Alimento"] } } }, tipo: { enum: ["simple"] } },
+          not: { required: ["ingredientes"] }
+        },
+        {
+          properties: { origen: { properties: { tabla: { enum: ["Plato"] } } }, tipo: { enum: ["compuesto"] } }
+        }
+      ]
     }
   },
   validationLevel: "strict",
@@ -176,11 +186,11 @@ db.fichas_nutricionales.createIndex({ "origen.tabla": 1, "origen.id": 1 }, { uni
 
 | # | Regla | Evidencia | Dónde se garantiza |
 |---|---|---|---|
-| F-01 | Toda ficha identifica la fila de PostgreSQL a la que pertenece (`origen.tabla`, `origen.id`). | líneas 51, 56–57 | `$jsonSchema` (`required`) |
-| F-02 | `origen.tabla` solo puede ser `Alimento` o `Plato`. | líneas 51, 54 | `$jsonSchema` (`enum`) |
-| F-03 | `tipo` es `simple` o `compuesto`, y es coherente con la tabla: `Alimento` → `simple`, `Plato` → `compuesto`. | líneas 53–55 | `$jsonSchema` (`enum`) + capa de aplicación (la coherencia con la tabla) |
-| F-04 | Los valores numéricos de la porción son positivos y los alérgenos no se repiten. | decisión del equipo | `$jsonSchema` |
-| F-05 | Los bloques `macronutrientes`, `micronutrientes` y `modoPreparacion` no tienen campos obligatorios. | líneas 52–53, 56–57 | ausencia de `required` en esos bloques |
+| R8-01 | Toda ficha identifica la fila de PostgreSQL a la que pertenece (`origen.tabla`, `origen.id`). | líneas 51, 56–57 | `$jsonSchema` (`required`) |
+| R8-02 | `origen.tabla` solo puede ser `Alimento` o `Plato`. | líneas 51, 54 | `$jsonSchema` (`enum`) |
+| R8-03 | `tipo` es `simple` o `compuesto`, y es coherente con la tabla: `Alimento` → `simple`, `Plato` → `compuesto`; solo las fichas de plato llevan `ingredientes`. | líneas 53–55 | `$jsonSchema` (`enum` y `anyOf`) |
+| R8-04 | Los valores numéricos de la porción son positivos y los alérgenos no se repiten. | decisión del equipo | `$jsonSchema` |
+| R8-05 | Los bloques `macronutrientes`, `micronutrientes` y `modoPreparacion` no tienen campos obligatorios. | líneas 52–53, 56–57 | ausencia de `required` en esos bloques |
 
 ---
 
@@ -188,7 +198,8 @@ db.fichas_nutricionales.createIndex({ "origen.tabla": 1, "origen.id": 1 }, { uni
 
 - Una sola colección para alimentos y platos, distinguidos por `tipo`, en lugar de dos colecciones: la ficha es el mismo concepto con distinto grado de detalle (líneas 53–55).
 - Sufijo de unidad en el nombre de cada valor numérico (`…Kcal`, `…G`, `…Mg`, `…Ug`).
-- Desglose por ingrediente en los platos, subordinado a la composición de PostgreSQL (§4).
-- Regla F-04.
+- Desglose por ingrediente en los platos, subordinado a la composición de PostgreSQL y sin repetir sus cantidades (§4).
+- Coherencia entre la tabla de origen y el tipo declarada en el validador (R8-03).
+- Regla R8-04.
 
-Queda abierta la **lista de alérgenos admitidos** (texto libre o catálogo cerrado). Si se adopta un catálogo, bastaría añadir un `enum` a `alergenos.items`.
+Queda abierta la **lista de alérgenos admitidos** (texto libre o catálogo cerrado). Si se adopta un catálogo, bastaría añadir un `enum` a `alergenos.items`. Se decide junto con la correspondencia entre restricciones alimentarias y alérgenos que necesita la comprobación de compatibilidad (documento 2, §5); un catálogo cerrado es lo que hace fiable esa comprobación.

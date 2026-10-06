@@ -34,13 +34,13 @@ Un conjunto de datos se ubica en el almacén de documentos si cumple **todas** e
 
 | Condición | Ficha nutricional | Datos del MERX (p. ej., `Menú`, `Consumo`) |
 |---|---|---|
-| C1 | **Sí.** «cantidad y tipo de atributos varía de un alimento a otro y no se ajusta a una estructura fija ni común» (líneas 52–53). | No. Atributos fijos y atómicos (regla de atomicidad del MERX, `Atributos.pdf`). |
+| C1 | **Sí.** «cantidad y tipo de atributos varía de un alimento a otro y no se ajusta a una estructura fija ni común» (líneas 52–53). | No. Atributos fijos y atómicos (restricción de atomicidad, convenciones de modelado, §5). |
 | C2 | **Sí.** El plato requiere una ficha «considerablemente más extensa y anidada» (líneas 54–55): micronutrientes por grupos, pasos de preparación, desglose por ingrediente (documento 1, §4). | No. |
 | C3 | **Sí.** Se consulta la ficha de un alimento o plato concreto, completa (documento 2, §2). | No. Se filtran, agrupan y combinan entre sí. |
 | C4 | **Sí.** Ninguna de las consultas 1 a 6 usa macronutrientes, micronutrientes, alérgenos ni modo de preparación: la clasificación que usan (nivel calórico, grupo nutricional, tipo de preparación) está en PostgreSQL. | No. Son el objeto de las seis consultas. |
-| C5 | **Sí.** Solo pertenece a su alimento o plato; las reglas F-06 a F-10 cubren esa pertenencia (documento 2, §4). | No. Participan en claves foráneas y restricciones cruzadas (issue #11). |
+| C5 | **Sí.** Solo pertenece a su alimento o plato; las reglas R8-06 a R8-10 cubren esa pertenencia (documento 2, §4). La compatibilidad de sus alérgenos con las restricciones alimentarias de una dieta es una verificación de la capa de aplicación, no una restricción de integridad (documento 2, §5). | No. Participan en claves foráneas y restricciones cruzadas (issue #11). |
 
-La ficha cumple las cinco condiciones y ningún otro dato del dominio cumple ninguna. La frontera de la partición, por tanto, **no corta ninguna consulta**: las seis se resuelven enteras en PostgreSQL.
+La ficha cumple las cinco condiciones y ningún otro dato del dominio las cumple todas. La frontera de la partición, por tanto, **no corta ninguna consulta**: las seis se resuelven enteras en PostgreSQL.
 
 A la evaluación se suma el mandato explícito del enunciado: la ficha «no debe modelarse junto al resto de las tablas de la solución, sino gestionarse de forma independiente, permitiendo que cada alimento almacene únicamente los atributos que le correspondan» (líneas 55–57).
 
@@ -62,7 +62,7 @@ A la evaluación se suma el mandato explícito del enunciado: la ficha «no debe
 | Coste | Mitigación |
 |---|---|
 | **Sin transacción común:** una operación que escribe en los dos gestores no es atómica. | Orden de escritura fijo (PostgreSQL primero, en altas y bajas), de modo que el único estado intermedio es «fila sin ficha» (válido) o «ficha huérfana» (invisible y recuperable). Documento 2, §3. |
-| **Sin claves foráneas entre gestores.** | Comprobación previa en la capa de aplicación (F-07), índice único para la cardinalidad (F-08) y conciliación periódica de huérfanas (F-10). Documento 2, §4. |
+| **Sin claves foráneas entre gestores.** | Comprobación previa en la capa de aplicación (R8-07), índice único para la cardinalidad (R8-08) y conciliación periódica de huérfanas (R8-10). Documento 2, §4. |
 | **Copias desactualizadas** (el `nombre` de cada ingrediente en la ficha de un plato). | Se actualizan al renombrar el alimento y se reconstruyen en la conciliación. La fuente de verdad sigue siendo PostgreSQL. |
 | **Validación más débil** que en un esquema relacional. | Validador `$jsonSchema` sobre lo común a toda ficha, sin restringir los bloques variables. Documento 1, §5. |
 | **Un gestor más que operar.** | MongoDB ya forma parte del entorno (`docker-compose.yml`, `.env.example`) y el backend incluye el controlador oficial (`MongoDB.Driver`). |

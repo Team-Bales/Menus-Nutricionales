@@ -163,7 +163,7 @@ Se conservan los nombres de los submodelos aunque se repitan entre pares distint
 
 ### D9-3 — `Pertenece(Menú, Dieta)` en lugar de `Generado para`
 
-El glosario (§4.4) registra la relación como `Generado para`. El #7 la dibuja como `Pertenece`, que es un único verbo en presente, como piden las convenciones (§2). Se adopta `Pertenece`.
+El glosario registraba la relación como `Generado para`. El #7 la dibuja como `Pertenece`, que es un único verbo en presente, como piden las convenciones (§2). Se adopta `Pertenece`, que el glosario ya recoge (§4.4).
 
 ### D9-4 — Formato y organización del diagrama
 

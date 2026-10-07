@@ -78,7 +78,7 @@ La notación del curso incluye generalización/especialización (§6) y agregaci
 **Restricción de atomicidad — no existen los atributos multivaluados ni compuestos.** El MERX de este curso exige que todo atributo sea atómico. Toda propiedad que pueda tomar más de un valor a la vez, o que tenga subcampos propios, se modela como **entidad más relación**, nunca como un atributo-lista o un atributo con estructura interna.
 
 Esta restricción ya tiene aplicación directa sobre el dominio del proyecto:
-- `Restricción alimentaria` y `Grupo nutricional a cubrir` no son atributos-lista de `Dieta`, sino entidades conectadas por relaciones N:M: `Cubre` con `GrupoNutricional` y `Restringe` con `RestricciónAlimentaria` (issue #6).
+- `Restricción alimentaria` y `Grupo nutricional a cubrir` no son atributos-lista de `Dieta`, sino entidades conectadas por relaciones N:M: `Cubre` con `GrupoNutricional`, dentro de la agregación `Cobertura` con el atributo `Tipo`, y `Restringe` con `RestricciónAlimentaria` (issue #6).
 - `Parámetros de generación` de `Menú` tampoco es un atributo único: se descompone en un atributo simple (`CantidadTotalAlimentos`), la agregación `Distribución` hacia `TipoPreparación` y la relación `Cubre` hacia `GrupoNutricional` (issue #7).
 
 **Patrón "nomenclador":** cuando un atributo debería restringirse a un catálogo cerrado de valores válidos, se modela como entidad independiente referenciada, no como texto libre. En el MERX consolidado hay siete: `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `ProgramaDeAtención`, `RestricciónAlimentaria`, `Especialidad` y `ResultadoNutricional`.

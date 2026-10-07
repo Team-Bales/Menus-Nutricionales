@@ -122,7 +122,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="pag-relaciones-6a" name="Página-Relaciones-1">
-    <mxGraphModel dx="1571" dy="2138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2357" dy="2622" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -222,6 +222,25 @@
         </mxCell>
         <mxCell id="AViCq49dNcwtHDKiZqBh-13" edge="1" parent="1" source="AViCq49dNcwtHDKiZqBh-2" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="AViCq49dNcwtHDKiZqBh-10">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="excluye_restriccion" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="RestricciónAlimentaria" vertex="1">
+          <mxGeometry height="60" width="340" x="40" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="excluye_rel" parent="1" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Excluye" vertex="1">
+          <mxGeometry height="90" width="260" x="430" y="1065" as="geometry" />
+        </mxCell>
+        <mxCell id="excluye_grupo" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="GrupoNutricional" vertex="1">
+          <mxGeometry height="60" width="300" x="740" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="excluye_c1" edge="1" parent="1" source="excluye_restriccion" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="excluye_rel" value="(0,*)">
+          <mxGeometry relative="1" x="0.2" y="-40" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="excluye_c2" edge="1" parent="1" source="excluye_grupo" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="excluye_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5556" y="40" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

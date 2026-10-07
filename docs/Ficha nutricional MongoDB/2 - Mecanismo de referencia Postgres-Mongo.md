@@ -81,10 +81,10 @@ db.fichas_nutricionales.updateMany(
 
 El glosario (§6) y el submodelo #6 (§5) dejan a este issue la compatibilidad de las restricciones alimentarias de una dieta con los alérgenos de los alimentos y platos de sus menús. Se resuelve en dos niveles:
 
-- **Por grupo nutricional, en PostgreSQL.** La consolidación del MERX (issue #9) relaciona cada restricción alimentaria con los grupos nutricionales que excluye (`Excluye`), así que los grupos excluidos de una dieta se obtienen sin consultar la ficha.
-- **Por alérgeno, en la capa de aplicación.** Al generar o validar un menú, la aplicación lee los `alergenos` de las fichas de sus alimentos y platos y los contrasta con las restricciones alimentarias de la dieta; si encuentra un alérgeno incompatible, lo advierte al nutricionista. Un alimento sin ficha, o con `alergenos` ausente, no se puede verificar y se informa como tal (documento 1, §2).
+- **Por grupo nutricional, en PostgreSQL.** El submodelo #6 añadirá la relación `Excluye(RestricciónAlimentaria, GrupoNutricional)` — una N:M entre dos nomencladores que mapea cada restricción clínica a los grupos que prohíbe. Con esa relación, los grupos excluidos de una dieta se obtienen íntegramente en PostgreSQL sin consultar la ficha.
+- **Por alérgeno, en la capa de aplicación.** Al generar o validar un menú, la aplicación lee los `alergenos` de las fichas de sus alimentos y platos y los contrasta con las restricciones alimentarias de la dieta; si encuentra un alérgeno incompatible, lo advierte al nutricionista. Un alimento sin ficha, o con `alergenos` ausente, no se puede verificar y se informa como tal (documento 1, §2). Los valores de `alergenos` son **texto libre** (documento 1, §6); la aplicación normaliza los términos antes de compararlos.
 
-No es una restricción de integridad: la base no impide el menú, del mismo modo que no impide un menú que se aparte de los grupos de su dieta (submodelo #7, §4). Para que la comprobación por alérgeno sea fiable hace falta saber qué alérgenos excluye cada restricción (por ejemplo, «sin gluten» excluye «gluten»); esa correspondencia no forma parte del modelo relacional y se decide junto con la lista de alérgenos admitidos (documento 1, §6).
+No es una restricción de integridad: la base no impide el menú, del mismo modo que no impide un menú que se aparte de los grupos de su dieta (submodelo #7, §4). Para que la comprobación por alérgeno sea fiable hace falta saber qué alérgenos excluye cada restricción (por ejemplo, «sin gluten» excluye «gluten»); esa correspondencia no forma parte del modelo relacional y queda pendiente de decisión (documento 1, §6).
 
 ---
 

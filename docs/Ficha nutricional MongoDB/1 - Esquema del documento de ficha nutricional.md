@@ -40,7 +40,7 @@ Campos comunes a todo documento:
 | `micronutrientes` | objeto | no | Vitaminas, minerales u otros; subobjetos variables. |
 | `alergenos` | arreglo de `string` | no | Alérgenos presentes. Ausente = no registrado; `[]` = registrado sin alérgenos. |
 | `modoPreparacion` | objeto | no | Pasos, tiempos y técnica; propio sobre todo de los platos. |
-| `ingredientes` | arreglo de objetos | solo en `compuesto` | Desglose nutricional por ingrediente (§4). |
+| `ingredientes` | arreglo de objetos | no (ver nota) | Desglose nutricional por ingrediente (§4). Solo tiene sentido en fichas `compuesto`; puede incorporarse después de crear la ficha. |
 | `actualizadoEn` | `Date` | sí | Fecha de la última modificación de la ficha. |
 
 Convención de nombres: camelCase y sufijo de unidad en los valores numéricos (`energiaKcal`, `proteinasG`, `sodioMg`), para que cada número lleve su unidad sin un campo aparte.
@@ -199,7 +199,10 @@ db.fichas_nutricionales.createIndex({ "origen.tabla": 1, "origen.id": 1 }, { uni
 - Una sola colección para alimentos y platos, distinguidos por `tipo`, en lugar de dos colecciones: la ficha es el mismo concepto con distinto grado de detalle (líneas 53–55).
 - Sufijo de unidad en el nombre de cada valor numérico (`…Kcal`, `…G`, `…Mg`, `…Ug`).
 - Desglose por ingrediente en los platos, subordinado a la composición de PostgreSQL y sin repetir sus cantidades (§4).
+- **`ingredientes` es opcional en las fichas `compuesto`.** Una ficha de plato puede crearse sin desglose y completarlo después; el validador no exige `ingredientes` en la rama `Plato/compuesto` del `anyOf`. Mientras no esté completo, la ficha existe pero la aplicación no puede mostrar el aporte por ingrediente.
+- **`alergenos` es texto libre.** Los valores del arreglo son cadenas sin catálogo forzado. La aplicación es responsable de normalizar los términos antes de compararlos con las restricciones alimentarias de la dieta; si en el futuro se adopta un catálogo cerrado, bastará añadir un `enum` a `alergenos.items` en el validador.
 - Coherencia entre la tabla de origen y el tipo declarada en el validador (R8-03).
 - Regla R8-04.
+- El campo `nombre` en cada elemento de `ingredientes` es una copia de lectura no validada: su ausencia no impide guardar la ficha. Se recomienda incluirlo para que la ficha sea legible sin consultar PostgreSQL.
 
-Queda abierta la **lista de alérgenos admitidos** (texto libre o catálogo cerrado). Si se adopta un catálogo, bastaría añadir un `enum` a `alergenos.items`. Se decide junto con la correspondencia entre restricciones alimentarias y alérgenos que necesita la comprobación de compatibilidad (documento 2, §5); un catálogo cerrado es lo que hace fiable esa comprobación.
+La correspondencia entre restricciones alimentarias y alérgenos (qué alérgenos excluye cada restricción) no forma parte del modelo relacional y queda pendiente de decisión; es condición previa para que la verificación por alérgeno de la capa de aplicación sea fiable (documento 2, §5).

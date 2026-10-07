@@ -13,11 +13,11 @@
 |---|---|
 | Entidades | `Dieta`, `Nutricionista`, `Paciente`, `Sala` |
 | Nomencladores | `ProgramaDeAtención`, `RestricciónAlimentaria`, `Especialidad` |
-| Entidad de frontera | `GrupoNutricional` (issue #5), extremo de `Cubre` en la agregación `Cobertura` |
-| Relaciones | `Corresponde` (`Dieta`, `ProgramaDeAtención`); `Restringe` (`Dieta`, `RestricciónAlimentaria`); `Autoriza` (`Nutricionista`, `Dieta`); `Inscribe` (`Paciente`, `Dieta`); `Pertenece` (`Paciente`, `Sala`); `Ejerce` (`Nutricionista`, `Especialidad`) |
+| Entidad de frontera | `GrupoNutricional` (issue #5), extremo de `Cubre` en `Cobertura` y de `Excluye` |
+| Relaciones | `Corresponde` (`Dieta`, `ProgramaDeAtención`); `Restringe` (`Dieta`, `RestricciónAlimentaria`); `Excluye` (`RestricciónAlimentaria`, `GrupoNutricional`); `Autoriza` (`Nutricionista`, `Dieta`); `Inscribe` (`Paciente`, `Dieta`); `Pertenece` (`Paciente`, `Sala`); `Ejerce` (`Nutricionista`, `Especialidad`) |
 | Agregación | `Cobertura`: envuelve `Dieta`—`Cubre`—`GrupoNutricional`, hereda su llave (`DietaId`, `GrupoNutricionalId`) y lleva el atributo `Tipo` |
 
-`GrupoNutricional` se incorpora como entidad de frontera del submodelo #5 —donde se declara nomenclador y se le dan sus atributos— porque este submodelo lo necesita como extremo de `Cubre` en la agregación `Cobertura`; en el diagrama aparece solo el rectángulo, sin atributos duplicados. `ProgramaDeAtención` y `RestricciónAlimentaria` se modelan como nomencladores porque así lo decide el glosario (§6), y `Especialidad` porque el glosario la cataloga como nomenclador (§4.2, N6). En los tres casos se aplica el patrón nomenclador de las convenciones de modelado (§5): ninguno queda como atributo de `Dieta` o de `Nutricionista`.
+`GrupoNutricional` se incorpora como entidad de frontera del submodelo #5 —donde se declara nomenclador y se le dan sus atributos— porque este submodelo lo necesita como extremo de `Cubre` en la agregación `Cobertura` y también como extremo de `Excluye`; en el diagrama aparece solo el rectángulo, sin atributos duplicados. `ProgramaDeAtención` y `RestricciónAlimentaria` se modelan como nomencladores porque así lo decide el glosario (§6), y `Especialidad` porque el glosario la cataloga como nomenclador (§4.2, N6). En los tres casos se aplica el patrón nomenclador de las convenciones de modelado (§5): ninguno queda como atributo de `Dieta` o de `Nutricionista`.
 
 `Cubre` se eleva a agregación (`Cobertura`) porque la consulta 5 (§7-C, issue #10) exige verificar algorítmicamente si los criterios de equilibrio de una dieta son cumplidos por un menú: para ello el modelo debe distinguir si un grupo nutricional es *requerido* (debe aparecer en el menú) o *restringido* (no debe aparecer). Una relación pura no puede llevar ese dato; la agregación lo expresa con el atributo `Tipo`. `Restringe(Dieta, RestricciónAlimentaria)` coexiste porque modela restricciones clínicas distintas (sin gluten, hiposódica…) cuya verificación opera contra la ficha nutricional ampliada en MongoDB (issue #8), no contra los grupos nutricionales del modelo relacional.
 
@@ -58,8 +58,9 @@ Las cardinalidades se leen con la convención de dirección de las convenciones 
 | R6-04 | El par (`PacienteId`, `DietaId`) identifica cada inscripción: un paciente no aparece dos veces inscrito en la misma dieta. | decisión del equipo | PK compuesta |
 | R6-05 | El par (`DietaId`, `RestricciónAlimentariaId`) identifica cada ocurrencia de `Restringe`. | decisión del equipo | PK compuesta |
 | R6-05b | El par (`DietaId`, `GrupoNutricionalId`) identifica cada ocurrencia de la agregación `Cobertura`. | decisión del equipo | PK compuesta heredada |
+| R6-05c | El par (`RestricciónAlimentariaId`, `GrupoNutricionalId`) identifica cada ocurrencia de `Excluye`: una restricción no excluye dos veces el mismo grupo. | decisión del equipo | PK compuesta |
 
-> **Convención adoptada (R6-03 a R6-05b):** las relaciones N:M se materializan como tablas de interconexión cuya llave es el par de claves primarias de los participantes. `Cobertura` hereda la misma llave compuesta que la antigua `Cubre` y añade el atributo `Tipo`, siguiendo el patrón de agregación de las convenciones de modelado (§3): el par (`DietaId`, `GrupoNutricionalId`) sigue siendo la PK; no se incluye `Tipo` en la llave porque una dieta solo puede tener una regla por grupo nutricional.
+> **Convención adoptada (R6-03 a R6-05c):** las relaciones N:M se materializan como tablas de interconexión cuya llave es el par de claves primarias de los participantes. `Cobertura` hereda la misma llave compuesta que la antigua `Cubre` y añade el atributo `Tipo`, siguiendo el patrón de agregación de las convenciones de modelado (§3): el par (`DietaId`, `GrupoNutricionalId`) sigue siendo la PK; no se incluye `Tipo` en la llave porque una dieta solo puede tener una regla por grupo nutricional.
 
 ### 2.2 Referenciales
 
@@ -68,6 +69,7 @@ Las cardinalidades se leen con la convención de dirección de las convenciones 
 | R6-06 | Toda dieta corresponde a un programa de atención existente. | línea 42 | FK |
 | R6-07 | Toda ocurrencia de `Cobertura` referencia una dieta y un grupo nutricional existentes. | líneas 24-25, 42-43 | FK |
 | R6-08 | Toda ocurrencia de `Restringe` referencia una dieta y una restricción alimentaria existentes. | líneas 27, 42-43 | FK |
+| R6-08b | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. No se elimina una restricción alimentaria ni un grupo nutricional mientras tengan ocurrencias en `Excluye`. | issue #8, doc 2, §5; decisión del equipo | FK; FK con `ON DELETE RESTRICT` |
 | R6-09 | Toda autorización referencia un nutricionista y una dieta existentes. | líneas 32, 44-45 | FK |
 | R6-10 | Toda inscripción referencia un paciente y una dieta existentes. | líneas 49-50 | FK |
 | R6-11 | Todo paciente referencia la sala a la que pertenece, la cual debe existir. | línea 49 | FK |
@@ -151,7 +153,7 @@ Se registran para la consolidación del issue #11; su definición corresponde a 
 
 ## 6. Decisiones del equipo tomadas en este documento
 
-Restricciones sin cita directa en el enunciado, adoptadas por el equipo: R6-03, R6-04, R6-05, R6-05b, R6-13, R6-15, R6-16, R6-17, R6-17b; el mínimo de un grupo requerido en R6-21; y la elevación de `Cubre` a la agregación `Cobertura` con `Tipo` (issue #10, consulta 5 §7-C).
+Restricciones sin cita directa en el enunciado, adoptadas por el equipo: R6-03, R6-04, R6-05, R6-05b, R6-05c, R6-08b, R6-13, R6-15, R6-16, R6-17, R6-17b; el mínimo de un grupo requerido en R6-21; la elevación de `Cubre` a la agregación `Cobertura` con `Tipo` (issue #10, consulta 5 §7-C); y la adición de `Excluye(RestricciónAlimentaria, GrupoNutricional)` para mapear cada restricción clínica a los grupos nutricionales que excluye, habilitando la verificación por grupo en PostgreSQL (issue #8, doc 2, §5).
 
 Quedan abiertas dos decisiones:
 

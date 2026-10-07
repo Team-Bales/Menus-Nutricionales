@@ -1,75 +1,228 @@
-<mxfile host="app.diagrams.net" version="24.0.0">
+<mxfile host="Electron" pages="3">
   <diagram id="pag-entidades-6" name="Página-Entidades">
-    <mxGraphModel dx="827" dy="1169" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2357" dy="1453" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="a_dieta_id" value="DietaId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="100" y="40" width="220" height="60" as="geometry" /></mxCell>
-        <mxCell id="e_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="110" y="120" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_dieta_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="125" y="200" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_dieta_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_dieta" target="a_dieta_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_dieta_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_dieta" target="a_dieta_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_nutricionista_id" value="NutricionistaId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="482" y="40" width="270" height="60" as="geometry" /></mxCell>
-        <mxCell id="e_nutricionista" value="Nutricionista" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="120" width="280" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_nutricionista_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="532" y="200" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_nutricionista_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_nutricionista" target="a_nutricionista_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_nutricionista_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_nutricionista" target="a_nutricionista_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_paciente_id" value="PacienteId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="90" y="300" width="240" height="60" as="geometry" /></mxCell>
-        <mxCell id="e_paciente" value="Paciente" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="100" y="380" width="220" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_paciente_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="50" y="460" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_paciente_edad" value="Edad" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="240" y="460" width="130" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_paciente_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_paciente" target="a_paciente_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_paciente_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_paciente" target="a_paciente_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_paciente_edad" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_paciente" target="a_paciente_edad"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_sala_id" value="SalaId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="527" y="300" width="180" height="60" as="geometry" /></mxCell>
-        <mxCell id="e_sala" value="Sala" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="537" y="380" width="160" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_sala_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="532" y="460" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_sala_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_sala" target="a_sala_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_sala_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_sala" target="a_sala_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_programa_id" value="ProgramaDeAtenciónId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="30" y="550" width="360" height="80" as="geometry" /></mxCell>
-        <mxCell id="e_programa" value="ProgramaDeAtención" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="50" y="650" width="320" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_programa_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="125" y="730" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_programa_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_programa" target="a_programa_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_programa_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_programa" target="a_programa_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_restriccion_id" value="RestricciónAlimentariaId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="427" y="550" width="380" height="80" as="geometry" /></mxCell>
-        <mxCell id="e_restriccion" value="RestricciónAlimentaria" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="447" y="650" width="340" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_restriccion_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="532" y="730" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_restriccion_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_restriccion" target="a_restriccion_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_restriccion_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_restriccion" target="a_restriccion_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="a_especialidad_id" value="EspecialidadId" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" vertex="1" parent="1"><mxGeometry x="70" y="820" width="280" height="60" as="geometry" /></mxCell>
-        <mxCell id="e_especialidad" value="Especialidad" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="90" y="900" width="240" height="60" as="geometry" /></mxCell>
-        <mxCell id="a_especialidad_nombre" value="Nombre" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="125" y="980" width="170" height="60" as="geometry" /></mxCell>
-        <mxCell id="l_especialidad_id" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_especialidad" target="a_especialidad_id"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="l_especialidad_nombre" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="e_especialidad" target="a_especialidad_nombre"><mxGeometry relative="1" as="geometry" /></mxCell>
-        <mxCell id="e_grupo" value="GrupoNutricional" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="467" y="900" width="300" height="60" as="geometry" /></mxCell>
+        <mxCell id="a_dieta_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="DietaId" vertex="1">
+          <mxGeometry height="60" width="220" x="100" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dieta" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Dieta" vertex="1">
+          <mxGeometry height="60" width="200" x="110" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="a_dieta_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="125" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="l_dieta_id" edge="1" parent="1" source="e_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_dieta_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_dieta_nombre" edge="1" parent="1" source="e_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_dieta_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_nutricionista_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="NutricionistaId" vertex="1">
+          <mxGeometry height="60" width="270" x="482" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e_nutricionista" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nutricionista" vertex="1">
+          <mxGeometry height="60" width="280" x="477" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="a_nutricionista_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="532" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="l_nutricionista_id" edge="1" parent="1" source="e_nutricionista" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_nutricionista_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_nutricionista_nombre" edge="1" parent="1" source="e_nutricionista" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_nutricionista_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_paciente_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="PacienteId" vertex="1">
+          <mxGeometry height="60" width="240" x="90" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="e_paciente" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Paciente" vertex="1">
+          <mxGeometry height="60" width="220" x="100" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="a_paciente_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="50" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="a_paciente_edad" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Edad" vertex="1">
+          <mxGeometry height="60" width="130" x="240" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="l_paciente_id" edge="1" parent="1" source="e_paciente" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_paciente_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_paciente_nombre" edge="1" parent="1" source="e_paciente" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_paciente_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_paciente_edad" edge="1" parent="1" source="e_paciente" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_paciente_edad">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_sala_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="SalaId" vertex="1">
+          <mxGeometry height="60" width="180" x="527" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sala" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Sala" vertex="1">
+          <mxGeometry height="60" width="160" x="537" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="a_sala_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="532" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="l_sala_id" edge="1" parent="1" source="e_sala" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_sala_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_sala_nombre" edge="1" parent="1" source="e_sala" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_sala_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_programa_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="ProgramaDeAtenciónId" vertex="1">
+          <mxGeometry height="80" width="360" x="30" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="e_programa" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="ProgramaDeAtención" vertex="1">
+          <mxGeometry height="60" width="320" x="50" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="a_programa_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="125" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="l_programa_id" edge="1" parent="1" source="e_programa" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_programa_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_programa_nombre" edge="1" parent="1" source="e_programa" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_programa_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_restriccion_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="RestricciónAlimentariaId" vertex="1">
+          <mxGeometry height="80" width="380" x="427" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="e_restriccion" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="RestricciónAlimentaria" vertex="1">
+          <mxGeometry height="60" width="340" x="447" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="a_restriccion_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="532" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="l_restriccion_id" edge="1" parent="1" source="e_restriccion" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_restriccion_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_restriccion_nombre" edge="1" parent="1" source="e_restriccion" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_restriccion_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_especialidad_id" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;fontStyle=4;" value="EspecialidadId" vertex="1">
+          <mxGeometry height="60" width="280" x="70" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="e_especialidad" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Especialidad" vertex="1">
+          <mxGeometry height="60" width="240" x="90" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="a_especialidad_nombre" parent="1" style="ellipse;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nombre" vertex="1">
+          <mxGeometry height="60" width="170" x="125" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="l_especialidad_id" edge="1" parent="1" source="e_especialidad" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_especialidad_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l_especialidad_nombre" edge="1" parent="1" source="e_especialidad" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="a_especialidad_nombre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_grupo" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="GrupoNutricional" vertex="1">
+          <mxGeometry height="60" width="300" x="467" y="900" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
   <diagram id="pag-relaciones-6a" name="Página-Relaciones-1">
-    <mxGraphModel dx="827" dy="1169" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1571" dy="2138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="corresponde_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="110" y="40" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="corresponde_rel" value="Corresponde" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="70" y="210" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="corresponde_programa" value="ProgramaDeAtención" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="50" y="410" width="320" height="60" as="geometry" /></mxCell>
-        <mxCell id="corresponde_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="corresponde_dieta" target="corresponde_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="corresponde_c2" value="(1,1)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="corresponde_programa" target="corresponde_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="restringe_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="110" y="560" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="restringe_rel" value="Restringe" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="70" y="730" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="restringe_restriccion" value="RestricciónAlimentaria" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="40" y="930" width="340" height="60" as="geometry" /></mxCell>
-        <mxCell id="restringe_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="restringe_dieta" target="restringe_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="restringe_c2" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="restringe_restriccion" target="restringe_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="cubre_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="517" y="40" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="cubre_rel" value="Cubre" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="210" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="cubre_grupo" value="GrupoNutricional" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="467" y="410" width="300" height="60" as="geometry" /></mxCell>
-        <mxCell id="cubre_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="cubre_dieta" target="cubre_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="cubre_c2" value="(1,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="cubre_grupo" target="cubre_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="autoriza_nutricionista" value="Nutricionista" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="560" width="280" height="60" as="geometry" /></mxCell>
-        <mxCell id="autoriza_rel" value="Autoriza" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="730" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="autoriza_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="517" y="930" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="autoriza_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="autoriza_nutricionista" target="autoriza_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="autoriza_c2" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="autoriza_dieta" target="autoriza_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
+        <mxCell id="corresponde_dieta" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Dieta" vertex="1">
+          <mxGeometry height="60" width="200" x="110" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="corresponde_rel" parent="1" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Corresponde" vertex="1">
+          <mxGeometry height="90" width="280" x="70" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="corresponde_programa" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="ProgramaDeAtención" vertex="1">
+          <mxGeometry height="60" width="320" x="50" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="corresponde_c1" edge="1" parent="1" source="corresponde_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="corresponde_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="corresponde_c2" edge="1" parent="1" source="corresponde_programa" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="corresponde_rel" value="(1,1)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="restringe_dieta" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Dieta" vertex="1">
+          <mxGeometry height="60" width="200" x="110" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="restringe_rel" parent="1" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Restringe" vertex="1">
+          <mxGeometry height="90" width="280" x="70" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="restringe_restriccion" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="RestricciónAlimentaria" vertex="1">
+          <mxGeometry height="60" width="340" x="40" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="restringe_c1" edge="1" parent="1" source="restringe_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="restringe_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="restringe_c2" edge="1" parent="1" source="restringe_restriccion" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="restringe_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cubre_dieta" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Dieta" vertex="1">
+          <mxGeometry height="60" width="200" x="517" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cubre_rel" parent="1" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Cubre" vertex="1">
+          <mxGeometry height="90" width="280" x="477" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="cubre_grupo" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="GrupoNutricional" vertex="1">
+          <mxGeometry height="60" width="300" x="467" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="cubre_c1" edge="1" parent="1" source="cubre_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="cubre_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cubre_c2" edge="1" parent="1" source="cubre_grupo" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="cubre_rel" value="(1,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="autoriza_nutricionista" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Nutricionista" vertex="1">
+          <mxGeometry height="60" width="280" x="477" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="autoriza_rel" parent="1" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Autoriza" vertex="1">
+          <mxGeometry height="90" width="280" x="477" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="autoriza_dieta" parent="1" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" value="Dieta" vertex="1">
+          <mxGeometry height="60" width="200" x="517" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="autoriza_c1" edge="1" parent="1" source="autoriza_nutricionista" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="autoriza_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="autoriza_c2" edge="1" parent="1" source="autoriza_dieta" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="autoriza_rel" value="(0,*)">
+          <mxGeometry relative="1" x="-0.5" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=bottom;spacingBottom=8;spacingLeft=12;spacingRight=12;align=right;fontFamily=Times New Roman;fontSize=30;" value="Cobertura" vertex="1">
+          <mxGeometry height="590" width="360" x="430" y="-80" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=30;fontStyle=4;dashed=1;" value="DietaId" vertex="1">
+          <mxGeometry height="100" width="120" x="380" y="-290" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=30;" value="Tipo" vertex="1">
+          <mxGeometry height="100" width="120" x="540" y="-290" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontFamily=Times New Roman;fontSize=30;fontStyle=4;dashed=1;" value="GrupoNutricionalId" vertex="1">
+          <mxGeometry height="100" width="130" x="680" y="-290" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-11" edge="1" parent="1" source="AViCq49dNcwtHDKiZqBh-2" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="AViCq49dNcwtHDKiZqBh-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-12" edge="1" parent="1" source="AViCq49dNcwtHDKiZqBh-2" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="AViCq49dNcwtHDKiZqBh-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="AViCq49dNcwtHDKiZqBh-13" edge="1" parent="1" source="AViCq49dNcwtHDKiZqBh-2" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" target="AViCq49dNcwtHDKiZqBh-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
@@ -78,21 +231,63 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="inscribe_paciente" value="Paciente" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="100" y="40" width="220" height="60" as="geometry" /></mxCell>
-        <mxCell id="inscribe_rel" value="Inscribe" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="70" y="210" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="inscribe_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="110" y="410" width="200" height="60" as="geometry" /></mxCell>
-        <mxCell id="inscribe_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="inscribe_paciente" target="inscribe_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="inscribe_c2" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="inscribe_dieta" target="inscribe_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="pertenece_paciente" value="Paciente" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="100" y="560" width="220" height="60" as="geometry" /></mxCell>
-        <mxCell id="pertenece_rel" value="Pertenece" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="70" y="730" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="pertenece_sala" value="Sala" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="130" y="930" width="160" height="60" as="geometry" /></mxCell>
-        <mxCell id="pertenece_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="pertenece_paciente" target="pertenece_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="pertenece_c2" value="(1,1)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="pertenece_sala" target="pertenece_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="ejerce_nutricionista" value="Nutricionista" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="40" width="280" height="60" as="geometry" /></mxCell>
-        <mxCell id="ejerce_rel" value="Ejerce" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="477" y="210" width="280" height="90" as="geometry" /></mxCell>
-        <mxCell id="ejerce_especialidad" value="Especialidad" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1"><mxGeometry x="497" y="410" width="240" height="60" as="geometry" /></mxCell>
-        <mxCell id="ejerce_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="ejerce_nutricionista" target="ejerce_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
-        <mxCell id="ejerce_c2" value="(1,1)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="ejerce_especialidad" target="ejerce_rel"><mxGeometry x="-0.5" relative="1" as="geometry"><mxPoint x="36" as="offset" /></mxGeometry></mxCell>
+        <mxCell id="inscribe_paciente" value="Paciente" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="100" y="40" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="inscribe_rel" value="Inscribe" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="70" y="210" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="inscribe_dieta" value="Dieta" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="110" y="410" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="inscribe_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="inscribe_paciente" target="inscribe_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="inscribe_c2" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="inscribe_dieta" target="inscribe_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pertenece_paciente" value="Paciente" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="100" y="560" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pertenece_rel" value="Pertenece" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="70" y="730" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="pertenece_sala" value="Sala" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="130" y="930" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pertenece_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="pertenece_paciente" target="pertenece_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pertenece_c2" value="(1,1)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="pertenece_sala" target="pertenece_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejerce_nutricionista" value="Nutricionista" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="477" y="40" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejerce_rel" value="Ejerce" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="477" y="210" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ejerce_especialidad" value="Especialidad" style="whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=30;" vertex="1" parent="1">
+          <mxGeometry x="497" y="410" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ejerce_c1" value="(0,*)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="ejerce_nutricionista" target="ejerce_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ejerce_c2" value="(1,1)" style="endArrow=none;html=1;rounded=0;fontFamily=Times New Roman;fontSize=25;labelBackgroundColor=none;" edge="1" parent="1" source="ejerce_especialidad" target="ejerce_rel">
+          <mxGeometry x="-0.5" relative="1" as="geometry">
+            <mxPoint x="36" as="offset" />
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

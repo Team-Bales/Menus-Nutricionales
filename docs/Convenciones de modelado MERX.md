@@ -14,7 +14,7 @@ La notación del curso incluye generalización/especialización (§6) y agregaci
 
 **Versionado:** el archivo fuente editable `.drawio` de cada submodelo se guarda en `docs/Submodelos Relacionales del MERX/`; el MERX consolidado (issue #9), con su documento de decisiones, en `docs/MERX consolidado/`.
 
-**Formato:** Times New Roman 30 en figuras y 25 en cardinalidades. Los submodelos y la versión imprimible del MERX consolidado usan páginas A4 verticales, separadas en páginas de entidades —donde se dibujan los atributos— y páginas de relaciones; la versión completa del MERX consolidado ocupa una sola hoja A0 horizontal.
+**Formato:** Times New Roman 30 en figuras y 25 en cardinalidades. Los submodelos y el MERX consolidado usan páginas A4 verticales, separadas en páginas de entidades —donde se dibujan los atributos— y páginas de relaciones.
 
 ---
 

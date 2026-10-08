@@ -44,27 +44,40 @@ jobs:
             --results-directory ./coverage \
             --logger "trx;LogFileName=test-results.trx"
 
+      - name: Verificar si hay archivos de cobertura
+        id: check-coverage
+        if: always()
+        run: |
+          if compgen -G "coverage/**/coverage.opencover.xml" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "## Cobertura" >> $GITHUB_STEP_SUMMARY
+            echo "Sin datos — todavía no hay tests implementados." >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Generar reporte de cobertura
         uses: danielpalme/ReportGenerator-GitHub-Action@5.2.4
+        if: steps.check-coverage.outputs.exists == 'true'
         with:
           reports: "coverage/**/coverage.opencover.xml"
           targetdir: coverage-report
           reporttypes: MarkdownSummaryGithub
 
       - name: Publicar resumen en Actions
-        if: always()
+        if: steps.check-coverage.outputs.exists == 'true'
         run: cat coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
 
       - name: Comentar cobertura en PR
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.check-coverage.outputs.exists == 'true'
         with:
           recreate: true
           path: coverage-report/SummaryGithub.md
 
       - name: Subir artefactos de cobertura
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.check-coverage.outputs.exists == 'true'
         with:
           name: cobertura-${{ github.run_number }}
           path: |
@@ -73,6 +86,7 @@ jobs:
 
       - name: Subir cobertura a Codecov
         uses: codecov/codecov-action@v5
+        if: steps.check-coverage.outputs.exists == 'true'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/**/coverage.opencover.xml

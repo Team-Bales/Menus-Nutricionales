@@ -1,4 +1,4 @@
-﻿namespace Menus.Domain.Tests;
+namespace Menus.Domain.Tests;
 
 public class UnitTest1
 {

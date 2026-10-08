@@ -1,4 +1,4 @@
-name: build
+name: CI
 
 on:
   push:
@@ -6,19 +6,91 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
 
-      - name: Configurar .NET
+jobs:
+  ci:
+    name: Build · Tests · Análisis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
 
-      - name: Restaurar
+      - name: Restaurar dependencias
         run: dotnet restore MenusNutricionales.slnx
 
-      - name: Compilar
+      - name: Verificar formato de código
+        run: dotnet format MenusNutricionales.slnx --verify-no-changes
+
+      - name: Compilar (Release)
         run: dotnet build MenusNutricionales.slnx --no-restore --configuration Release
+
+      - name: Tests con cobertura
+        run: |
+          dotnet test MenusNutricionales.slnx \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage;Format=opencover" \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=test-results.trx"
+
+      - name: Generar reporte de cobertura
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.2.4
+        with:
+          reports: "coverage/**/coverage.opencover.xml"
+          targetdir: coverage-report
+          reporttypes: MarkdownSummaryGithub
+
+      - name: Publicar resumen en Actions
+        if: always()
+        run: cat coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Comentar cobertura en PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: coverage-report/SummaryGithub.md
+
+      - name: Subir artefactos de cobertura
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura-${{ github.run_number }}
+          path: |
+            coverage/
+            coverage-report/
+
+      - name: Subir cobertura a Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/**/coverage.opencover.xml
+          flags: backend
+          fail_ci_if_error: false
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker:
+    name: Docker · API
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imagen API
+        run: docker build -f src/Menus.Api/Dockerfile -t menus-api:ci .

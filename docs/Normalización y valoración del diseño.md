@@ -46,7 +46,7 @@ El esquema que se verifica es el derivado del MERX consolidado, con 29 tablas. S
 | `Consumo` | agregación | <u>MenúId</u> → Asignación, <u>PacienteId</u> → Asignación, <u>AlimentoId</u> → Alimento, Aceptación |
 | `Autoriza` | relación N:M | <u>NutricionistaId</u> → Nutricionista, <u>DietaId</u> → Dieta |
 | `Inscribe` | relación N:M | <u>PacienteId</u> → Paciente, <u>DietaId</u> → Dieta |
-| `CubreDieta` | relación N:M `Cubre(Dieta, GrupoNutricional)` | <u>DietaId</u> → Dieta (CASCADE), <u>GrupoNutricionalId</u> → GrupoNutricional |
+| `CubreDieta` | agregación `Cobertura` sobre `Cubre(Dieta, GrupoNutricional)` | <u>DietaId</u> → Dieta (CASCADE), <u>GrupoNutricionalId</u> → GrupoNutricional, Tipo · CHECK ('Requerido','Restringido') |
 | `Restringe` | relación N:M | <u>DietaId</u> → Dieta (CASCADE), <u>RestricciónAlimentariaId</u> → RestricciónAlimentaria |
 | `Excluye` | relación N:M | <u>RestricciónAlimentariaId</u> → RestricciónAlimentaria, <u>GrupoNutricionalId</u> → GrupoNutricional |
 | `IncluyeAlimento` | relación N:M `Incluye(Alimento, Menú)` | <u>MenúId</u> → Menú (CASCADE), <u>AlimentoId</u> → Alimento |
@@ -93,7 +93,7 @@ Ninguna otra dependencia funcional no trivial se cumple dentro de una tabla, sal
 | `Consumo` | (MenúId, PacienteId, AlimentoId) → Aceptación |
 | `Autoriza` | (NutricionistaId, DietaId) → ∅ (solo la clave) |
 | `Inscribe` | (PacienteId, DietaId) → ∅ (solo la clave) |
-| `CubreDieta` | (DietaId, GrupoNutricionalId) → ∅ (solo la clave) |
+| `CubreDieta` | (DietaId, GrupoNutricionalId) → Tipo |
 | `Restringe` | (DietaId, RestricciónAlimentariaId) → ∅ (solo la clave) |
 | `Excluye` | (RestricciónAlimentariaId, GrupoNutricionalId) → ∅ (solo la clave) |
 | `IncluyeAlimento` | (MenúId, AlimentoId) → ∅ (solo la clave) |
@@ -137,7 +137,7 @@ Ninguna otra dependencia funcional no trivial se cumple dentro de una tabla, sal
 | `Consumo` | (`MenúId`, `PacienteId`, `AlimentoId`) | Sí | Sí | Sí | Sí | La terna identifica el hecho (R7-06) y `Aceptación` depende de ella completa (R7-18). |
 | `Autoriza` | (`NutricionistaId`, `DietaId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R6-03): la única dependencia es la de la clave. |
 | `Inscribe` | (`PacienteId`, `DietaId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R6-04): la única dependencia es la de la clave. |
-| `CubreDieta` | (`DietaId`, `GrupoNutricionalId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R6-05): la única dependencia es la de la clave. |
+| `CubreDieta` | (`DietaId`, `GrupoNutricionalId`) | Sí | Sí | Sí | Sí | Agregación `Cobertura` (R6-05a, R6-05b); `Tipo` depende del par completo y es el único atributo propio. Clave compuesta = PK → BCNF ✓ |
 | `Restringe` | (`DietaId`, `RestricciónAlimentariaId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R6-05): la única dependencia es la de la clave. |
 | `Excluye` | (`RestricciónAlimentariaId`, `GrupoNutricionalId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R9-01): la única dependencia es la de la clave. |
 | `IncluyeAlimento` | (`MenúId`, `AlimentoId`) | Sí | Sí | Sí | Sí | Tabla puente N:M sin atributos (R7-07): la única dependencia es la de la clave. |
@@ -166,6 +166,121 @@ Hay otras dos reglas del #11 con la misma forma aparente, pero **no son violacio
 - **R6-22 y R6-23:** un nutricionista solo genera o valida menús de las dietas en las que está autorizado, y un paciente solo recibe menús de las dietas en las que está inscrito. Atraviesan `Menú`, `Validación`, `Asignación`, `Autoriza` e `Inscribe`.
 
 Las tres son restricciones entre tablas y las implementan disparadores, no declaraciones del esquema (#11, §7). Lo mismo cabe decir de R9-04, que impide que una dieta exija cubrir un grupo que una de sus restricciones excluye.
+
+### 2.5 Demostraciones algorítmicas
+
+Las afirmaciones de §2.2 y §2.3 se apoyan aquí en tres demostraciones mecánicas: (A) el algoritmo de cierre de atributos para verificar si todo determinante es superclave, (B) el criterio de Heath para probar que la descomposición en 29 tablas es sin pérdida, y (C) la clasificación de las dependencias entre las que se comprueban localmente y las que requieren disparadores.
+
+#### A. Cierre de atributos (X⁺)
+
+**Algoritmo.** Dado un conjunto X y un conjunto F de DFs no triviales sobre R:
+
+```
+X⁺ := X
+repetir:
+  para cada DF α → β en F: si α ⊆ X⁺, entonces X⁺ := X⁺ ∪ β
+hasta que X⁺ no cambie
+```
+
+Un determinante α viola la BCNF si α⁺ ≠ todos los atributos de R. Viola la 3FN si además ningún atributo de β pertenece a una clave candidata de R.
+
+**Caso 1 — `GrupoNutricional`** (nomenclador con clave candidata)
+
+Atributos: {G, N} = {GrupoNutricionalId, Nombre}. F = {G → N ; N → G}.
+
+| X | X⁺ tras aplicar F | ¿Superclave? |
+|---|---|---|
+| {G} | {G, N} = todos | ✓ |
+| {N} | {G, N} = todos | ✓ |
+
+Todo determinante es superclave → **BCNF ✓**. El mismo patrón rige los seis nomencladores restantes y `Sala`.
+
+**Caso 2 — `Composición`** (clave compuesta; 2FN y BCNF)
+
+Atributos: {P, A, C} = {PlatoId, AlimentoId, Cantidad}. F = {(P,A) → C}.
+
+| X | X⁺ | ¿Superclave? |
+|---|---|---|
+| {P, A} | {P, A, C} = todos | ✓ — clave primaria |
+| {P} | {P} | ✗ — C no determinada por la mitad de la clave |
+| {A} | {A} | ✗ — C no determinada por la mitad de la clave |
+
+{P}⁺ y {A}⁺ no alcanzan todos los atributos: ningún atributo no clave depende de una parte propia de la clave → **2FN ✓**. El único determinante no trivial es {P,A} = PK → **BCNF ✓**. El mismo razonamiento aplica a `Distribución`, `Validación` y al resto de tablas con clave compuesta y atributos propios.
+
+**Caso 3 — `Consumo`** (clave de tres atributos; 2FN)
+
+Atributos: {M, P, A, Ac} = {MenúId, PacienteId, AlimentoId, Aceptación}. F = {(M,P,A) → Ac}.
+
+Para que exista dependencia parcial, algún subconjunto propio de {M,P,A} debería determinar Ac. Se calculan los seis cierres posibles:
+
+| X | X⁺ | ¿Determina Ac? |
+|---|---|---|
+| {M, P} | {M, P} | No |
+| {M, A} | {M, A} | No |
+| {P, A} | {P, A} | No |
+| {M} | {M} | No |
+| {P} | {P} | No |
+| {A} | {A} | No |
+
+No existe dependencia parcial → **2FN ✓**. El único determinante es la PK → **BCNF ✓**.
+
+**Caso 4 — `Revalorización`** (la excepción)
+
+Atributos: {R, F, Pa, N, Vr, Vg} = {RevalorizaciónId, FechaSolicitud, PacienteId, NutricionistaId, ValoraciónRevisadaId, ValoraciónGeneradaId}. F = {R → F,Pa,N,Vr,Vg ; Vr → Pa ; Vg → R (admite nulos)}.
+
+| X | Pasos de cierre | X⁺ | ¿Superclave? |
+|---|---|---|---|
+| {R} | R→F,Pa,N,Vr,Vg ; Vr→Pa (ya en X⁺) ; Vg→R (ya en X⁺) | todos | ✓ — clave primaria |
+| {Vr} | Vr → Pa | {Vr, Pa} | **✗** |
+| {Vg} | Vg→R ; luego R → todos | todos | ✓ — candidata con nulos; no es clave real |
+
+{Vr}⁺ = {Vr, Pa} ≠ todos los atributos: **Vr no es superclave**. Existe la DF Vr → Pa y Pa no pertenece a ninguna clave candidata estricta ({R}). No se cumple ninguna de las dos cláusulas de la 3FN:
+
+> ∀ DF no trivial α → A: α es superclave **o** A ∈ alguna clave candidata de R.
+
+La cadena de transitividad es **R → Vr → Pa**. La tabla está en 2FN (clave simple, sin dependencias parciales posibles) y **no en 3FN** — confirma §2.3.
+
+---
+
+#### B. Unión sin pérdida (PLJ)
+
+El **teorema de Heath (1971)** establece que una descomposición binaria {R₁, R₂} de R es sin pérdida respecto de F si y solo si:
+
+> R₁ ∩ R₂ → R₁ − R₂ ∈ F⁺ **o** R₁ ∩ R₂ → R₂ − R₁ ∈ F⁺.
+
+Es decir, los atributos compartidos deben determinar todos los atributos de una de las dos partes.
+
+**Argumento por construcción ER → relacional.** Toda tabla del esquema pertenece a uno de tres tipos: (1) entidad/nomenclador con clave surrogada K y sus atributos propios, (2) tabla puente o agregación con clave compuesta (K₁, K₂) donde K₁ y K₂ son PK de otras tablas, o (3) entidad con claves foráneas escalares. En los tres casos, los atributos compartidos entre dos tablas coinciden con la PK de una de ellas, porque toda referencia entre tablas es del tipo FK → PK. Sea S = R₁ ∩ R₂ = PK de R₁: dentro del conjunto F₁ existe S → (todos los atributos de R₁), lo que garantiza S → R₁ − R₂. Por Heath, la junta es sin pérdida.
+
+Aplicado a pares representativos:
+
+| Par (R₁ — R₂) | R₁ ∩ R₂ | DF que garantiza la PLJ | Dirección |
+|---|---|---|---|
+| `Menú` — `Distribución` | {MenúId} | MenúId es PK de Menú | Menú → Distribución |
+| `Asignación` — `Consumo` | {MenúId, PacienteId} | (MenúId, PacienteId) es PK de Asignación | Asignación → Consumo |
+| `Asignación` — `Valoración` | {MenúId, PacienteId} | igual que el anterior | Asignación → Valoración |
+| `Valoración` — `Revalorización` | {ValoraciónId ≅ ValoraciónRevisadaId} | ValoraciónId es PK de Valoración | Valoración → Revalorización |
+| `Dieta` — `CubreDieta` | {DietaId} | DietaId es PK de Dieta | Dieta → CubreDieta |
+
+Cada junta binaria entre tablas conectadas por FK → PK es sin pérdida. El esquema forma un grafo conexo donde toda arista tiene esa forma; por inducción, la junta de las 29 tablas es **sin pérdida** ✓.
+
+---
+
+#### C. Preservación de dependencias
+
+Una descomposición preserva las DFs si (F₁ ∪ F₂ ∪ … ∪ F₂₉)⁺ = F⁺, donde Fᵢ = {α → β ∈ F : α ∪ β ⊆ Rᵢ} son las DFs locales a la tabla Rᵢ.
+
+**DFs locales (las de §1):** toda DF de la forma K → atributos, contenida dentro de la misma tabla. Se comprueban con PK, UNIQUE o CHECK sin join → **Preservadas**.
+
+**Restricciones de integridad cruzadas:** relacionan atributos de tablas distintas; no son DFs en sentido estricto (no se aplican a una sola relación) y no son verificables sin join. No se pueden preservar como DFs locales; se implementan con disparadores (#11, §7).
+
+| Restricción | Tablas involucradas | Mecanismo |
+|---|---|---|
+| R7-29: `Revalorización.PacienteId = Valoración[ValoraciónRevisadaId].PacienteId` | `Revalorización`, `Valoración`, `Asignación` | Trigger |
+| R7-30: la valoración generada evalúa la misma asignación que la revisada | `Revalorización`, `Valoración`, `Asignación` | Trigger |
+| R6-22: el nutricionista solo genera menús en sus dietas autorizadas | `Menú`, `Autoriza` | Trigger |
+| R6-23: el paciente solo recibe menús de las dietas en que está inscrito | `Asignación`, `Menú`, `Inscribe` | Trigger |
+| R9-04: una dieta no puede exigir cubrir un grupo que su restricción excluye | `CubreDieta`, `Restringe`, `Excluye` | Trigger |
 
 ---
 
@@ -221,7 +336,7 @@ Observaciones:
 - La trayectoria de la consulta 5 usa `Excluye` para obtener los grupos que una restricción prohíbe, encadenando `Dieta` → `Restringe` → `Excluye` → `GrupoNutricional`, frente a los grupos exigidos, que se obtienen por `CubreDieta`.
 - La parte C de la consulta 6 no necesita fechas propias: la dieta del revalorizado se deriva de la valoración revisada (`Valoración` → `Asignación` → `Menú` → `Dieta`), lo que resuelve «para esas mismas dietas» incluso con pacientes inscritos en varias dietas.
 
-> **La validación formal de estas seis consultas contra el modelo es el issue #10.** Las trayectorias anteriores indican qué recorrido ofrece el esquema; no constituyen por sí solas la comprobación de que cada consulta se pueda formular y ejecutar. [pendiente: resultado del #10]
+> **La validación formal de estas seis consultas contra el modelo es el issue #10.** Las trayectorias anteriores indican qué recorrido ofrece el esquema; no constituyen por sí solas la comprobación de que cada consulta se pueda formular y ejecutar. El resultado del #10 confirma que el esquema satisface los 40 criterios distribuidos entre las seis consultas; ver `docs/Validación del modelo contra las consultas.md`.
 
 ---
 
@@ -239,7 +354,7 @@ Observaciones:
 > La especificación del #11 recoge 86 restricciones: 70 de los submodelos, 4 de la consolidación, 10 de la ficha nutricional y 2 definidas en esa especificación. Por mecanismo —una misma restricción puede necesitar más de uno—: 16 se declaran con clave primaria, 30 con clave foránea, 7 con `UNIQUE`, 10 con `CHECK`, 15 con `NOT NULL` y una con el tipo entero del dominio. Las reglas semánticas, que no admiten una declaración del esquema porque consultan otras tablas, se implementan con 13 disparadores: entre ellas, que quien crea o valida un menú esté autorizado para su dieta (R6-22), que quien valida no haya creado el menú (R7-25), que el paciente que solicita la revalorización sea el de la valoración revisada (R7-29) y que solo se registre consumo de alimentos del menú asignado (R11-01). En la capa de aplicación quedan 10, entre ellas la clasificación de un alimento por quien lo describió (R5-17) y la coherencia entre los ingredientes de la ficha en MongoDB y `Composición` (R8-06, #8). En la ficha nutricional se emplean además validación con `$jsonSchema`, un índice único y una tarea programada de conciliación (#8). La política de borrado es `RESTRICT` en todas las claves foráneas, con `CASCADE` solo desde un dueño hacia sus propias filas de composición o parametrización (R11-02).
 >
 > **4. Suficiencia.**
-> [pendiente: resultado del #10] El esquema ofrece una trayectoria de navegación para cada una de las seis consultas (§4). La comprobación formal de que las seis puedan formularse y ejecutarse sobre este modelo, con el conjunto de datos de prueba, corresponde al issue #10 y se incorpora aquí cuando esté disponible.
+> El esquema ofrece una trayectoria de navegación para cada una de las seis consultas (§4). La comprobación formal de que las seis pueden formularse y ejecutarse sobre este modelo está documentada en el issue #10 (`docs/Validación del modelo contra las consultas.md`): los 40 criterios §8 de las seis consultas se satisfacen, con C1(7/7), C2(6/6), C3(6/6), C4(5/5), C5(6/6) y C6(10/10). La única brecha identificada —la ausencia de `Tipo` en `CubreDieta`— se resolvió en el commit `d5cd55e`.
 >
 > **5. Límites y decisiones abiertas.**
 > El modelo admite deliberadamente algunas condiciones que por eso no restringe. La principal es que la composición real de un menú no se contrasta con su parametrización: un menú puede incluir un número de alimentos distinto de `CantidadTotalAlimentos`, o proporciones distintas de las de `Distribución`, y puede no cubrir los grupos que su dieta exige. Es una decisión consciente, porque la comparación entre dietas (consulta 5) existe para detectar esas desviaciones; si la base las impidiera, la consulta no tendría nada que detectar. Tampoco se restringen la clasificación de un plato frente a la de sus ingredientes, la composición de un solo nivel, el hecho de que una dieta pueda no declarar restricciones, ni el traslado de un paciente entre salas como historial. Quedan abiertas cuatro decisiones de los submodelos: la unidad de `Cantidad` en `Composición` (#5), la escala de `Proporción` en `Distribución` (#7), la precisión de `Edad` en `Paciente` (#6) y la correspondencia entre las restricciones de una dieta y los alérgenos de los alimentos, que residen en la ficha nutricional (#8).
@@ -259,7 +374,7 @@ Observaciones:
 
 | Punto | Estado | Referencia |
 |---|---|---|
-| Validación formal del modelo contra las seis consultas | Pendiente; su resultado se incorporará a §4 y §5 | #10 |
+| Validación formal del modelo contra las seis consultas | **Resuelto** (#10, PR #43); 40/40 criterios satisfechos; §4 y §5 actualizados | #10 |
 | Confirmación de R11-02 por el equipo | Pendiente de confirmación antes de darla por cerrada | #11, §4 y §8 |
 | Numeración de R8-01 a R8-10 y su coherencia con `main` | Pendiente del #8; cuando se mergee hay que verificar su numeración y ajustar las referencias | #8, #11 §8 |
 | Unidad de `Cantidad` en `Composición` | Abierta: el enunciado no la fija y R5-12 necesita un sentido inequívoco | #5, §6 |

@@ -41,3 +41,7 @@ packages/
 .DS_Store
 Thumbs.db
 .omo/
+
+# --- Drawio ---
+*.drawio.bkp
+.*.drawio.bkp

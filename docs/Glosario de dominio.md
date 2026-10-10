@@ -29,9 +29,9 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 | **Administrador del sistema** | Encargado de evitar alimentos duplicados e impedir la asignación doble de un menú a pacientes. | Actor (rol de sistema, fuera del MERX) |
 | **Paciente** | Destinatario de los menús: accede a sus menús, consulta valoraciones, solicita revalorizaciones. Almacena id, nombre, edad y sala. | Entidad + actor |
 | **Sala** | Unidad de hospitalización a la que pertenece el paciente; se usa como agregado en reportes (promedio por sala). | Entidad |
-| **Valoración nutricional** | Evaluación del estado del paciente para un menú asignado, ejecutada por un nutricionista; lleva un resultado registrado como referencia al nomenclador `ResultadoNutricional`. Consultable por dieta (navegando Valoración → Asignación → Menú → Dieta). | Entidad |
+| **Valoración nutricional** | Evaluación del estado del paciente para un menú asignado, ejecutada por un nutricionista; registra una fecha de valoración, observaciones opcionales y el resultado como referencia al nomenclador `ResultadoNutricional`. Consultable por dieta (navegando Valoración → Asignación → Menú → Dieta). | Entidad |
 | **Revalorización nutricional** | Solicitud virtual del paciente que especifica al nutricionista ejecutor. Referencia la valoración que se revisó (`ValoraciónRevisadaId`) y, si ya fue atendida, la nueva valoración generada (`ValoraciónGeneradaId`). | Entidad |
-| **ResultadoNutricional** | Catálogo de posibles resultados de una valoración (p. ej. «Adecuado», «Insuficiente»); cada valor tiene un `Nombre` y un `Valor` numérico, ambos únicos. | Nomenclador |
+| **ResultadoNutricional** | Catálogo de posibles resultados de una valoración con exactamente cinco categorías: *Muy mala* (1), *Mala* (2), *Normal* (3), *Buena* (4) y *Excelente* (5); `Nombre` y `Valor` son únicos y obligatorios. Catálogo cerrado. | Nomenclador |
 | **Consumo** | Registro de cada alimento consumido de un menú asignado a un paciente (aceptación). La identidad depende de paciente + menú + alimento: un paciente registra su aceptación alimento por alimento dentro de un menú. No hay atributo de fecha en esta tabla. | Agregación |
 | **Ficha nutricional ampliada** | Documento de macronutrientes, micronutrientes, alérgenos y modo de preparación; estructura **variable por alimento**. Se gestiona de forma independiente del modelo relacional. | Atributo-documento (NoSQL) |
 | **Parámetros de generación** | Criterios almacenados junto al menú: proporción de alimentos por tipo de preparación y cobertura de grupos nutricionales (tablas `Distribución` y `CubreMenú`), más la cantidad total de alimentos (atributo escalar `CantidadTotalAlimentos` de Menú) y si el menú fue generado automáticamente (`EsAutomático`). | Concepto compuesto sin representación única — 2 atributos + 2 relaciones (el MERX no admite atributos multivaluados/compuestos) |
@@ -41,7 +41,7 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 
 ## 2. Barrido línea a línea del enunciado
 
-Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenclador · **[A]** actor · **[At]** atributo · **[R]** relación · **[Doc]** atributo documento · **[Der]** derivado/analítico · **[Fuera]** fuera de alcance del MERX.
+Leyenda: **[E]** entidad fuerte · **[Agregación]** agregación · **[N]** nomenclador · **[A]** actor · **[At]** atributo · **[R]** relación · **[Doc]** atributo documento · **[Der]** derivado/analítico · **[Fuera]** fuera de alcance del MERX.
 
 ### 2.1 Descripción del problema — Párrafo 1 (líneas 22-28)
 | # | Fragmento | Línea(s) | Candidatos detectados |
@@ -75,7 +75,7 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 | # | Fragmento | Línea(s) | Candidatos detectados |
 |---|---|---|---|
 | 17 | "Los pacientes podrán acceder a los menús que le son asignados" | 35 | **[R]** Asigna (Menú → Paciente) |
-| 18 | "el sistema debe garantizar el almacenamiento de cada consumo registrado ante un menú servido" | 35 | **[Débil]** Consumo (paciente + menú + fecha) |
+| 18 | "el sistema debe garantizar el almacenamiento de cada consumo registrado ante un menú servido" | 35 | **[Agregación]** Consumo — identificada por el trío (MenúId, PacienteId, AlimentoId); sin atributo de fecha propia |
 | 19 | "Las valoraciones nutricionales pueden ser consultadas por los nutricionistas y los pacientes" | 35-36 | **[E]** Valoración nutricional · consulta compartida |
 | 20 | "los pacientes pueden solicitar de forma virtual una revalorización nutricional y especificar el nutricionista que ejecute esta tarea" | 36 | **[E]** Revalorización · **[R]** Solicita (Paciente → Revalorización) · **[R]** Ejecuta (Nutricionista → Revalorización) |
 | 21 | "el resultado de la revalorización manual" [se registra en la base de datos] | 36-37 | **[At]** Resultado de Revalorización |
@@ -120,7 +120,7 @@ Leyenda: **[E]** entidad fuerte · **[Débil]** entidad débil · **[N]** nomenc
 |---|---|---|---|
 | F1 | "listado de menús generados automáticamente para una dieta específica, indicando el nombre del creador, la fecha de creación y los parámetros utilizados" | 68-69 | **[R]** Crea · **[At]** Menú(FechaCreación, Parámetros) · confirma que Menú se asocia a una Dieta específica |
 | F2 | "los alimentos más utilizados en los **menús finales** de una dieta, clasificados por nivel calórico y grupo nutricional" | 70-71 | **[Der]** ranking de alimentos · nomencladores confirmados · la expresión **"menús finales"** sugiere que no todo menú generado llega a ese estado (se deriva de `Valida`, sin atributo `Estado` propio en Menú) |
-| F3 | "los menús que fueron validados por un revisor determinado, indicando la fecha de validación y las observaciones hechas durante el proceso" | 72-73 | **[R]** Valida **con atributos propios: FechaValidación, Observaciones** · **[A/rol]** revisor (≈ jefe/nutricionista validador) |
+| F3 | "los menús que fueron validados por un revisor determinado, indicando la fecha de validación y las observaciones hechas durante el proceso" | 72-73 | **[R]** Valida **con atributos propios: FechaValidación, Aprobado, Observaciones** · **[A/rol]** revisor (≈ jefe/nutricionista validador) |
 | F4 | "desempeño nutricional de los pacientes ante un menú, clasificando los alimentos por nivel calórico y comparando las tasas de aceptación" | 74-75 | **[At]** Consumo.Aceptación · **[Der]** tasa de aceptación |
 | F5 | "comparar los menús generados para diferentes dietas … si los criterios de equilibrio fueron cumplidos" | 76-77 | **[Der]** verificación de parámetros de generación vs. composición real del menú |
 | F6 | "correlación entre el nivel calórico … los 10 alimentos con la tasa de rechazo más alta, el nutricionista que los creó y la dieta a la que pertenecen" | 78-80 | **[R]** Describe (Nutricionista → Alimento) confirmada como consultable · **[Der]** correlaciones · pertenencia de un alimento a una dieta, siempre indirecta (vía Menú) |
@@ -138,11 +138,11 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | E1 | **Alimento** | Id, Nombre, GrupoNutricional, TipoPreparación, NivelCalórico | 23-24, 29-31, 51-57 | Fuerte. Núcleo del sistema. |
 | E2 | **Plato** | mismos atributos base que Alimento | 23-24, 29, 54-55 | Fuerte, con composición (`Compone(Plato,Alimento,Cantidad)`). |
 | E3 | **Dieta** | Id, Nombre | 24, 42-43 | Fuerte. |
-| E4 | **Menú** | Id, FechaCreación, CantidadTotalAlimentos, EsAutomático | 22-23, 31, 35, 38-40, 68-69 | Fuerte (generado, no necesariamente servido aún). Proporción por tipo de preparación y cobertura de grupos nutricionales son relaciones (`Distribución`, `CubreMenú`), no atributos (el MERX no admite multivaluados/compuestos). `EsAutomático` distingue los menús generados por el sistema de los confeccionados manualmente. |
+| E4 | **Menú** | Id, Nombre, FechaCreación, CantidadTotalAlimentos, EsAutomático | 22-23, 31, 35, 38-40, 68-69 | Fuerte (generado, no necesariamente servido aún). Proporción por tipo de preparación y cobertura de grupos nutricionales son relaciones (`Distribución`, `CubreMenú`), no atributos (el MERX no admite multivaluados/compuestos). `EsAutomático` distingue los menús generados por el sistema de los confeccionados manualmente. |
 | E5 | **Nutricionista** | Id, Nombre, Especialidad | 25, 29-32, 38, 40-41, 43-45 | Fuerte + actor. |
 | E6 | **Paciente** | Id, Nombre, Edad | 26, 35-36, 49-50 | Fuerte + actor. |
 | E7 | **Sala** | Id, Nombre | 49, 80-82 | Fuerte (mínima). |
-| E8 | **Valoración nutricional** | ValoraciónId, MenúId, PacienteId, NutricionistaId, ResultadoNutricionalId | 35-36, 50 | Fuerte; ligada a la asignación (Menú + Paciente) y ejecutada por un nutricionista; el resultado se referencia al nomenclador `ResultadoNutricional`. |
+| E8 | **Valoración nutricional** | ValoraciónId, MenúId, PacienteId, NutricionistaId, ResultadoNutricionalId, FechaValoración, Observaciones | 35-36, 50 | Fuerte; ligada a la asignación (Menú + Paciente) y ejecutada por un nutricionista; el resultado se referencia al nomenclador `ResultadoNutricional`; `Observaciones` es opcional. |
 | E9 | **Revalorización nutricional** | RevalorizaciónId, FechaSolicitud, PacienteId, NutricionistaId, ValoraciónRevisadaId, ValoraciónGeneradaId (nullable) | 36-37 | Fuerte; solicitada por un paciente, ejecutada por un nutricionista; referencia la valoración que se revisó y la nueva valoración generada (esta última puede estar pendiente). |
 | E10 | **Consumo** | (MenúId, PacienteId, AlimentoId), Aceptación | 35, 74-75 | **Agregación** — identificada por el trío (Menú, Paciente, Alimento). No hay atributo de fecha: la fecha de servicio se obtiene de `Asignación`; `Aceptación` es el único atributo propio. |
 
@@ -156,7 +156,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | N4 | **Restricción alimentaria** | no enumerados (p. ej. sin gluten, hiposódica) | 27, 42-43 |
 | N5 | **Programa de atención** | no enumerados | 42 |
 | N6 | **Especialidad** (de Nutricionista) | no enumerados | 44 |
-| N7 | **ResultadoNutricional** | no enumerados (p. ej. Adecuado, Insuficiente); cada entrada lleva `Nombre` (UNIQUE) y `Valor` numérico (UNIQUE) | decisión del equipo |
+| N7 | **ResultadoNutricional** | *Muy mala* (1), *Mala* (2), *Normal* (3), *Buena* (4), *Excelente* (5); catálogo cerrado, `Nombre` y `Valor` únicos y obligatorios | decisión del equipo |
 
 ### 4.3 Actores candidatos
 
@@ -179,7 +179,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Nivela | Nutricionista → Alimento (nivel calórico) | 31 | — | — |
 | Autoriza/Atiende | Nutricionista ↔ Dieta | 32, 44-45 | N:M | — |
 | Crea | Nutricionista → Menú | 25, 31, 68-69 | 1:N (un menú lo crea un único nutricionista) | — |
-| Valida/Aprueba | Nutricionista (revisor/jefe) → Menú | 25, 40-41, 72-73 | 1:N | **FechaValidación, Observaciones** |
+| Valida/Aprueba | Nutricionista (revisor/jefe) → Menú | 25, 40-41, 72-73 | 1:N | **FechaValidación, Aprobado, Observaciones** |
 | Pertenece | Menú → Dieta | 68-71 | N:1 (varios menús pueden generarse para una misma dieta; mismo verbo que `Pertenece(Paciente,Sala)`, ocurrencia distinta) | — |
 | Incluye | Menú → Alimento | 31 | N:M | — |
 | **Incluye** *(decisión de equipo)* | Menú → Plato | — (no está en el enunciado; el nutricionista puede agregar platos directamente al menú) | N:M | — |
@@ -216,7 +216,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Tema | Decisión | Por qué |
 |---|---|---|
 | Plato | Entidad separada de Alimento, relacionada por `Compone(Plato, Alimento, Cantidad)` | El enunciado trata "alimentos y platos" como dos catálogos paralelos (líneas 23-24, 29) |
-| Jefe de nutrición | Rol de Nutricionista, sin entidad ni atributos propios | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Observaciones)`; no tiene estado propio en el enunciado |
+| Jefe de nutrición | Rol de Nutricionista, sin entidad ni atributos propios | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Aprobado, Observaciones)`; no tiene estado propio en el enunciado |
 | Administrador del sistema | Fuera del MERX | Es mantenimiento de la aplicación (evitar duplicados, asignación doble); no se consulta como dato en ninguna funcionalidad |
 | "Plan de alimentación / tratamiento" | Sin entidad propia | Es sinónimo del ciclo de la dieta (líneas 27-28, 42-43) |
 | Estado del menú | Sin atributo `Estado` en Menú | Un menú se considera final/aprobado si existe un registro en `Valida`; no hace falta duplicar el dato |
@@ -226,7 +226,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | `Excluye(RestricciónAlimentaria, GrupoNutricional)` | Relación N:M para mapear cada restricción clínica a los grupos nutricionales que excluye | Habilita la verificación de compatibilidad a nivel de grupo en PostgreSQL; la verificación a nivel de alérgeno se hace contra la ficha nutricional en MongoDB |
 | `Asignación` es N:M, no 1:1 | Un menú puede asignarse a varios pacientes; la restricción de la línea 33-34 se garantiza con PK compuesta `(MenúId, PacienteId)` | El texto dice que el administrador debe impedir la *asignación doble del mismo menú al mismo paciente*, que es exactamente lo que la PK compuesta garantiza |
 | `Consumo` sin `FechaConsumo` | La clave de la agregación es `(MenúId, PacienteId, AlimentoId)`; no hay fecha | La fecha de servicio es un hecho de la asignación, no del consumo individual de un alimento; el equipo decidió no duplicarla |
-| `ResultadoNutricional` como nomenclador | Los posibles resultados de una valoración se gestionan como catálogo, con `Nombre` y `Valor` únicos | Evita valores de texto libres en `Valoración` y permite consultas analíticas sobre resultados sin comparaciones de cadenas |
+| `ResultadoNutricional` como nomenclador cerrado | Catálogo de cinco categorías fijas: *Muy mala* (1), *Mala* (2), *Normal* (3), *Buena* (4), *Excelente* (5); `Nombre` y `Valor` únicos y obligatorios | Evita valores de texto libres en `Valoración`, permite promedios numéricos y garantiza que el catálogo no se amplía sin revisión del diseño |
 | Menú y platos | Un menú puede incluir alimentos y platos directamente (`IncluyeAlimento`, `IncluyePlato`) | El plato ya conoce sus alimentos componentes vía `Composición`, así que no hay que descomponerlo al armar el menú |
 
 ## 7. Resumen ejecutivo de la lista cerrada

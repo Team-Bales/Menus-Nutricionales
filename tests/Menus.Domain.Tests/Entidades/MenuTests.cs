@@ -137,6 +137,37 @@ public sealed class MenuTests
             CrearMenu(distribucion: [(TipoPreparacion.Entrante, 0.3m), (TipoPreparacion.PlatoFuerte, 0.5m)]));
     }
 
+    [Theory]
+    [InlineData(0.5, 0.49)]
+    [InlineData(0.51, 0.5)]
+    [InlineData(0.5, 0.499)]
+    public void Constructor_SumaFueraDeLaTolerancia_LanzaArgumentException(decimal primera, decimal segunda)
+    {
+        Assert.Throws<ArgumentException>(() =>
+            CrearMenu(distribucion: [(TipoPreparacion.Entrante, primera), (TipoPreparacion.PlatoFuerte, segunda)]));
+    }
+
+    [Fact]
+    public void Constructor_TresTerciosCalculados_EsValido()
+    {
+        var tercio = 1m / 3m;
+
+        var menu = CrearMenu(distribucion:
+            [(TipoPreparacion.Entrante, tercio), (TipoPreparacion.PlatoFuerte, tercio), (TipoPreparacion.Postre, tercio)]);
+
+        Assert.Equal(3, menu.Distribuciones.Count);
+        Assert.NotEqual(1m, menu.Distribuciones.Sum(d => d.Proporcion));
+    }
+
+    [Fact]
+    public void Constructor_ProporcionesRedondeadasACuatroDecimales_EsValido()
+    {
+        var menu = CrearMenu(distribucion:
+            [(TipoPreparacion.Entrante, 0.3333m), (TipoPreparacion.PlatoFuerte, 0.3333m), (TipoPreparacion.Postre, 0.3333m)]);
+
+        Assert.Equal(0.9999m, menu.Distribuciones.Sum(d => d.Proporcion));
+    }
+
     [Fact]
     public void Constructor_TipoPreparacionRepetido_LanzaArgumentException()
     {

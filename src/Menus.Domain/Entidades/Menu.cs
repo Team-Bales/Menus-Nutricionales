@@ -28,6 +28,17 @@ public sealed class Menu : AggregateRoot<Guid>
     private readonly List<MenuGrupoNutricional> _gruposNutricionales = [];
     private readonly List<Asignacion> _asignaciones = [];
 
+    /// <summary>
+    /// Diferencia máxima admitida entre la suma de las proporciones y 1 (R7-28).
+    /// </summary>
+    /// <remarks>
+    /// La suma no se compara por igualdad exacta por dos motivos: hay fracciones sin representación
+    /// decimal finita (tres veces <c>1m / 3m</c> suma 0,999…9) y las proporciones se redondean al
+    /// persistirse. Con cuatro tipos de preparación guardados con cuatro decimales, el error acumulado
+    /// es como máximo 0,0002, de modo que esta tolerancia lo absorbe y sigue rechazando sumas como 0,99.
+    /// </remarks>
+    public static readonly decimal ToleranciaSumaProporciones = 0.001m;
+
     /// <summary>Crea un menú con sus parámetros de generación.</summary>
     /// <param name="id">Identificador único del menú.</param>
     /// <param name="dietaId">Dieta a la que pertenece el menú (relación <c>Pertenece</c>).</param>
@@ -40,7 +51,8 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="esAutomatico">Indica si el menú fue generado automáticamente (consulta 1, §7-A).</param>
     /// <param name="distribucion">
     /// Proporción de alimentos por tipo de preparación: al menos una (R7-22), cada una en (0, 1] (R7-16),
-    /// sin tipos repetidos (R7-03) y con suma igual a 1 (R7-28).
+    /// sin tipos repetidos (R7-03) y con suma igual a 1, con la tolerancia
+    /// <see cref="ToleranciaSumaProporciones"/> (R7-28).
     /// </param>
     /// <param name="gruposNutricionalesIds">Grupos nutricionales que cubre el menú: al menos uno (R7-22) y sin repetidos (R7-07).</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="distribucion"/> o <paramref name="gruposNutricionalesIds"/> es nulo.</exception>
@@ -202,7 +214,7 @@ public sealed class Menu : AggregateRoot<Guid>
             throw new ArgumentException("El menú debe tener al menos una proporción por tipo de preparación.", nameof(distribucion));
         }
 
-        if (_distribuciones.Sum(d => d.Proporcion) != 1m)
+        if (Math.Abs(_distribuciones.Sum(d => d.Proporcion) - 1m) >= ToleranciaSumaProporciones)
         {
             throw new ArgumentException("Las proporciones de la distribución deben sumar 1.", nameof(distribucion));
         }

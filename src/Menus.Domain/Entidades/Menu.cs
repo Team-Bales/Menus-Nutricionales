@@ -17,7 +17,8 @@ namespace Menus.Domain.Entidades;
 /// El menú no guarda un estado: es final si su validación más reciente está aprobada (submodelo #7, §4).
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
 /// (agregación <c>Asignación</c>, R7-05). Que el paciente esté inscrito en la dieta del menú (R6-23)
-/// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente.
+/// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente; lo mismo
+/// ocurre con que el nutricionista creador esté autorizado en esa dieta (R6-22).
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
 {
@@ -31,7 +32,10 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="id">Identificador único del menú.</param>
     /// <param name="dietaId">Dieta a la que pertenece el menú (relación <c>Pertenece</c>).</param>
     /// <param name="nutricionistaCreadorId">Nutricionista que creó el menú (relación <c>Crea</c>).</param>
-    /// <param name="fechaCreacion">Instante de creación del menú, en UTC; no puede ser posterior al instante actual.</param>
+    /// <param name="fechaCreacion">
+    /// Instante de creación del menú. Debe estar en UTC (<see cref="DateTimeKind.Utc"/>), porque así se
+    /// persiste, y no puede ser posterior al instante actual.
+    /// </param>
     /// <param name="cantidadTotalAlimentos">Cantidad total de alimentos del menú (&gt; 0, R7-15).</param>
     /// <param name="esAutomatico">Indica si el menú fue generado automáticamente (consulta 1, §7-A).</param>
     /// <param name="distribucion">
@@ -45,7 +49,8 @@ public sealed class Menu : AggregateRoot<Guid>
     /// o si alguna proporción está fuera de (0, 1].
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// Si la distribución o los grupos están vacíos o tienen repetidos, o si las proporciones no suman 1.
+    /// Si <paramref name="fechaCreacion"/> no está en UTC, si la distribución o los grupos están vacíos
+    /// o tienen repetidos, o si las proporciones no suman 1.
     /// </exception>
     public Menu(
         Guid id,
@@ -77,6 +82,11 @@ public sealed class Menu : AggregateRoot<Guid>
         int cantidadTotalAlimentos,
         bool esAutomatico) : base(id)
     {
+        if (fechaCreacion.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("El instante de creación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaCreacion));
+        }
+
         if (fechaCreacion > DateTime.UtcNow)
         {
             throw new ArgumentOutOfRangeException(nameof(fechaCreacion), "El instante de creación no puede ser futuro.");

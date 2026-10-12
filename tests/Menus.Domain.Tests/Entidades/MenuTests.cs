@@ -74,6 +74,16 @@ public sealed class MenuTests
     }
 
     [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void Constructor_FechaCreacionNoUtc_LanzaArgumentException(DateTimeKind kind)
+    {
+        var fecha = DateTime.SpecifyKind(_ahora.AddHours(-1), kind);
+
+        Assert.Throws<ArgumentException>(() => CrearMenu(fechaCreacion: fecha));
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(-1)]
     public void Constructor_CantidadTotalAlimentosNoPositiva_LanzaArgumentOutOfRangeException(int cantidad)

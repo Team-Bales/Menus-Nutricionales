@@ -7,15 +7,17 @@ namespace Menus.Domain.Entidades;
 /// Menú creado por un nutricionista para una dieta, de forma automática o manual,
 /// junto con los parámetros con que se generó.
 /// Es la raíz del agregado: los alimentos y platos incluidos, la distribución por tipo de
-/// preparación y los grupos nutricionales cubiertos solo se registran a través de él.
+/// preparación, los grupos nutricionales cubiertos y las asignaciones a pacientes solo se
+/// registran a través de él.
 /// </summary>
 /// <remarks>
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
 /// cambian después (submodelo #7, R7-27), por eso no hay métodos para modificarlos.
 /// El menú no guarda un estado: es final si su validación más reciente está aprobada (submodelo #7, §4).
-/// Tampoco guarda un paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
-/// (agregación <c>Asignación</c>, R7-05).
+/// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
+/// (agregación <c>Asignación</c>, R7-05). Que el paciente esté inscrito en la dieta del menú (R6-23)
+/// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente.
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
 {
@@ -23,6 +25,7 @@ public sealed class Menu : AggregateRoot<Guid>
     private readonly List<MenuPlato> _platos = [];
     private readonly List<MenuDistribucion> _distribuciones = [];
     private readonly List<MenuGrupoNutricional> _gruposNutricionales = [];
+    private readonly List<Asignacion> _asignaciones = [];
 
     /// <summary>Crea un menú con sus parámetros de generación.</summary>
     /// <param name="id">Identificador único del menú.</param>
@@ -121,6 +124,9 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Grupos nutricionales que cubre el menú (solo lectura). Parámetro de generación.</summary>
     public IReadOnlyCollection<MenuGrupoNutricional> GruposNutricionales => _gruposNutricionales.AsReadOnly();
 
+    /// <summary>Pacientes a los que se asignó el menú (solo lectura).</summary>
+    public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
+
     /// <summary>Incluye un alimento en el menú (relación <c>Incluye(Menú, Alimento)</c>).</summary>
     /// <param name="alimentoId">Identificador del alimento.</param>
     /// <returns>La inclusión registrada.</returns>
@@ -151,6 +157,22 @@ public sealed class Menu : AggregateRoot<Guid>
         var plato = new MenuPlato(Id, platoId);
         _platos.Add(plato);
         return plato;
+    }
+
+    /// <summary>Asigna el menú a un paciente (agregación <c>Asignación</c>).</summary>
+    /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
+    /// <returns>La asignación registrada.</returns>
+    /// <exception cref="InvalidOperationException">Si el menú ya está asignado a ese paciente (R7-05).</exception>
+    public Asignacion AsignarPaciente(Guid pacienteId)
+    {
+        if (_asignaciones.Any(a => a.PacienteId == pacienteId))
+        {
+            throw new InvalidOperationException($"El menú ya está asignado al paciente {pacienteId}.");
+        }
+
+        var asignacion = new Asignacion(Id, pacienteId);
+        _asignaciones.Add(asignacion);
+        return asignacion;
     }
 
     private void FijarDistribucion(IEnumerable<(TipoPreparacion TipoPreparacion, decimal Proporcion)> distribucion)

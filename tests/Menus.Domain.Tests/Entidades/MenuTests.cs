@@ -51,6 +51,7 @@ public sealed class MenuTests
         Assert.False(menu.EsAutomatico);
         Assert.Empty(menu.Alimentos);
         Assert.Empty(menu.Platos);
+        Assert.Empty(menu.Asignaciones);
     }
 
     [Fact]
@@ -188,6 +189,44 @@ public sealed class MenuTests
     }
 
     [Fact]
+    public void AsignarPaciente_ValidArgs_AgregaYRetornaAsignacion()
+    {
+        var menu = CrearMenu();
+        var pacienteId = Guid.NewGuid();
+
+        var asignacion = menu.AsignarPaciente(pacienteId);
+
+        Assert.Single(menu.Asignaciones);
+        Assert.Equal(menu.Id, asignacion.MenuId);
+        Assert.Equal(pacienteId, asignacion.PacienteId);
+    }
+
+    [Fact]
+    public void AsignarPaciente_VariosPacientes_TodosAsignados()
+    {
+        var menu = CrearMenu();
+        var pacientes = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+
+        foreach (var pacienteId in pacientes)
+        {
+            menu.AsignarPaciente(pacienteId);
+        }
+
+        Assert.Equal(3, menu.Asignaciones.Count);
+        Assert.All(pacientes, p => Assert.Contains(menu.Asignaciones, a => a.PacienteId == p));
+    }
+
+    [Fact]
+    public void AsignarPaciente_PacienteDuplicado_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+        var pacienteId = Guid.NewGuid();
+        menu.AsignarPaciente(pacienteId);
+
+        Assert.Throws<InvalidOperationException>(() => menu.AsignarPaciente(pacienteId));
+    }
+
+    [Fact]
     public void Colecciones_SonDeSoloLectura()
     {
         var menu = CrearMenu();
@@ -196,6 +235,7 @@ public sealed class MenuTests
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuPlato>>(menu.Platos);
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuDistribucion>>(menu.Distribuciones);
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuGrupoNutricional>>(menu.GruposNutricionales);
+        Assert.IsAssignableFrom<IReadOnlyCollection<Asignacion>>(menu.Asignaciones);
         Assert.False(menu.Distribuciones is ICollection<MenuDistribucion> { IsReadOnly: false });
         Assert.False(menu.GruposNutricionales is ICollection<MenuGrupoNutricional> { IsReadOnly: false });
     }

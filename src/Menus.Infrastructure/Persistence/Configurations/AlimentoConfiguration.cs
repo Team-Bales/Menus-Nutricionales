@@ -32,12 +32,16 @@ internal sealed class AlimentoConfiguration : IEntityTypeConfiguration<Alimento>
             .HasConversion<string>()
             .IsRequired();
 
-        // FK → Nutricionista se configura cuando esa entidad se incorpore (issue #52)
         builder.Property(a => a.NutricionistaId).HasColumnName("nutricionista_id");
 
         builder.HasOne<GrupoNutricional>()
             .WithMany()
             .HasForeignKey(a => a.GrupoNutricionalId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Nutricionista>()
+            .WithMany()
+            .HasForeignKey(a => a.NutricionistaId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

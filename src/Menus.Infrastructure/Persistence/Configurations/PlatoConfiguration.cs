@@ -32,12 +32,16 @@ internal sealed class PlatoConfiguration : IEntityTypeConfiguration<Plato>
             .HasConversion<string>()
             .IsRequired();
 
-        // FK → Nutricionista se configura cuando esa entidad se incorpore (issue #52)
         builder.Property(p => p.NutricionistaId).HasColumnName("nutricionista_id");
 
         builder.HasOne<GrupoNutricional>()
             .WithMany()
             .HasForeignKey(p => p.GrupoNutricionalId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Nutricionista>()
+            .WithMany()
+            .HasForeignKey(p => p.NutricionistaId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Composición: Plato → PlatoIngrediente (CASCADE per RX-02)

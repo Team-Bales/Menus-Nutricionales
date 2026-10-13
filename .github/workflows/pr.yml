@@ -24,3 +24,5 @@ jobs:
             perf
             ci
           requireScope: false
+          headerPattern: '^(\w*)(?:\(([\w$.\-*/ ]*)\))?(?::\s+|\s+)(.+)$'
+          headerPatternCorrespondence: type, scope, subject

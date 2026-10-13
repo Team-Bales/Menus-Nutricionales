@@ -4,7 +4,7 @@
 **Issue:** #9
 **Diagrama:** `MERX consolidado.drawio` (misma carpeta), en doce páginas A4 verticales con la organización de los submodelos: Página-Entidades-1 a Página-Entidades-3 y Página-Relaciones-1 a Página-Relaciones-9 (§0.4).
 
-**Alcance de este documento:** integra los submodelos de los issues #5 (Alimento-Plato), #6 (Dieta-Nutricionista-Paciente-Sala) y #7 (Menú-Valoración-Consumo) en un MERX único, resuelve las relaciones que cruzan fronteras entre ellos, unifica nombres y notación, y deja constancia de las decisiones propias de la consolidación. Recoge los submodelos tal como están en `main`, incluidos los cambios que la validación de las consultas (issue #10) y la ficha nutricional (issue #8) introdujeron en el #6: la agregación `Cobertura`, con el atributo `Tipo`, y la relación `Excluye`. Es insumo de la especificación consolidada de restricciones (issue #11), de la valoración del diseño (issue #12) y del §4 del informe.
+**Alcance de este documento:** integra los submodelos de los issues #5 (Alimento-Plato), #6 (Dieta-Nutricionista-Paciente-Sala) y #7 (Menú-Valoración-Consumo) en un MERX único, resuelve las relaciones que cruzan fronteras entre ellos, unifica nombres y notación, y deja constancia de las decisiones propias de la consolidación. Recoge los submodelos tal como están en `main`, incluidos los cambios que la validación de las consultas (issue #10) y la ficha nutricional (issue #8) introdujeron en el #6: la agregación `Cobertura`, con el atributo `Tipo`, y la relación `Excluye`. Es insumo de la especificación consolidada de restricciones (issue #11), de la valoración del diseño (issue #12) y del §4 del informe. La §7 registra en qué se aparta de él la implementación y por qué.
 
 Cuando el glosario del dominio o el documento de un submodelo difiera de lo establecido aquí, prevalece este documento, que es posterior.
 
@@ -223,3 +223,23 @@ Decisiones de las consultas formalizadas que el MERX recoge. La verificación co
 | 4 | Consumo por (paciente, menú, alimento) con estado de aceptación (§7-A); valoración anclada al menú recibido (§7-C); asignación única por par, sin fechas (§7-D) | `Consumo` con `Aceptación`; `Evalúa(Asignación, Valoración)`; `Asignación` |
 | 5 | Criterios de equilibrio en dos niveles (§7-A); grupos obligatorios y prohibidos de la dieta, computables (§7-C) | `Cobertura` con `Tipo`, `Restringe` y `Excluye` (D9-1); parámetros del menú |
 | 6 | Dieta del alimento a través del menú (§7-B); el resultado de una revalorización es una nueva valoración (§7-D y §7-E); sin ventanas temporales (§7-F); escala del resultado (§7-G) | `Consume` → `Asignación` → `Menú` → `Dieta`; `Revalora` y `Genera`; ancla en `Menú.FechaCreación`; `ResultadoNutricional` |
+
+---
+
+## 7. Correspondencia con la implementación
+
+El MERX es el modelo conceptual del proyecto y no cambia por las decisiones de implementación. Esta sección registra en qué se apartan de él el código (`src/`) y la base de datos real, por qué y dónde se decidió, para que cada diferencia quede explicada y no se lea como un error del modelo. El esquema relacional del #12 se mantiene como el diseño validado; las diferencias físicas son las de esta tabla.
+
+| Elemento del MERX | En la implementación | Por qué | Dónde se decidió | Estado |
+|---|---|---|---|---|
+| Nomencladores `TipoPreparación` y `NivelCalórico` (§0.1), con tabla propia en el #12 | Enums de C# (`TipoPreparacion`, `NivelCalorico`), guardados como texto en las columnas de `alimentos`, `platos` y `menu_distribucion`; sin tabla propia | Sus valores los fija el enunciado (R5-08, R5-09), y el compilador controla que no haya otros | ADR-003; issue #49 | Vigente |
+| Nomenclador `ResultadoNutricional` (§0.1) | Entidad de catálogo cerrado: cinco instancias fijas, cada una con un `Guid` fijo, y tabla propia | Tiene un atributo propio, `Valor`, que la consulta 6 promedia, y la valoración lo referencia por identificador; R7-19 fija exactamente cinco categorías | ADR-006 | En revisión |
+| Agregaciones `Asignación`, `Validación` y `Consumo` (§0.2) | Clases con clave compuesta dentro del agregado `Menu`: `Menu.AsignarPaciente`, `Menu.Validar` y `Asignacion.RegistrarConsumo` | Como en el MERX, no tienen identificador propio y dependen del menú o de la asignación. Así el dominio controla R7-04, R7-05, R7-06, R7-25 y R7-26, y deriva si un menú es final | #54 (asignación); #55 y #56 (validación y consumo) | Asignación vigente; validación y consumo en curso |
+| Identificadores (`…Id`) | `Guid` | Patrón de las clases base `Entity<TId>` | ADR-002 | Vigente |
+| Nombres de las tablas de relaciones y agregaciones (#12) | En la base, en minúscula: `menu_alimento`, `menu_plato`, `menu_distribucion`, `menu_grupo_nutricional`, `composicion`, `autoriza`, `paciente_dieta`, `asignacion`. En C#, los nombres de los issues: `MenuAlimento`, `PlatoIngrediente`, `NutricionistasDieta`, `PacienteDieta`… | Convenciones de nombres de la capa de persistencia y de los issues de implementación | #57; issues #50 a #55 | En revisión |
+| Fechas: `FechaCreación`, `FechaValidación` y `FechaSolicitud` (R7-20) | `timestamp with time zone`, siempre en UTC (`DateTimeKind.Utc`) | Npgsql solo guarda en ese tipo de columna fechas en UTC; la consulta 1 pide una marca temporal precisa | #54 (`Menu`); #55 (validación y revalorización) | Vigente en `Menu`; en curso en el #55 |
+| `Proporción` de `Distribución` (R7-16, R7-28) | `numeric(5,4)`; la suma de las proporciones de un menú admite una diferencia menor que 0,001 | Hay fracciones sin representación decimal finita (1/3) y las proporciones se redondean al guardarse | #54 (tolerancia); #57 (precisión) | Tolerancia vigente; precisión en revisión |
+| `Tipo` de la agregación `Cobertura` (§0.2, D9-1) | Todavía sin implementar en `Dieta` | — | #51 (PR #127) | Pendiente |
+| Relación `Excluye` (§0.3, fila 13) | Todavía sin implementar; ningún issue la cubre | — | — | Pendiente, sin responsable |
+
+Por la primera fila, la base real no tiene las tablas de `TipoPreparación` ni de `NivelCalórico` que lista el #12; la de `ResultadoNutricional`, en cambio, sí existe. Las filas pendientes se actualizan aquí cuando se implementen.

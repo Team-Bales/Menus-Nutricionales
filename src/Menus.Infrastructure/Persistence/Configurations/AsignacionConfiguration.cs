@@ -16,6 +16,9 @@ internal sealed class AsignacionConfiguration : IEntityTypeConfiguration<Asignac
         builder.Property(a => a.MenuId).HasColumnName("menu_id");
         builder.Property(a => a.PacienteId).HasColumnName("paciente_id");
 
-        // FK → Paciente se configura cuando esa entidad se incorpore (issue #53)
+        builder.HasOne<Paciente>()
+            .WithMany()
+            .HasForeignKey(a => a.PacienteId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

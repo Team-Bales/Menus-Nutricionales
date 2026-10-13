@@ -16,6 +16,9 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     public DbSet<Nutricionista> Nutricionistas => Set<Nutricionista>();
     public DbSet<NutricionistasDieta> NutricionistasDietas => Set<NutricionistasDieta>();
 
+    public DbSet<Paciente> Pacientes => Set<Paciente>();
+    public DbSet<PacienteDieta> PacientesDietas => Set<PacienteDieta>();
+
     public DbSet<Alimento> Alimentos => Set<Alimento>();
     public DbSet<Plato> Platos => Set<Plato>();
     public DbSet<PlatoIngrediente> PlatosIngredientes => Set<PlatoIngrediente>();

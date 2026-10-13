@@ -1,22 +1,19 @@
-namespace Menus.Domain.Entities;
+using Menus.Domain.Abstractions;
 
-public class Dieta
+namespace Menus.Domain.Entidades;
+
+public sealed class Dieta : Entity<Guid>
 {
-    public Guid Id { get; private set; }
     public string Nombre { get; private set; }
     public Guid ProgramaAtencionId { get; private set; }
 
-    // Colecciones encapsuladas (backing fields)
     private readonly List<DietaGrupoNutricional> _gruposNutricionales = new();
     private readonly List<DietaRestriccion> _restricciones = new();
 
-    // Colecciones de sólo lectura expuestas hacia el exterior
     public IReadOnlyCollection<DietaGrupoNutricional> GruposNutricionales => _gruposNutricionales.AsReadOnly();
     public IReadOnlyCollection<DietaRestriccion> Restricciones => _restricciones.AsReadOnly();
 
-    private Dieta() { } // Para ORM
-
-    public Dieta(Guid id, string nombre, Guid programaAtencionId)
+    public Dieta(Guid id, string nombre, Guid programaAtencionId) : base(id)
     {
         if (id == Guid.Empty)
         {
@@ -33,7 +30,6 @@ public class Dieta
             throw new ArgumentException("El Id del programa de atención no puede ser vacío.", nameof(programaAtencionId));
         }
 
-        Id = id;
         Nombre = nombre;
         ProgramaAtencionId = programaAtencionId;
     }
@@ -45,7 +41,6 @@ public class Dieta
             throw new ArgumentException("El Id del grupo nutricional es inválido.", nameof(grupoNutricionalId));
         }
 
-        // Evita duplicados: si ya existe, no hace nada
         if (_gruposNutricionales.Any(g => g.GrupoNutricionalId == grupoNutricionalId))
         {
             return;
@@ -61,7 +56,6 @@ public class Dieta
             throw new ArgumentException("El Id de la restricción es inválido.", nameof(restriccionAlimentariaId));
         }
 
-        // Evita duplicados: si ya existe, no lanza error ni agrega
         if (_restricciones.Any(r => r.RestriccionAlimentariaId == restriccionAlimentariaId))
         {
             return;

@@ -35,3 +35,4 @@ alternativas consideradas y las consecuencias que implica.
 | [003](ADR-003-nomencladores-catalog-entities.md) | Nomencladores como catalog entities con seed data | Aceptado |
 | [004](ADR-004-repository-unit-of-work.md) | Separación de `IRepository<T>` e `IUnitOfWork` | Aceptado |
 | [005](ADR-005-postgresql-mongodb-redis.md) | Tres motores de persistencia: PostgreSQL, MongoDB y Redis | Aceptado |
+| [006](ADR-006-resultado-nutricional-catalogo-cerrado.md) | `ResultadoNutricional` como entidad de catálogo cerrado | Aceptado |

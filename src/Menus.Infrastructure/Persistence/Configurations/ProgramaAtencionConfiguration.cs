@@ -19,5 +19,10 @@ internal sealed class ProgramaAtencionConfiguration : IEntityTypeConfiguration<P
             .IsRequired();
 
         builder.HasIndex(p => p.Nombre).IsUnique();
+
+        builder.HasData(
+            new ProgramaAtencion(new Guid("33333333-0000-0000-0000-000000000001"), "Nutrición Pediátrica"),
+            new ProgramaAtencion(new Guid("33333333-0000-0000-0000-000000000002"), "Oncología"),
+            new ProgramaAtencion(new Guid("33333333-0000-0000-0000-000000000003"), "Geriatría"));
     }
 }

@@ -22,8 +22,9 @@ internal sealed class ResultadoNutricionalConfiguration : IEntityTypeConfigurati
             .HasColumnName("valor")
             .IsRequired();
 
-        // Nombre y Valor únicos (R7-19); las cinco filas las siembra el #58 con ResultadoNutricional.Todos
         builder.HasIndex(r => r.Nombre).IsUnique();
         builder.HasIndex(r => r.Valor).IsUnique();
+
+        builder.HasData(ResultadoNutricional.Todos);
     }
 }

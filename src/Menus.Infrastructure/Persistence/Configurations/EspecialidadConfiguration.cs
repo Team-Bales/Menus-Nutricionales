@@ -19,5 +19,10 @@ internal sealed class EspecialidadConfiguration : IEntityTypeConfiguration<Espec
             .IsRequired();
 
         builder.HasIndex(e => e.Nombre).IsUnique();
+
+        builder.HasData(
+            new Especialidad(new Guid("44444444-0000-0000-0000-000000000001"), "Nutrición Clínica"),
+            new Especialidad(new Guid("44444444-0000-0000-0000-000000000002"), "Dietética Hospitalaria"),
+            new Especialidad(new Guid("44444444-0000-0000-0000-000000000003"), "Nutrición Deportiva"));
     }
 }

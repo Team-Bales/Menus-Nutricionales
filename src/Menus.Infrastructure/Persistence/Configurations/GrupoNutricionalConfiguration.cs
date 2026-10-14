@@ -19,5 +19,12 @@ internal sealed class GrupoNutricionalConfiguration : IEntityTypeConfiguration<G
             .IsRequired();
 
         builder.HasIndex(g => g.Nombre).IsUnique();
+
+        builder.HasData(
+            new GrupoNutricional(new Guid("11111111-0000-0000-0000-000000000001"), "Cereales"),
+            new GrupoNutricional(new Guid("11111111-0000-0000-0000-000000000002"), "Proteínas"),
+            new GrupoNutricional(new Guid("11111111-0000-0000-0000-000000000003"), "Lácteos"),
+            new GrupoNutricional(new Guid("11111111-0000-0000-0000-000000000004"), "Frutas"),
+            new GrupoNutricional(new Guid("11111111-0000-0000-0000-000000000005"), "Verduras"));
     }
 }

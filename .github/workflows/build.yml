@@ -72,7 +72,7 @@ jobs:
         run: cat coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
 
       - name: Comentar cobertura en PR
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         if: github.event_name == 'pull_request' && steps.check-coverage.outputs.exists == 'true'
         with:
           recreate: true

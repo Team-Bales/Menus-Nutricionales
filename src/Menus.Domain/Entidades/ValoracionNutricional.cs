@@ -26,7 +26,9 @@ public sealed class ValoracionNutricional : Entity<Guid>
         : base(id)
     {
         if (fechaValoracion.Kind != DateTimeKind.Utc)
+        {
             throw new ArgumentException("El instante de valoración debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValoracion));
+        }
 
         MenuId = menuId;
         PacienteId = pacienteId;

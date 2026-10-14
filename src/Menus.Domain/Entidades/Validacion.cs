@@ -5,6 +5,7 @@ namespace Menus.Domain.Entidades;
 /// <summary>
 /// Dictamen de un nutricionista sobre un menú.
 /// Cada nutricionista puede registrar una única validación por menú.
+/// Solo la crea <see cref="Menu.Validar"/>, que comprueba las reglas del dictamen.
 /// </summary>
 public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
 {
@@ -13,7 +14,7 @@ public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
     /// <param name="fechaValidacion">Fecha y hora en que se emite el dictamen.</param>
     /// <param name="aprobado">Indica si el menú fue aprobado.</param>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
-    public Validacion(
+    internal Validacion(
         Guid nutricionistaId,
         Guid menuId,
         DateTime fechaValidacion,

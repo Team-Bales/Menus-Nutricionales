@@ -210,6 +210,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <exception cref="InvalidOperationException">
     /// Si el nutricionista creó el menú o ya registró una validación para él.
     /// </exception>
+    /// <exception cref="ArgumentException">Si la fecha de validación no está en UTC.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Si la validación es anterior a la creación del menú.
     /// </exception>
@@ -227,6 +228,12 @@ public sealed class Menu : AggregateRoot<Guid>
         if (_validaciones.Any(v => v.NutricionistaId == nutricionistaId))
         {
             throw new InvalidOperationException($"El nutricionista {nutricionistaId} ya validó este menú.");
+        }
+
+        // Antes de comparar con FechaCreacion (UTC): una fecha local daría una comparación sin sentido.
+        if (fechaValidacion.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("El instante de validación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValidacion));
         }
 
         if (fechaValidacion < FechaCreacion)

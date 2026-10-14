@@ -27,6 +27,7 @@ public sealed class Menu : AggregateRoot<Guid>
     private readonly List<MenuDistribucion> _distribuciones = [];
     private readonly List<MenuGrupoNutricional> _gruposNutricionales = [];
     private readonly List<Asignacion> _asignaciones = [];
+    private readonly List<Validacion> _validaciones = [];
 
     /// <summary>
     /// Diferencia máxima admitida entre la suma de las proporciones y 1 (R7-28).
@@ -149,6 +150,9 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Pacientes a los que se asignó el menú (solo lectura).</summary>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
+    /// <summary>Validaciones registradas para el menú (solo lectura).</summary>
+    public IReadOnlyCollection<Validacion> Validaciones => _validaciones.AsReadOnly();
+
     /// <summary>Incluye un alimento en el menú (relación <c>Incluye(Menú, Alimento)</c>).</summary>
     /// <param name="alimentoId">Identificador del alimento.</param>
     /// <returns>La inclusión registrada.</returns>
@@ -195,6 +199,44 @@ public sealed class Menu : AggregateRoot<Guid>
         var asignacion = new Asignacion(Id, pacienteId);
         _asignaciones.Add(asignacion);
         return asignacion;
+    }
+
+    /// <summary>Registra el dictamen de un nutricionista sobre el menú.</summary>
+    /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
+    /// <param name="fechaValidacion">Fecha y hora en que se emite el dictamen.</param>
+    /// <param name="aprobado">Indica si el menú fue aprobado.</param>
+    /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
+    /// <returns>La validación registrada.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Si el nutricionista creó el menú o ya registró una validación para él.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Si la validación es anterior a la creación del menú.
+    /// </exception>
+    public Validacion Validar(
+        Guid nutricionistaId,
+        DateTime fechaValidacion,
+        bool aprobado,
+        string? observaciones = null)
+    {
+        if (nutricionistaId == NutricionistaCreadorId)
+        {
+            throw new InvalidOperationException("El nutricionista que creó el menú no puede validarlo.");
+        }
+
+        if (_validaciones.Any(v => v.NutricionistaId == nutricionistaId))
+        {
+            throw new InvalidOperationException($"El nutricionista {nutricionistaId} ya validó este menú.");
+        }
+
+        if (fechaValidacion < FechaCreacion)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fechaValidacion), "La fecha de validación no puede ser anterior a la creación del menú.");
+        }
+
+        var validacion = new Validacion(nutricionistaId, Id, fechaValidacion, aprobado, observaciones);
+        _validaciones.Add(validacion);
+        return validacion;
     }
 
     private void FijarDistribucion(IEnumerable<(TipoPreparacion TipoPreparacion, decimal Proporcion)> distribucion)

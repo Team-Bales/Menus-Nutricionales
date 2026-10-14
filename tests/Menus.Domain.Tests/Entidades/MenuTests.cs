@@ -52,6 +52,7 @@ public sealed class MenuTests
         Assert.Empty(menu.Alimentos);
         Assert.Empty(menu.Platos);
         Assert.Empty(menu.Asignaciones);
+        Assert.Empty(menu.Validaciones);
     }
 
     [Fact]
@@ -268,6 +269,89 @@ public sealed class MenuTests
     }
 
     [Fact]
+    public void Validar_ValidArgs_AgregaYRetornaValidacion()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        var nutricionistaRevisorId = Guid.NewGuid();
+        var fechaValidacion = _ahora;
+
+        var validacion = menu.Validar(nutricionistaRevisorId, fechaValidacion, true, "Correcto.");
+
+        Assert.Single(menu.Validaciones);
+        Assert.Equal(nutricionistaRevisorId, validacion.NutricionistaId);
+        Assert.Equal(menu.Id, validacion.MenuId);
+        Assert.Equal(fechaValidacion, validacion.FechaValidacion);
+        Assert.True(validacion.Aprobado);
+        Assert.Equal("Correcto.", validacion.Observaciones);
+    }
+
+    [Fact]
+    public void Validar_MismoRevisorDosVeces_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+        var nutricionistaRevisorId = Guid.NewGuid();
+        menu.Validar(nutricionistaRevisorId, _ahora, true);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            menu.Validar(nutricionistaRevisorId, _ahora.AddMinutes(1), false));
+    }
+
+    [Fact]
+    public void Validar_RevisoresDistintos_RegistraAmbasValidaciones()
+    {
+        var menu = CrearMenu();
+
+        menu.Validar(Guid.NewGuid(), _ahora, true);
+        menu.Validar(Guid.NewGuid(), _ahora.AddMinutes(1), false);
+
+        Assert.Equal(2, menu.Validaciones.Count);
+    }
+
+    [Fact]
+    public void Validar_CreadorDelMenu_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.Validar(_nutricionistaId, _ahora, true));
+    }
+
+    [Fact]
+    public void Validar_FechaAnteriorACreacion_LanzaArgumentOutOfRangeException()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            menu.Validar(Guid.NewGuid(), _ahora.AddMinutes(-1), true));
+    }
+
+    [Fact]
+    public void RegistrarConsumo_ValidArgs_AgregaYRetornaConsumo()
+    {
+        var menu = CrearMenu();
+        var asignacion = menu.AsignarPaciente(Guid.NewGuid());
+        var alimentoId = Guid.NewGuid();
+
+        var consumo = asignacion.RegistrarConsumo(alimentoId, true);
+
+        Assert.Single(asignacion.Consumos);
+        Assert.Equal(menu.Id, consumo.MenuId);
+        Assert.Equal(asignacion.PacienteId, consumo.PacienteId);
+        Assert.Equal(alimentoId, consumo.AlimentoId);
+        Assert.True(consumo.Aceptacion);
+    }
+
+    [Fact]
+    public void RegistrarConsumo_MismoAlimentoDosVeces_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+        var asignacion = menu.AsignarPaciente(Guid.NewGuid());
+        var alimentoId = Guid.NewGuid();
+        asignacion.RegistrarConsumo(alimentoId, true);
+
+        Assert.Throws<InvalidOperationException>(() => asignacion.RegistrarConsumo(alimentoId, false));
+    }
+
+    [Fact]
     public void Colecciones_SonDeSoloLectura()
     {
         var menu = CrearMenu();
@@ -277,6 +361,7 @@ public sealed class MenuTests
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuDistribucion>>(menu.Distribuciones);
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuGrupoNutricional>>(menu.GruposNutricionales);
         Assert.IsAssignableFrom<IReadOnlyCollection<Asignacion>>(menu.Asignaciones);
+        Assert.IsAssignableFrom<IReadOnlyCollection<Validacion>>(menu.Validaciones);
         Assert.False(menu.Distribuciones is ICollection<MenuDistribucion> { IsReadOnly: false });
         Assert.False(menu.GruposNutricionales is ICollection<MenuGrupoNutricional> { IsReadOnly: false });
     }

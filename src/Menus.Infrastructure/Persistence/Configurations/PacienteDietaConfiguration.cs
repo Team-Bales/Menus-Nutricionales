@@ -16,6 +16,9 @@ internal sealed class PacienteDietaConfiguration : IEntityTypeConfiguration<Paci
         builder.Property(pd => pd.PacienteId).HasColumnName("paciente_id");
         builder.Property(pd => pd.DietaId).HasColumnName("dieta_id");
 
-        // FK → Dieta se configura cuando esa entidad se incorpore (issue #51)
+        builder.HasOne<Dieta>()
+            .WithMany()
+            .HasForeignKey(pd => pd.DietaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

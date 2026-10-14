@@ -16,6 +16,9 @@ internal sealed class NutricionistasDietaConfiguration : IEntityTypeConfiguratio
         builder.Property(nd => nd.NutricionistaId).HasColumnName("nutricionista_id");
         builder.Property(nd => nd.DietaId).HasColumnName("dieta_id");
 
-        // FK → Dieta se configura cuando esa entidad se incorpore (issue #51)
+        builder.HasOne<Dieta>()
+            .WithMany()
+            .HasForeignKey(nd => nd.DietaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

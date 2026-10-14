@@ -1,5 +1,10 @@
 # Menús Nutricionales
 
+[![CI](https://github.com/Team-Bales/Menus-Nutricionales/actions/workflows/build.yml/badge.svg)](https://github.com/Team-Bales/Menus-Nutricionales/actions/workflows/build.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Team-Bales_Menus-Nutricionales&metric=alert_status)](https://sonarcloud.io/project/overview?id=Team-Bales_Menus-Nutricionales)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Team-Bales_Menus-Nutricionales&metric=coverage)](https://sonarcloud.io/project/overview?id=Team-Bales_Menus-Nutricionales)
+[![codecov](https://codecov.io/gh/Team-Bales/Menus-Nutricionales/branch/main/graph/badge.svg)](https://codecov.io/gh/Team-Bales/Menus-Nutricionales)
+
 Sistema web para la gestión de la generación automática de menús nutricionales en una institución de salud — administra alimentos y platos, dietas, nutricionistas, pacientes, y el flujo de generación, validación y valoración de menús.
 
 Proyecto conjunto de las asignaturas **Bases de Datos II** e **Ingeniería de Software**, Quinto Semestre, Ciencias de la Computación — Curso 2026-2027.

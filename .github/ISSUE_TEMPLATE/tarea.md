@@ -5,12 +5,16 @@ title: ''
 labels: ''
 ---
 
-## Descripción
+## Objetivo
 
-## Criterio de aceptación
+## Documento de planificación que lo justifica
+<!-- ADR, docs/consultas/*.md, docs/informe.md (sección X), submodelo relacional, Glosario, etc. -->
+
+## Criterios de aceptación
 - [ ]
 
-## Línea(s) del enunciado a la que responde
+## Dependencias
+<!-- Issues previos que deben estar cerrados (opcional) -->
 
 ## Definition of Done
 - [ ] Tests en verde

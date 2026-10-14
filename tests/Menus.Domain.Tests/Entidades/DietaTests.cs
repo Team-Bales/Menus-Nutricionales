@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -29,16 +30,29 @@ public sealed class DietaTests
     }
 
     [Fact]
-    public void AgregarGrupo_NuevoGrupo_AgregaYRetorna()
+    public void AgregarGrupo_NuevoGrupoRequerido_AgregaYRetorna()
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         var grupoId = Guid.NewGuid();
 
-        var resultado = dieta.AgregarGrupo(grupoId);
+        var resultado = dieta.AgregarGrupo(grupoId, TipoCobertura.Requerido);
 
         Assert.Single(dieta.GruposNutricionales);
         Assert.Equal(dieta.Id, resultado.DietaId);
         Assert.Equal(grupoId, resultado.GrupoNutricionalId);
+        Assert.Equal(TipoCobertura.Requerido, resultado.Tipo);
+    }
+
+    [Fact]
+    public void AgregarGrupo_NuevoGrupoRestringido_AgregaYRetorna()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Lactosa", _programaId);
+        var grupoId = Guid.NewGuid();
+
+        var resultado = dieta.AgregarGrupo(grupoId, TipoCobertura.Restringido);
+
+        Assert.Single(dieta.GruposNutricionales);
+        Assert.Equal(TipoCobertura.Restringido, resultado.Tipo);
     }
 
     [Fact]
@@ -46,9 +60,9 @@ public sealed class DietaTests
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         var grupoId = Guid.NewGuid();
-        dieta.AgregarGrupo(grupoId);
+        dieta.AgregarGrupo(grupoId, TipoCobertura.Requerido);
 
-        Assert.Throws<InvalidOperationException>(() => dieta.AgregarGrupo(grupoId));
+        Assert.Throws<InvalidOperationException>(() => dieta.AgregarGrupo(grupoId, TipoCobertura.Restringido));
     }
 
     [Fact]
@@ -56,9 +70,9 @@ public sealed class DietaTests
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
 
-        dieta.AgregarGrupo(Guid.NewGuid());
-        dieta.AgregarGrupo(Guid.NewGuid());
-        dieta.AgregarGrupo(Guid.NewGuid());
+        dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
+        dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
+        dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Restringido);
 
         Assert.Equal(3, dieta.GruposNutricionales.Count);
     }

@@ -29,10 +29,10 @@ internal sealed class PacienteConfiguration : IEntityTypeConfiguration<Paciente>
             .HasForeignKey(p => p.SalaId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Inscribe: Paciente → PacienteDieta (Cascade: si se elimina el paciente, se eliminan sus inscripciones)
+        // Inscribe: Paciente → PacienteDieta (Restrict: no se elimina un paciente con inscripciones, R11-02)
         builder.HasMany(p => p.Dietas)
             .WithOne()
             .HasForeignKey(pd => pd.PacienteId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

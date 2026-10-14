@@ -36,7 +36,7 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(m => m.NutricionistaCreadorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Cascade a todas las colecciones del agregado (RX-02)
+        // Cascade solo a la parametrización del menú: Incluye, Distribución y Cubre (R11-02)
         builder.HasMany(m => m.Alimentos)
             .WithOne()
             .HasForeignKey(ma => ma.MenuId)
@@ -57,9 +57,15 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(mg => mg.MenuId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Restrict: no se elimina un menú asignado o validado (R7-14, R11-02)
         builder.HasMany(m => m.Asignaciones)
             .WithOne()
             .HasForeignKey(a => a.MenuId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(m => m.Validaciones)
+            .WithOne()
+            .HasForeignKey(v => v.MenuId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -20,5 +20,11 @@ internal sealed class AsignacionConfiguration : IEntityTypeConfiguration<Asignac
             .WithMany()
             .HasForeignKey(a => a.PacienteId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // FK compuesta (menu_id, paciente_id) desde Consumo (R7-11); no se elimina una asignación con consumos (R7-14)
+        builder.HasMany(a => a.Consumos)
+            .WithOne()
+            .HasForeignKey(c => new { c.MenuId, c.PacienteId })
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

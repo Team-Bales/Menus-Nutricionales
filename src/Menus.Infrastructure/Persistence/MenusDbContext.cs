@@ -11,6 +11,7 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     public DbSet<RestriccionAlimentaria> RestriccionesAlimentarias => Set<RestriccionAlimentaria>();
     public DbSet<ProgramaAtencion> ProgramasAtencion => Set<ProgramaAtencion>();
     public DbSet<Especialidad> Especialidades => Set<Especialidad>();
+    public DbSet<ResultadoNutricional> ResultadosNutricionales => Set<ResultadoNutricional>();
 
     public DbSet<Sala> Salas => Set<Sala>();
     public DbSet<Nutricionista> Nutricionistas => Set<Nutricionista>();
@@ -29,6 +30,11 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     public DbSet<MenuDistribucion> MenuDistribuciones => Set<MenuDistribucion>();
     public DbSet<MenuGrupoNutricional> MenuGruposNutricionales => Set<MenuGrupoNutricional>();
     public DbSet<Asignacion> Asignaciones => Set<Asignacion>();
+    public DbSet<Validacion> Validaciones => Set<Validacion>();
+    public DbSet<Consumo> Consumos => Set<Consumo>();
+
+    public DbSet<ValoracionNutricional> ValoracionesNutricionales => Set<ValoracionNutricional>();
+    public DbSet<Revalorizacion> Revalorizaciones => Set<Revalorizacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(MenusDbContext).Assembly);

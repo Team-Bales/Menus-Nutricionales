@@ -21,6 +21,11 @@ public sealed class Revalorizacion : Entity<Guid>
         Guid valoracionRevisadaId)
         : base(id)
     {
+        if (fechaSolicitud.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("El instante de solicitud debe estar en UTC (DateTimeKind.Utc).", nameof(fechaSolicitud));
+        }
+
         FechaSolicitud = fechaSolicitud;
         PacienteId = pacienteId;
         NutricionistaId = nutricionistaId;

@@ -23,6 +23,17 @@ public sealed class RevalorizacionTests
         Assert.Null(revalorizacion.ValoracionGeneradaId);
     }
 
+    [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void Constructor_FechaSolicitudNoUtc_ThrowsArgumentException(DateTimeKind kind)
+    {
+        var fecha = DateTime.SpecifyKind(DateTime.UtcNow, kind);
+
+        Assert.Throws<ArgumentException>(() =>
+            new Revalorizacion(Guid.NewGuid(), fecha, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()));
+    }
+
     [Fact]
     public void RegistrarValoracionGenerada_SetsGeneratedValoracion()
     {

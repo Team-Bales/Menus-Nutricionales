@@ -31,6 +31,17 @@ public sealed class ValidacionTests
         Assert.Equal("Ajustar la distribución.", validacion.Observaciones);
     }
 
+    [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void Constructor_FechaValidacionNoUtc_ThrowsArgumentException(DateTimeKind kind)
+    {
+        var fecha = DateTime.SpecifyKind(DateTime.UtcNow, kind);
+
+        Assert.Throws<ArgumentException>(() =>
+            new Validacion(Guid.NewGuid(), Guid.NewGuid(), fecha, true));
+    }
+
     [Fact]
     public void Equality_SameCompositeKey_ReturnsTrue()
     {
@@ -41,5 +52,16 @@ public sealed class ValidacionTests
         var segunda = new Validacion(nutricionistaId, menuId, DateTime.UtcNow.AddMinutes(1), false);
 
         Assert.Equal(primera, segunda);
+    }
+
+    [Fact]
+    public void Equality_DifferentCompositeKey_ReturnsFalse()
+    {
+        var nutricionistaId = Guid.NewGuid();
+
+        var primera = new Validacion(nutricionistaId, Guid.NewGuid(), DateTime.UtcNow, true);
+        var segunda = new Validacion(nutricionistaId, Guid.NewGuid(), DateTime.UtcNow, true);
+
+        Assert.NotEqual(primera, segunda);
     }
 }

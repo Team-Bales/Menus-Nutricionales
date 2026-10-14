@@ -21,6 +21,11 @@ public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
         string? observaciones = null)
         : base((nutricionistaId, menuId))
     {
+        if (fechaValidacion.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("El instante de validación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValidacion));
+        }
+
         FechaValidacion = fechaValidacion;
         Aprobado = aprobado;
         Observaciones = observaciones;

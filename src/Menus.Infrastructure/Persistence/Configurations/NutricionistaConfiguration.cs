@@ -26,10 +26,10 @@ internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutr
             .HasForeignKey(n => n.EspecialidadId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Autoriza: Nutricionista → NutricionistasDieta (Cascade: si se elimina el nutricionista, se eliminan sus autorizaciones)
+        // Autoriza: Nutricionista → NutricionistasDieta (Restrict: no se elimina un nutricionista con autorizaciones, R11-02)
         builder.HasMany(n => n.DietasAutorizadas)
             .WithOne()
             .HasForeignKey(nd => nd.NutricionistaId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

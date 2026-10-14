@@ -13,8 +13,10 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// agregado (R7-04, R7-05, R7-06, R7-07, R7-25) se comprueban sobre esas colecciones.
 /// <see cref="Validacion"/> y <see cref="Consumo"/> no tienen repositorio propio: son agregaciones sin
 /// identidad propia (MERX, §0.2) y se guardan junto con el menú.
-/// El estado de un menú no se almacena: es final si su validación más reciente está aprobada,
-/// y está pendiente mientras no tenga ninguna validación (submodelo #7, §4).
+/// El estado de un menú no se almacena, se deriva de sus validaciones: es final si su validación más
+/// reciente está aprobada (submodelo #7, §4; consulta 2, §7-A). El MERX no define «pendiente»; aquí es
+/// el menú sin ninguna validación, porque un menú rechazado no vuelve a revisarse: se confecciona otro
+/// (submodelo #7, §2.1, convención de R7-04).
 /// </remarks>
 public interface IMenuRepository : IRepository<Menu, Guid>
 {
@@ -44,7 +46,9 @@ public interface IMenuRepository : IRepository<Menu, Guid>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);
 
-    /// <summary>Devuelve los menús de una dieta que todavía no tienen ninguna validación registrada.</summary>
+    /// <summary>
+    /// Devuelve los menús pendientes de una dieta: los que todavía no tienen ninguna validación registrada.
+    /// </summary>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Menu>> GetPendientesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);

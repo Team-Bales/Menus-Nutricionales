@@ -13,8 +13,12 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).HasColumnName("id");
 
-        // FK → Dieta se configura cuando esa entidad se incorpore (issue #51)
         builder.Property(m => m.DietaId).HasColumnName("dieta_id");
+
+        builder.HasOne<Dieta>()
+            .WithMany()
+            .HasForeignKey(m => m.DietaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(m => m.NutricionistaCreadorId).HasColumnName("nutricionista_creador_id");
 

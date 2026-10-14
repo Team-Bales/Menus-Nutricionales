@@ -18,6 +18,7 @@ public sealed class GrupoNutricionalTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("\t\n")]
     public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
     {
         Assert.Throws<ArgumentException>(() => new GrupoNutricional(Guid.NewGuid(), nombre));

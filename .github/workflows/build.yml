@@ -60,7 +60,7 @@ jobs:
           fi
 
       - name: Generar reporte de cobertura
-        uses: danielpalme/ReportGenerator-GitHub-Action@5.2.4
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.11
         if: steps.check-coverage.outputs.exists == 'true'
         with:
           reports: "coverage/**/coverage.opencover.xml"

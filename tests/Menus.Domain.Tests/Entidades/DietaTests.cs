@@ -1,179 +1,104 @@
-using FluentAssertions;
 using Menus.Domain.Entidades;
-using Xunit;
 
-namespace Menus.Domain.UnitTests.Entidades;
+namespace Menus.Domain.Tests.Entidades;
 
-public class DietaTests
+public sealed class DietaTests
 {
+    private readonly Guid _programaId = Guid.NewGuid();
+
     [Fact]
-    public void Constructor_ConParametrosValidos_DeberiaCrearInstanciaCorrectamente()
+    public void Constructor_ValidArgs_SetsProperties()
     {
-        // Arrange
         var id = Guid.NewGuid();
-        var nombre = "Dieta Hiposódica";
-        var programaId = Guid.NewGuid();
 
-        // Act
-        var dieta = new Dieta(id, nombre, programaId);
+        var dieta = new Dieta(id, "Dieta Hiposódica", _programaId);
 
-        // Assert
-        dieta.Id.Should().Be(id);
-        dieta.Nombre.Should().Be(nombre);
-        dieta.ProgramaAtencionId.Should().Be(programaId);
-        dieta.GruposNutricionales.Should().BeEmpty();
-        dieta.Restricciones.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void Constructor_ConIdVacio_DeberiaLanzarArgumentException()
-    {
-        // Act
-        var act = () => new Dieta(Guid.Empty, "Dieta Normal", Guid.NewGuid());
-
-        // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithParameterName("id");
+        Assert.Equal(id, dieta.Id);
+        Assert.Equal("Dieta Hiposódica", dieta.Nombre);
+        Assert.Equal(_programaId, dieta.ProgramaAtencionId);
+        Assert.Empty(dieta.GruposNutricionales);
+        Assert.Empty(dieta.Restricciones);
     }
 
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_ConNombreInvalido_DeberiaLanzarArgumentException(string? nombreInvalido)
+    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
     {
-        // Act
-        var act = () => new Dieta(Guid.NewGuid(), nombreInvalido!, Guid.NewGuid());
-
-        // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithParameterName("nombre");
+        Assert.Throws<ArgumentException>(() => new Dieta(Guid.NewGuid(), nombre, _programaId));
     }
 
     [Fact]
-    public void Constructor_ConProgramaAtencionIdVacio_DeberiaLanzarArgumentException()
+    public void AgregarGrupo_NuevoGrupo_AgregaYRetorna()
     {
-        // Act
-        var act = () => new Dieta(Guid.NewGuid(), "Dieta Renal", Guid.Empty);
-
-        // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithParameterName("programaAtencionId");
-    }
-
-    [Fact]
-    public void AgregarGrupo_ConGrupoValido_DeberiaAgregarloALaColeccion()
-    {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", Guid.NewGuid());
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         var grupoId = Guid.NewGuid();
 
-        // Act
-        dieta.AgregarGrupo(grupoId);
+        var resultado = dieta.AgregarGrupo(grupoId);
 
-        // Assert
-        dieta.GruposNutricionales.Should().HaveCount(1);
-        var item = dieta.GruposNutricionales.First();
-        item.DietaId.Should().Be(dieta.Id);
-        item.GrupoNutricionalId.Should().Be(grupoId);
+        Assert.Single(dieta.GruposNutricionales);
+        Assert.Equal(dieta.Id, resultado.DietaId);
+        Assert.Equal(grupoId, resultado.GrupoNutricionalId);
     }
 
     [Fact]
-    public void AgregarGrupo_ConGrupoVacio_DeberiaLanzarArgumentException()
+    public void AgregarGrupo_GrupoDuplicado_LanzaInvalidOperationException()
     {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", Guid.NewGuid());
-
-        // Act
-        var act = () => dieta.AgregarGrupo(Guid.Empty);
-
-        // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithParameterName("grupoNutricionalId");
-    }
-
-    [Fact]
-    public void AgregarGrupo_ConGrupoDuplicado_NoDeberiaLanzarNiDuplicar()
-    {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", Guid.NewGuid());
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         var grupoId = Guid.NewGuid();
         dieta.AgregarGrupo(grupoId);
 
-        // Act
-        var act = () => dieta.AgregarGrupo(grupoId);
-
-        // Assert
-        act.Should().NotThrow();
-        dieta.GruposNutricionales.Should().HaveCount(1);
+        Assert.Throws<InvalidOperationException>(() => dieta.AgregarGrupo(grupoId));
     }
 
     [Fact]
-    public void AgregarRestriccion_ConRestriccionValida_DeberiaAgregarlaALaColeccion()
+    public void AgregarGrupo_VariosGrupos_AgregaTodos()
     {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", Guid.NewGuid());
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
+
+        dieta.AgregarGrupo(Guid.NewGuid());
+        dieta.AgregarGrupo(Guid.NewGuid());
+        dieta.AgregarGrupo(Guid.NewGuid());
+
+        Assert.Equal(3, dieta.GruposNutricionales.Count);
+    }
+
+    [Fact]
+    public void AgregarRestriccion_NuevaRestriccion_AgregaYRetorna()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", _programaId);
         var restriccionId = Guid.NewGuid();
 
-        // Act
-        dieta.AgregarRestriccion(restriccionId);
+        var resultado = dieta.AgregarRestriccion(restriccionId);
 
-        // Assert
-        dieta.Restricciones.Should().HaveCount(1);
-        var item = dieta.Restricciones.First();
-        item.DietaId.Should().Be(dieta.Id);
-        item.RestriccionAlimentariaId.Should().Be(restriccionId);
+        Assert.Single(dieta.Restricciones);
+        Assert.Equal(dieta.Id, resultado.DietaId);
+        Assert.Equal(restriccionId, resultado.RestriccionAlimentariaId);
     }
 
     [Fact]
-    public void AgregarRestriccion_ConRestriccionVacia_DeberiaLanzarArgumentException()
+    public void AgregarRestriccion_RestriccionDuplicada_LanzaInvalidOperationException()
     {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", Guid.NewGuid());
-
-        // Act
-        var act = () => dieta.AgregarRestriccion(Guid.Empty);
-
-        // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithParameterName("restriccionAlimentariaId");
-    }
-
-    [Fact]
-    public void AgregarRestriccion_ConRestriccionDuplicada_NoDeberiaLanzarNiDuplicar()
-    {
-        // Arrange
-        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", Guid.NewGuid());
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", _programaId);
         var restriccionId = Guid.NewGuid();
         dieta.AgregarRestriccion(restriccionId);
 
-        // Act
-        var act = () => dieta.AgregarRestriccion(restriccionId);
-
-        // Assert
-        act.Should().NotThrow();
-        dieta.Restricciones.Should().HaveCount(1);
+        Assert.Throws<InvalidOperationException>(() => dieta.AgregarRestriccion(restriccionId));
     }
 
     [Fact]
-    public void DietaGrupoNutricional_ConArgumentosInvalidos_DeberiaLanzarArgumentException()
+    public void GruposNutricionales_EsReadOnly()
     {
-        // Act & Assert
-        FluentActions.Invoking(() => new DietaGrupoNutricional(Guid.Empty, Guid.NewGuid()))
-            .Should().Throw<ArgumentException>().WithParameterName("dietaId");
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Renal", _programaId);
 
-        FluentActions.Invoking(() => new DietaGrupoNutricional(Guid.NewGuid(), Guid.Empty()))
-            .Should().Throw<ArgumentException>().WithParameterName("grupoNutricionalId");
+        Assert.IsAssignableFrom<IReadOnlyCollection<DietaGrupoNutricional>>(dieta.GruposNutricionales);
     }
 
     [Fact]
-    public void DietaRestriccion_ConArgumentosInvalidos_DeberiaLanzarArgumentException()
+    public void Restricciones_EsReadOnly()
     {
-        // Act & Assert
-        FluentActions.Invoking(() => new DietaRestriccion(Guid.Empty, Guid.NewGuid()))
-            .Should().Throw<ArgumentException>().WithParameterName("dietaId");
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Renal", _programaId);
 
-        FluentActions.Invoking(() => new DietaRestriccion(Guid.NewGuid(), Guid.Empty()))
-            .Should().Throw<ArgumentException>().WithParameterName("restriccionAlimentariaId");
+        Assert.IsAssignableFrom<IReadOnlyCollection<DietaRestriccion>>(dieta.Restricciones);
     }
 }

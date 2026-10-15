@@ -1,5 +1,4 @@
 using Menus.Domain.Abstractions;
-using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
 
@@ -72,7 +71,7 @@ public sealed class Menu : AggregateRoot<Guid>
         DateTime fechaCreacion,
         int cantidadTotalAlimentos,
         bool esAutomatico,
-        IEnumerable<(TipoPreparacion TipoPreparacion, decimal Proporcion)> distribucion,
+        IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion,
         IEnumerable<Guid> gruposNutricionalesIds)
         : this(id, dietaId, nutricionistaCreadorId, fechaCreacion, cantidadTotalAlimentos, esAutomatico)
     {
@@ -246,16 +245,16 @@ public sealed class Menu : AggregateRoot<Guid>
         return validacion;
     }
 
-    private void FijarDistribucion(IEnumerable<(TipoPreparacion TipoPreparacion, decimal Proporcion)> distribucion)
+    private void FijarDistribucion(IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion)
     {
-        foreach (var (tipoPreparacion, proporcion) in distribucion)
+        foreach (var (tipoPreparacionId, proporcion) in distribucion)
         {
-            if (_distribuciones.Any(d => d.TipoPreparacion == tipoPreparacion))
+            if (_distribuciones.Any(d => d.TipoPreparacionId == tipoPreparacionId))
             {
-                throw new ArgumentException($"El tipo de preparación {tipoPreparacion} aparece más de una vez en la distribución.", nameof(distribucion));
+                throw new ArgumentException($"El tipo de preparación {tipoPreparacionId} aparece más de una vez en la distribución.", nameof(distribucion));
             }
 
-            _distribuciones.Add(new MenuDistribucion(Id, tipoPreparacion, proporcion));
+            _distribuciones.Add(new MenuDistribucion(Id, tipoPreparacionId, proporcion));
         }
 
         if (_distribuciones.Count == 0)

@@ -12,6 +12,8 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     public DbSet<ProgramaAtencion> ProgramasAtencion => Set<ProgramaAtencion>();
     public DbSet<Especialidad> Especialidades => Set<Especialidad>();
     public DbSet<ResultadoNutricional> ResultadosNutricionales => Set<ResultadoNutricional>();
+    public DbSet<TipoPreparacion> TiposPreparacion => Set<TipoPreparacion>();
+    public DbSet<NivelCalorico> NivelesCaloricos => Set<NivelCalorico>();
 
     public DbSet<Dieta> Dietas => Set<Dieta>();
     public DbSet<DietaGrupoNutricional> DietasGruposNutricionales => Set<DietaGrupoNutricional>();

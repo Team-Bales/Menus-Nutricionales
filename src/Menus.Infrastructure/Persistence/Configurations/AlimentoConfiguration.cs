@@ -22,21 +22,25 @@ internal sealed class AlimentoConfiguration : IEntityTypeConfiguration<Alimento>
 
         builder.Property(a => a.GrupoNutricionalId).HasColumnName("grupo_nutricional_id");
 
-        builder.Property(a => a.TipoPreparacion)
-            .HasColumnName("tipo_preparacion")
-            .HasConversion<string>()
-            .IsRequired();
+        builder.Property(a => a.TipoPreparacionId).HasColumnName("tipo_preparacion_id");
 
-        builder.Property(a => a.NivelCalorico)
-            .HasColumnName("nivel_calorico")
-            .HasConversion<string>()
-            .IsRequired();
+        builder.Property(a => a.NivelCaloricoId).HasColumnName("nivel_calorico_id");
 
         builder.Property(a => a.NutricionistaId).HasColumnName("nutricionista_id");
 
         builder.HasOne<GrupoNutricional>()
             .WithMany()
             .HasForeignKey(a => a.GrupoNutricionalId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<TipoPreparacion>()
+            .WithMany()
+            .HasForeignKey(a => a.TipoPreparacionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<NivelCalorico>()
+            .WithMany()
+            .HasForeignKey(a => a.NivelCaloricoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Nutricionista>()

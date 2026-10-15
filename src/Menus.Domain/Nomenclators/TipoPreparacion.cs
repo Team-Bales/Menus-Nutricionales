@@ -1,21 +1,29 @@
+using Menus.Domain.Abstractions;
+
 namespace Menus.Domain.Nomenclators;
 
 /// <summary>
 /// Clasificación del tipo de preparación de un alimento o plato dentro de un menú.
-/// Determina en qué parte de la comida se sirve y se usa como criterio de
-/// distribución durante la generación automática de menús.
+/// Catálogo cerrado: exactamente cuatro categorías con identificadores fijos (R4).
 /// </summary>
-public enum TipoPreparacion
+public sealed class TipoPreparacion : Entity<Guid>
 {
-    /// <summary>Plato servido al inicio de la comida (aperitivo, sopa, ensalada).</summary>
-    Entrante,
+    public static readonly TipoPreparacion Entrante =
+        new(new Guid("55555555-0000-0000-0000-000000000001"), "Entrante");
 
-    /// <summary>Plato principal de la comida, de mayor aporte calórico.</summary>
-    PlatoFuerte,
+    public static readonly TipoPreparacion PlatoFuerte =
+        new(new Guid("55555555-0000-0000-0000-000000000002"), "Plato fuerte");
 
-    /// <summary>Plato dulce o fruta servido al final de la comida.</summary>
-    Postre,
+    public static readonly TipoPreparacion Postre =
+        new(new Guid("55555555-0000-0000-0000-000000000003"), "Postre");
 
-    /// <summary>Líquido que acompaña la comida (agua, jugo, infusión).</summary>
-    Bebida,
+    public static readonly TipoPreparacion Bebida =
+        new(new Guid("55555555-0000-0000-0000-000000000004"), "Bebida");
+
+    public static IReadOnlyList<TipoPreparacion> Todos { get; } =
+        [Entrante, PlatoFuerte, Postre, Bebida];
+
+    private TipoPreparacion(Guid id, string nombre) : base(id) => Nombre = nombre;
+
+    public string Nombre { get; }
 }

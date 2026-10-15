@@ -1,19 +1,25 @@
+using Menus.Domain.Abstractions;
+
 namespace Menus.Domain.Nomenclators;
 
 /// <summary>
 /// Clasificación del aporte calórico de un alimento o plato.
-/// El nutricionista asigna este nivel al registrar el alimento en el sistema.
-/// Se utiliza como criterio de equilibrio durante la generación automática de menús
-/// y como dimensión de análisis en los reportes de desempeño nutricional.
+/// Catálogo cerrado: exactamente tres categorías con identificadores fijos (R5).
 /// </summary>
-public enum NivelCalorico
+public sealed class NivelCalorico : Entity<Guid>
 {
-    /// <summary>Aporte calórico reducido (menos de 100 kcal por porción estándar).</summary>
-    Bajo,
+    public static readonly NivelCalorico Bajo =
+        new(new Guid("66666666-0000-0000-0000-000000000001"), "Bajo");
 
-    /// <summary>Aporte calórico moderado (entre 100 y 300 kcal por porción estándar).</summary>
-    Medio,
+    public static readonly NivelCalorico Medio =
+        new(new Guid("66666666-0000-0000-0000-000000000002"), "Medio");
 
-    /// <summary>Aporte calórico elevado (más de 300 kcal por porción estándar).</summary>
-    Alto,
+    public static readonly NivelCalorico Alto =
+        new(new Guid("66666666-0000-0000-0000-000000000003"), "Alto");
+
+    public static IReadOnlyList<NivelCalorico> Todos { get; } = [Bajo, Medio, Alto];
+
+    private NivelCalorico(Guid id, string nombre) : base(id) => Nombre = nombre;
+
+    public string Nombre { get; }
 }

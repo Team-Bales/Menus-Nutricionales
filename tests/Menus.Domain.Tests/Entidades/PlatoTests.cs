@@ -15,13 +15,13 @@ public sealed class PlatoTests
     {
         var id = Guid.NewGuid();
 
-        var plato = new Plato(id, "Ensalada César", _grupoId, TipoPreparacion.Entrante, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(id, "Ensalada César", _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         Assert.Equal(id, plato.Id);
         Assert.Equal("Ensalada César", plato.Nombre);
         Assert.Equal(_grupoId, plato.GrupoNutricionalId);
-        Assert.Equal(TipoPreparacion.Entrante, plato.TipoPreparacion);
-        Assert.Equal(NivelCalorico.Medio, plato.NivelCalorico);
+        Assert.Equal(TipoPreparacion.Entrante.Id, plato.TipoPreparacionId);
+        Assert.Equal(NivelCalorico.Medio.Id, plato.NivelCaloricoId);
         Assert.Equal(_nutricionistaId, plato.NutricionistaId);
         Assert.Empty(plato.Ingredientes);
     }
@@ -31,13 +31,13 @@ public sealed class PlatoTests
     [InlineData("   ")]
     public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Alto, _nutricionistaId));
+        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Alto.Id, _nutricionistaId));
     }
 
     [Fact]
     public void AgregarIngrediente_ValidArgs_AgregaYRetornaIngrediente()
     {
-        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         var ingrediente = plato.AgregarIngrediente(_alimentoId1, 150m);
 
@@ -53,7 +53,7 @@ public sealed class PlatoTests
     [InlineData(-0.5)]
     public void AgregarIngrediente_CantidadNoPositiva_LanzaArgumentOutOfRangeException(decimal cantidad)
     {
-        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => plato.AgregarIngrediente(_alimentoId1, cantidad));
     }
@@ -61,7 +61,7 @@ public sealed class PlatoTests
     [Fact]
     public void AgregarIngrediente_AlimentoDuplicado_LanzaInvalidOperationException()
     {
-        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         plato.AgregarIngrediente(_alimentoId1, 100m);
 
@@ -71,7 +71,7 @@ public sealed class PlatoTests
     [Fact]
     public void AgregarIngrediente_MultiplesIngredientes_TodosPresentes()
     {
-        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         plato.AgregarIngrediente(_alimentoId1, 100m);
         plato.AgregarIngrediente(_alimentoId2, 200m);
@@ -84,7 +84,7 @@ public sealed class PlatoTests
     [Fact]
     public void Ingredientes_ReturnsReadOnlyCollection_NoPermiteModificacionExterna()
     {
-        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte, NivelCalorico.Medio, _nutricionistaId);
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         var collection = plato.Ingredientes;
 

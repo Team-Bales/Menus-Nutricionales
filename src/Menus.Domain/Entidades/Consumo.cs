@@ -5,6 +5,7 @@ namespace Menus.Domain.Entidades;
 /// <summary>
 /// Registra la aceptación o el rechazo de un alimento por un paciente ante un menú asignado.
 /// La identidad de un consumo está determinada por el menú, el paciente y el alimento.
+/// Solo lo crea <see cref="Asignacion.RegistrarConsumo"/>.
 /// </summary>
 public sealed class Consumo : Entity<(Guid MenuId, Guid PacienteId, Guid AlimentoId)>
 {
@@ -12,7 +13,7 @@ public sealed class Consumo : Entity<(Guid MenuId, Guid PacienteId, Guid Aliment
     /// <param name="pacienteId">Identificador del paciente que registra el consumo.</param>
     /// <param name="alimentoId">Identificador del alimento consumido.</param>
     /// <param name="aceptacion"><see langword="true"/> si el alimento fue aceptado; de lo contrario, <see langword="false"/>.</param>
-    public Consumo(Guid menuId, Guid pacienteId, Guid alimentoId, bool aceptacion)
+    internal Consumo(Guid menuId, Guid pacienteId, Guid alimentoId, bool aceptacion)
         : base((menuId, pacienteId, alimentoId))
     {
         Aceptacion = aceptacion;

@@ -1,45 +1,63 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
 
 public sealed class ConsumoTests
 {
+    private readonly Guid _menuId = Guid.NewGuid();
+    private readonly Guid _pacienteId = Guid.NewGuid();
+    private readonly Guid _alimentoId = Guid.NewGuid();
+
+    // Consumo solo se crea a través de Asignacion.RegistrarConsumo; dos instancias de Menu con el
+    // mismo Id representan el mismo menú leído dos veces.
+    private Asignacion CrearAsignacion() =>
+        new Menu(
+            _menuId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            DateTime.UtcNow.AddDays(-1),
+            4,
+            false,
+            [(TipoPreparacion.PlatoFuerte, 1m)],
+            [Guid.NewGuid()])
+        .AsignarPaciente(_pacienteId);
+
     [Fact]
-    public void Constructor_ValidArgs_SetsProperties()
+    public void RegistrarConsumo_ValidArgs_TomaLaClaveDeLaAsignacion()
     {
-        var menuId = Guid.NewGuid();
-        var pacienteId = Guid.NewGuid();
-        var alimentoId = Guid.NewGuid();
+        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
 
-        var consumo = new Consumo(menuId, pacienteId, alimentoId, true);
-
-        Assert.Equal(menuId, consumo.MenuId);
-        Assert.Equal(pacienteId, consumo.PacienteId);
-        Assert.Equal(alimentoId, consumo.AlimentoId);
+        Assert.Equal(_menuId, consumo.MenuId);
+        Assert.Equal(_pacienteId, consumo.PacienteId);
+        Assert.Equal(_alimentoId, consumo.AlimentoId);
         Assert.True(consumo.Aceptacion);
     }
 
     [Fact]
-    public void Equality_SameCompositeKey_ReturnsTrue()
+    public void RegistrarConsumo_Rechazo_GuardaAceptacionFalsa()
     {
-        var menuId = Guid.NewGuid();
-        var pacienteId = Guid.NewGuid();
-        var alimentoId = Guid.NewGuid();
+        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
 
-        var aceptado = new Consumo(menuId, pacienteId, alimentoId, true);
-        var rechazado = new Consumo(menuId, pacienteId, alimentoId, false);
+        Assert.False(consumo.Aceptacion);
+    }
+
+    [Fact]
+    public void Equality_MismaClaveCompuesta_SonIguales()
+    {
+        var aceptado = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
+        var rechazado = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
 
         Assert.Equal(aceptado, rechazado);
     }
 
     [Fact]
-    public void Equality_DifferentAlimentoId_ReturnsFalse()
+    public void Equality_DistintoAlimento_NoSonIguales()
     {
-        var menuId = Guid.NewGuid();
-        var pacienteId = Guid.NewGuid();
+        var asignacion = CrearAsignacion();
 
-        var primero = new Consumo(menuId, pacienteId, Guid.NewGuid(), true);
-        var segundo = new Consumo(menuId, pacienteId, Guid.NewGuid(), true);
+        var primero = asignacion.RegistrarConsumo(Guid.NewGuid(), true);
+        var segundo = asignacion.RegistrarConsumo(Guid.NewGuid(), true);
 
         Assert.NotEqual(primero, segundo);
     }

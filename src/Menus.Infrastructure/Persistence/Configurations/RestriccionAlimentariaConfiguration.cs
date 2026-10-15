@@ -19,5 +19,12 @@ internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfigura
             .IsRequired();
 
         builder.HasIndex(r => r.Nombre).IsUnique();
+
+        builder.HasData(
+            new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000001"), "Sin gluten"),
+            new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000002"), "Hiposódica"),
+            new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000003"), "Sin lactosa"),
+            new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000004"), "Vegetariana"),
+            new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000005"), "Vegana"));
     }
 }

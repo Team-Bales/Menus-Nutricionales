@@ -19,7 +19,7 @@ public sealed class ValidacionTests
             _creacion,
             4,
             false,
-            [(TipoPreparacion.PlatoFuerte, 1m)],
+            [(TipoPreparacion.PlatoFuerte.Id, 1m)],
             [Guid.NewGuid()]);
 
     [Fact]

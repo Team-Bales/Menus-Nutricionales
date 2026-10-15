@@ -19,7 +19,7 @@ public sealed class ConsumoTests
             DateTime.UtcNow.AddDays(-1),
             4,
             false,
-            [(TipoPreparacion.PlatoFuerte, 1m)],
+            [(TipoPreparacion.PlatoFuerte.Id, 1m)],
             [Guid.NewGuid()])
         .AsignarPaciente(_pacienteId);
 

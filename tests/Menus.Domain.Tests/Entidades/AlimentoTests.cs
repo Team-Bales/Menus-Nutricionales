@@ -13,13 +13,13 @@ public sealed class AlimentoTests
     {
         var id = Guid.NewGuid();
 
-        var alimento = new Alimento(id, "Manzana", _grupoId, TipoPreparacion.Postre, NivelCalorico.Bajo, _nutricionistaId);
+        var alimento = new Alimento(id, "Manzana", _grupoId, TipoPreparacion.Postre.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
 
         Assert.Equal(id, alimento.Id);
         Assert.Equal("Manzana", alimento.Nombre);
         Assert.Equal(_grupoId, alimento.GrupoNutricionalId);
-        Assert.Equal(TipoPreparacion.Postre, alimento.TipoPreparacion);
-        Assert.Equal(NivelCalorico.Bajo, alimento.NivelCalorico);
+        Assert.Equal(TipoPreparacion.Postre.Id, alimento.TipoPreparacionId);
+        Assert.Equal(NivelCalorico.Bajo.Id, alimento.NivelCaloricoId);
         Assert.Equal(_nutricionistaId, alimento.NutricionistaId);
     }
 
@@ -28,6 +28,6 @@ public sealed class AlimentoTests
     [InlineData("   ")]
     public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.Entrante, NivelCalorico.Medio, _nutricionistaId));
+        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id, _nutricionistaId));
     }
 }

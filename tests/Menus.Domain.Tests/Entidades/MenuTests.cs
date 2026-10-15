@@ -13,15 +13,15 @@ public sealed class MenuTests
     private readonly Guid _platoId = Guid.NewGuid();
     private readonly DateTime _ahora = DateTime.UtcNow;
 
-    private static readonly (TipoPreparacion, decimal)[] DistribucionValida =
+    private static readonly (Guid, decimal)[] DistribucionValida =
     [
-        (TipoPreparacion.Entrante, 0.25m),
-        (TipoPreparacion.PlatoFuerte, 0.5m),
-        (TipoPreparacion.Postre, 0.25m),
+        (TipoPreparacion.Entrante.Id, 0.25m),
+        (TipoPreparacion.PlatoFuerte.Id, 0.5m),
+        (TipoPreparacion.Postre.Id, 0.25m),
     ];
 
     private Menu CrearMenu(
-        IEnumerable<(TipoPreparacion, decimal)>? distribucion = null,
+        IEnumerable<(Guid, decimal)>? distribucion = null,
         IEnumerable<Guid>? grupos = null,
         int cantidadTotalAlimentos = 6,
         DateTime? fechaCreacion = null) =>
@@ -62,7 +62,7 @@ public sealed class MenuTests
 
         Assert.Equal(3, menu.Distribuciones.Count);
         Assert.All(menu.Distribuciones, d => Assert.Equal(menu.Id, d.MenuId));
-        Assert.Contains(menu.Distribuciones, d => d.TipoPreparacion == TipoPreparacion.PlatoFuerte && d.Proporcion == 0.5m);
+        Assert.Contains(menu.Distribuciones, d => d.TipoPreparacionId == TipoPreparacion.PlatoFuerte.Id && d.Proporcion == 0.5m);
         Assert.Equal(2, menu.GruposNutricionales.Count);
         Assert.All(menu.GruposNutricionales, g => Assert.Equal(menu.Id, g.MenuId));
         Assert.Contains(menu.GruposNutricionales, g => g.GrupoNutricionalId == _grupoId2);
@@ -119,13 +119,13 @@ public sealed class MenuTests
     public void Constructor_ProporcionFueraDeRango_LanzaArgumentOutOfRangeException(decimal proporcion)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte, proporcion), (TipoPreparacion.Bebida, 1m - proporcion)]));
+            CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte.Id, proporcion), (TipoPreparacion.Bebida.Id, 1m - proporcion)]));
     }
 
     [Fact]
     public void Constructor_ProporcionUnica_IgualAUno_EsValida()
     {
-        var menu = CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte, 1m)]);
+        var menu = CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte.Id, 1m)]);
 
         var distribucion = Assert.Single(menu.Distribuciones);
         Assert.Equal(1m, distribucion.Proporcion);
@@ -135,7 +135,7 @@ public sealed class MenuTests
     public void Constructor_ProporcionesQueNoSumanUno_LanzaArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
-            CrearMenu(distribucion: [(TipoPreparacion.Entrante, 0.3m), (TipoPreparacion.PlatoFuerte, 0.5m)]));
+            CrearMenu(distribucion: [(TipoPreparacion.Entrante.Id, 0.3m), (TipoPreparacion.PlatoFuerte.Id, 0.5m)]));
     }
 
     [Theory]
@@ -145,7 +145,7 @@ public sealed class MenuTests
     public void Constructor_SumaFueraDeLaTolerancia_LanzaArgumentException(decimal primera, decimal segunda)
     {
         Assert.Throws<ArgumentException>(() =>
-            CrearMenu(distribucion: [(TipoPreparacion.Entrante, primera), (TipoPreparacion.PlatoFuerte, segunda)]));
+            CrearMenu(distribucion: [(TipoPreparacion.Entrante.Id, primera), (TipoPreparacion.PlatoFuerte.Id, segunda)]));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class MenuTests
         var tercio = 1m / 3m;
 
         var menu = CrearMenu(distribucion:
-            [(TipoPreparacion.Entrante, tercio), (TipoPreparacion.PlatoFuerte, tercio), (TipoPreparacion.Postre, tercio)]);
+            [(TipoPreparacion.Entrante.Id, tercio), (TipoPreparacion.PlatoFuerte.Id, tercio), (TipoPreparacion.Postre.Id, tercio)]);
 
         Assert.Equal(3, menu.Distribuciones.Count);
         Assert.NotEqual(1m, menu.Distribuciones.Sum(d => d.Proporcion));
@@ -164,7 +164,7 @@ public sealed class MenuTests
     public void Constructor_ProporcionesRedondeadasACuatroDecimales_EsValido()
     {
         var menu = CrearMenu(distribucion:
-            [(TipoPreparacion.Entrante, 0.3333m), (TipoPreparacion.PlatoFuerte, 0.3333m), (TipoPreparacion.Postre, 0.3333m)]);
+            [(TipoPreparacion.Entrante.Id, 0.3333m), (TipoPreparacion.PlatoFuerte.Id, 0.3333m), (TipoPreparacion.Postre.Id, 0.3333m)]);
 
         Assert.Equal(0.9999m, menu.Distribuciones.Sum(d => d.Proporcion));
     }
@@ -173,7 +173,7 @@ public sealed class MenuTests
     public void Constructor_TipoPreparacionRepetido_LanzaArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
-            CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte, 0.5m), (TipoPreparacion.PlatoFuerte, 0.5m)]));
+            CrearMenu(distribucion: [(TipoPreparacion.PlatoFuerte.Id, 0.5m), (TipoPreparacion.PlatoFuerte.Id, 0.5m)]));
     }
 
     [Fact]

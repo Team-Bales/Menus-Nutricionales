@@ -11,15 +11,17 @@ internal sealed class MenuDistribucionConfiguration : IEntityTypeConfiguration<M
     {
         builder.ToTable("menu_distribucion");
 
-        builder.HasKey(md => new { md.MenuId, md.TipoPreparacion });
+        builder.HasKey(md => new { md.MenuId, md.TipoPreparacionId });
         builder.Ignore(md => md.Id);
 
         builder.Property(md => md.MenuId).HasColumnName("menu_id");
 
-        builder.Property(md => md.TipoPreparacion)
-            .HasColumnName("tipo_preparacion")
-            .HasConversion<string>()
-            .IsRequired();
+        builder.Property(md => md.TipoPreparacionId).HasColumnName("tipo_preparacion_id");
+
+        builder.HasOne<TipoPreparacion>()
+            .WithMany()
+            .HasForeignKey(md => md.TipoPreparacionId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(md => md.Proporcion)
             .HasColumnName("proporcion")

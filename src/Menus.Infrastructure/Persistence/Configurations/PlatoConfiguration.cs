@@ -22,21 +22,25 @@ internal sealed class PlatoConfiguration : IEntityTypeConfiguration<Plato>
 
         builder.Property(p => p.GrupoNutricionalId).HasColumnName("grupo_nutricional_id");
 
-        builder.Property(p => p.TipoPreparacion)
-            .HasColumnName("tipo_preparacion")
-            .HasConversion<string>()
-            .IsRequired();
+        builder.Property(p => p.TipoPreparacionId).HasColumnName("tipo_preparacion_id");
 
-        builder.Property(p => p.NivelCalorico)
-            .HasColumnName("nivel_calorico")
-            .HasConversion<string>()
-            .IsRequired();
+        builder.Property(p => p.NivelCaloricoId).HasColumnName("nivel_calorico_id");
 
         builder.Property(p => p.NutricionistaId).HasColumnName("nutricionista_id");
 
         builder.HasOne<GrupoNutricional>()
             .WithMany()
             .HasForeignKey(p => p.GrupoNutricionalId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<TipoPreparacion>()
+            .WithMany()
+            .HasForeignKey(p => p.TipoPreparacionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<NivelCalorico>()
+            .WithMany()
+            .HasForeignKey(p => p.NivelCaloricoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Nutricionista>()

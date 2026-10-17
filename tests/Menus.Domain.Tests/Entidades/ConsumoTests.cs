@@ -10,9 +10,10 @@ public sealed class ConsumoTests
     private readonly Guid _alimentoId = Guid.NewGuid();
 
     // Consumo solo se crea a través de Asignacion.RegistrarConsumo; dos instancias de Menu con el
-    // mismo Id representan el mismo menú leído dos veces.
-    private Asignacion CrearAsignacion() =>
-        new Menu(
+    // mismo Id representan el mismo menú leído dos veces. Solo se asigna un menú final (aprobado).
+    private Asignacion CrearAsignacion()
+    {
+        var menu = new Menu(
             _menuId,
             Guid.NewGuid(),
             Guid.NewGuid(),
@@ -20,8 +21,10 @@ public sealed class ConsumoTests
             4,
             false,
             [(TipoPreparacion.PlatoFuerte.Id, 1m)],
-            [Guid.NewGuid()])
-        .AsignarPaciente(_pacienteId);
+            [Guid.NewGuid()]);
+        menu.Aprobar(Guid.NewGuid(), DateTime.UtcNow);
+        return menu.AsignarPaciente(_pacienteId);
+    }
 
     [Fact]
     public void RegistrarConsumo_ValidArgs_TomaLaClaveDeLaAsignacion()

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
 
@@ -14,10 +15,13 @@ public sealed class Plato : Entity<Guid>
     /// <param name="id">Identificador único del plato.</param>
     /// <param name="nombre">Nombre del plato (único, no vacío).</param>
     /// <param name="grupoNutricionalId">FK → GrupoNutricional.</param>
-    /// <param name="tipoPreparacionId">FK → TipoPreparacion.</param>
-    /// <param name="nivelCaloricoId">FK → NivelCalorico.</param>
+    /// <param name="tipoPreparacionId">FK → TipoPreparacion: uno de <see cref="TipoPreparacion.Todos"/> (R5-08).</param>
+    /// <param name="nivelCaloricoId">FK → NivelCalorico: uno de <see cref="NivelCalorico.Todos"/> (R5-09).</param>
     /// <param name="nutricionistaId">Nutricionista que describió el plato.</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    /// <exception cref="ArgumentException">
+    /// Si <paramref name="nombre"/> es nulo o solo espacios, o si el tipo de preparación o el nivel calórico no
+    /// son del catálogo.
+    /// </exception>
     public Plato(
         Guid id,
         string nombre,
@@ -27,6 +31,16 @@ public sealed class Plato : Entity<Guid>
         Guid nutricionistaId) : base(id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        if (!TipoPreparacion.Existe(tipoPreparacionId))
+        {
+            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
+        }
+
+        if (!NivelCalorico.Existe(nivelCaloricoId))
+        {
+            throw new ArgumentException($"{nivelCaloricoId} no es un nivel calórico del catálogo.", nameof(nivelCaloricoId));
+        }
+
         Nombre = nombre;
         GrupoNutricionalId = grupoNutricionalId;
         TipoPreparacionId = tipoPreparacionId;

@@ -29,11 +29,19 @@ public sealed class PacienteTests
             new Paciente(Guid.NewGuid(), nombre, 25, _salaId));
     }
 
+    [Fact]
+    public void Constructor_EdadCero_SeAcepta()
+    {
+        // R6-14: la edad es mayor o igual que cero (un recién nacido tiene 0 años).
+        var paciente = new Paciente(Guid.NewGuid(), "Recién nacido", 0, _salaId);
+
+        Assert.Equal(0, paciente.Edad);
+    }
+
     [Theory]
-    [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Constructor_EdadInvalida_LanzaArgumentOutOfRangeException(int edad)
+    public void Constructor_EdadNegativa_LanzaArgumentOutOfRangeException(int edad)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new Paciente(Guid.NewGuid(), "Maria López", edad, _salaId));

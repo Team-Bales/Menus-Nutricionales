@@ -53,4 +53,11 @@ public sealed class ResultadoNutricionalTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => ResultadoNutricional.DesdeValor(valor));
     }
+
+    [Fact]
+    public void Existe_SoloParaLasCategoriasDelCatalogo()
+    {
+        Assert.All(ResultadoNutricional.Todos, r => Assert.True(ResultadoNutricional.Existe(r.Id)));
+        Assert.False(ResultadoNutricional.Existe(Guid.NewGuid()));
+    }
 }

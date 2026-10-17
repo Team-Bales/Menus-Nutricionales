@@ -35,6 +35,18 @@ public sealed class PlatoTests
     }
 
     [Fact]
+    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Alto.Id, _nutricionistaId));
+    }
+
+    [Fact]
+    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.PlatoFuerte.Id, Guid.NewGuid(), _nutricionistaId));
+    }
+
+    [Fact]
     public void AgregarIngrediente_ValidArgs_AgregaYRetornaIngrediente()
     {
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);

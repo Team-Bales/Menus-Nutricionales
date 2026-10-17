@@ -52,4 +52,9 @@ public sealed class ResultadoNutricional : Entity<Guid>
     public static ResultadoNutricional DesdeValor(int valor) =>
         Todos.SingleOrDefault(r => r.Valor == valor)
         ?? throw new ArgumentOutOfRangeException(nameof(valor), "El resultado nutricional debe tener un valor entre 1 y 5.");
+
+    /// <summary>Indica si el identificador corresponde a una de las cinco categorías del catálogo (R7-19).</summary>
+    /// <param name="id">Identificador que se quiere comprobar.</param>
+    /// <returns><see langword="true"/> si es el de una de las categorías de <see cref="Todos"/>.</returns>
+    public static bool Existe(Guid id) => Todos.Any(r => r.Id == id);
 }

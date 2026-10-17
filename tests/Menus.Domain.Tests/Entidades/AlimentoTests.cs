@@ -30,4 +30,16 @@ public sealed class AlimentoTests
     {
         Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id, _nutricionistaId));
     }
+
+    [Fact]
+    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Medio.Id, _nutricionistaId));
+    }
+
+    [Fact]
+    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.Entrante.Id, Guid.NewGuid(), _nutricionistaId));
+    }
 }

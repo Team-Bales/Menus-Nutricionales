@@ -9,7 +9,11 @@ internal sealed class DietaGrupoNutricionalConfiguration : IEntityTypeConfigurat
 {
     public void Configure(EntityTypeBuilder<DietaGrupoNutricional> builder)
     {
-        builder.ToTable("cubre_dieta");
+        // R6-17b: el tipo de cobertura es Requerido o Restringido
+        builder.ToTable("cubre_dieta", t =>
+        {
+            t.HasCheckConstraint("ck_cubre_dieta_r6_17b_tipo", "tipo IN ('Requerido', 'Restringido')");
+        });
 
         builder.HasKey(dg => new { dg.DietaId, dg.GrupoNutricionalId });
         builder.Ignore(dg => dg.Id);

@@ -8,7 +8,11 @@ internal sealed class GrupoNutricionalConfiguration : IEntityTypeConfiguration<G
 {
     public void Configure(EntityTypeBuilder<GrupoNutricional> builder)
     {
-        builder.ToTable("grupos_nutricionales");
+        // R5-11: nombre no vacío
+        builder.ToTable("grupos_nutricionales", t =>
+        {
+            t.HasCheckConstraint("ck_grupos_nutricionales_r5_11_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).HasColumnName("id");

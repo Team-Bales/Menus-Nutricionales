@@ -8,7 +8,11 @@ internal sealed class PlatoIngredienteConfiguration : IEntityTypeConfiguration<P
 {
     public void Configure(EntityTypeBuilder<PlatoIngrediente> builder)
     {
-        builder.ToTable("composicion");
+        // R5-12: cantidad estrictamente positiva
+        builder.ToTable("composicion", t =>
+        {
+            t.HasCheckConstraint("ck_composicion_r5_12_cantidad", "cantidad > 0");
+        });
 
         // La PK compuesta se declara con las propiedades individuales;
         // la propiedad Id (tuple) no es mapeable directamente por EF Core.

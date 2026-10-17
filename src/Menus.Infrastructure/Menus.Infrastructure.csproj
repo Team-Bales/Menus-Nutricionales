@@ -16,6 +16,11 @@
     <PackageReference Include="StackExchange.Redis" Version="3.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Restricciones del #11 que EF no declara (triggers e índice de R5-16); ver RestriccionesNoDeclarativas -->
+    <EmbeddedResource Include="Persistence\Sql\*.sql" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

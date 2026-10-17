@@ -9,7 +9,11 @@ internal sealed class PlatoConfiguration : IEntityTypeConfiguration<Plato>
 {
     public void Configure(EntityTypeBuilder<Plato> builder)
     {
-        builder.ToTable("platos");
+        // R5-11: nombre no vacío
+        builder.ToTable("platos", t =>
+        {
+            t.HasCheckConstraint("ck_platos_r5_11_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");
@@ -18,7 +22,8 @@ internal sealed class PlatoConfiguration : IEntityTypeConfiguration<Plato>
             .HasColumnName("nombre")
             .HasMaxLength(150)
             .IsRequired();
-        builder.HasIndex(p => p.Nombre).IsUnique();
+        // R5-16: el nombre único es el normalizado, lower(btrim(nombre)). Ese índice está en
+        // Persistence/Sql/R5_16_nombre_normalizado.sql, porque EF no declara índices sobre expresiones.
 
         builder.Property(p => p.GrupoNutricionalId).HasColumnName("grupo_nutricional_id");
 

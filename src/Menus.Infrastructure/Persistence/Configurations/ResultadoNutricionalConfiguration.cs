@@ -8,7 +8,12 @@ internal sealed class ResultadoNutricionalConfiguration : IEntityTypeConfigurati
 {
     public void Configure(EntityTypeBuilder<ResultadoNutricional> builder)
     {
-        builder.ToTable("resultados_nutricionales");
+        // R7-19: catálogo cerrado con exactamente estas cinco categorías y sus valores
+        builder.ToTable("resultados_nutricionales", t =>
+        {
+            t.HasCheckConstraint("ck_resultados_nutricionales_r7_19_nombre", "nombre IN ('Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente')");
+            t.HasCheckConstraint("ck_resultados_nutricionales_r7_19_valor", "valor BETWEEN 1 AND 5");
+        });
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasColumnName("id");

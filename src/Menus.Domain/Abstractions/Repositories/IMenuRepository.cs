@@ -13,10 +13,10 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// agregado (R7-04, R7-05, R7-06, R7-07, R7-25) se comprueban sobre esas colecciones.
 /// <see cref="Validacion"/> y <see cref="Consumo"/> no tienen repositorio propio: son agregaciones sin
 /// identidad propia (MERX, §0.2) y se guardan junto con el menú.
-/// El estado de un menú no se almacena, se deriva de sus validaciones: es final si su validación más
-/// reciente está aprobada (submodelo #7, §4; consulta 2, §7-A). El MERX no define «pendiente»; aquí es
-/// el menú sin ninguna validación, porque un menú rechazado no vuelve a revisarse: se confecciona otro
-/// (submodelo #7, §2.1, convención de R7-04).
+/// El estado de un menú no se almacena, se deriva de sus validaciones (submodelo #7, §4): está pendiente
+/// mientras no tiene ninguna y es final cuando tiene su aprobación. El primer dictamen cierra el menú, y el
+/// rechazo no se registra: elimina el menú (decisión del equipo, 16/10; ver <see cref="Menu.Rechazar"/>).
+/// Por eso no hay menús rechazados que consultar.
 /// </remarks>
 public interface IMenuRepository : IRepository<Menu, Guid>
 {
@@ -39,15 +39,15 @@ public interface IMenuRepository : IRepository<Menu, Guid>
     Task<IReadOnlyList<Menu>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Devuelve los menús finales de una dieta: aquellos cuya validación más reciente (la de mayor
-    /// fecha de validación) está aprobada (submodelo #7, §4; consulta 2, §7-A).
+    /// Devuelve los menús finales de una dieta: los que fueron aprobados (<see cref="Menu.EsFinal"/>;
+    /// submodelo #7, §4; consulta 2, §7-A).
     /// </summary>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Devuelve los menús pendientes de una dieta: los que todavía no tienen ninguna validación registrada.
+    /// Devuelve los menús pendientes de una dieta: los que todavía no tienen dictamen (<see cref="Menu.EsPendiente"/>).
     /// </summary>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

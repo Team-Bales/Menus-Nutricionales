@@ -16,7 +16,7 @@ public interface IPlatoRepository : IRepository<Plato, Guid>
 
     /// <summary>
     /// Indica si ya existe un plato con ese nombre, sin distinguir mayúsculas ni espacios sobrantes
-    /// (R5-16 lo exige para los alimentos; el #62 pide lo mismo para los platos).
+    /// (R5-16, extendida a los platos por decisión del equipo: submodelo #5).
     /// </summary>
     /// <param name="nombre">Nombre que se quiere registrar.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

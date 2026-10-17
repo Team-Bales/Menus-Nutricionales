@@ -13,7 +13,11 @@ namespace Menus.Domain.Entidades;
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
 /// cambian después (submodelo #7, R7-27), por eso no hay métodos para modificarlos.
-/// El menú no guarda un estado: es final si su validación más reciente está aprobada (submodelo #7, §4).
+/// El menú no guarda un estado, se deriva de sus validaciones (submodelo #7, §4): está pendiente mientras no
+/// tiene dictamen (<see cref="EsPendiente"/>) y es final cuando fue aprobado (<see cref="EsFinal"/>). El primer
+/// dictamen lo cierra: si es una aprobación queda registrada (<see cref="Aprobar"/>); si es un rechazo no se
+/// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Solo un menú pendiente
+/// se modifica y solo uno final se asigna a pacientes.
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
 /// (agregación <c>Asignación</c>, R7-05). Que el paciente esté inscrito en la dieta del menú (R6-23)
 /// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente; lo mismo
@@ -149,15 +153,28 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Pacientes a los que se asignó el menú (solo lectura).</summary>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
-    /// <summary>Validaciones registradas para el menú (solo lectura).</summary>
+    /// <summary>
+    /// Validaciones registradas para el menú (solo lectura). Como el primer dictamen cierra el menú y el rechazo
+    /// lo elimina, tiene a lo sumo una, y es una aprobación.
+    /// </summary>
     public IReadOnlyCollection<Validacion> Validaciones => _validaciones.AsReadOnly();
+
+    /// <summary>Indica si el menú está pendiente de revisión: todavía no tiene dictamen.</summary>
+    public bool EsPendiente => _validaciones.Count == 0;
+
+    /// <summary>Indica si el menú es final: fue aprobado (consulta 2, §7-A).</summary>
+    public bool EsFinal => _validaciones.Any(v => v.Aprobado);
 
     /// <summary>Incluye un alimento en el menú (relación <c>Incluye(Menú, Alimento)</c>).</summary>
     /// <param name="alimentoId">Identificador del alimento.</param>
     /// <returns>La inclusión registrada.</returns>
-    /// <exception cref="InvalidOperationException">Si el alimento ya está incluido en el menú (R7-07).</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú ya tiene dictamen o si el alimento ya está incluido en el menú (R7-07).
+    /// </exception>
     public MenuAlimento AgregarAlimento(Guid alimentoId)
     {
+        ExigirPendiente();
+
         if (_alimentos.Any(a => a.AlimentoId == alimentoId))
         {
             throw new InvalidOperationException($"El alimento {alimentoId} ya está incluido en este menú.");
@@ -171,9 +188,13 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Incluye un plato en el menú (relación <c>Incluye(Menú, Plato)</c>).</summary>
     /// <param name="platoId">Identificador del plato.</param>
     /// <returns>La inclusión registrada.</returns>
-    /// <exception cref="InvalidOperationException">Si el plato ya está incluido en el menú (R7-07).</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú ya tiene dictamen o si el plato ya está incluido en el menú (R7-07).
+    /// </exception>
     public MenuPlato AgregarPlato(Guid platoId)
     {
+        ExigirPendiente();
+
         if (_platos.Any(p => p.PlatoId == platoId))
         {
             throw new InvalidOperationException($"El plato {platoId} ya está incluido en este menú.");
@@ -184,12 +205,51 @@ public sealed class Menu : AggregateRoot<Guid>
         return plato;
     }
 
+    /// <summary>
+    /// Quita un alimento incluido en el menú. Es parte de la modificación manual que admite un menú generado
+    /// mientras espera revisión; los parámetros de generación no se modifican (R7-27).
+    /// </summary>
+    /// <param name="alimentoId">Identificador del alimento.</param>
+    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el alimento no está incluido.</exception>
+    public void QuitarAlimento(Guid alimentoId)
+    {
+        ExigirPendiente();
+
+        var alimento = _alimentos.SingleOrDefault(a => a.AlimentoId == alimentoId)
+            ?? throw new InvalidOperationException($"El alimento {alimentoId} no está incluido en este menú.");
+
+        _alimentos.Remove(alimento);
+    }
+
+    /// <summary>
+    /// Quita un plato incluido en el menú. Es parte de la modificación manual que admite un menú generado
+    /// mientras espera revisión; los parámetros de generación no se modifican (R7-27).
+    /// </summary>
+    /// <param name="platoId">Identificador del plato.</param>
+    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el plato no está incluido.</exception>
+    public void QuitarPlato(Guid platoId)
+    {
+        ExigirPendiente();
+
+        var plato = _platos.SingleOrDefault(p => p.PlatoId == platoId)
+            ?? throw new InvalidOperationException($"El plato {platoId} no está incluido en este menú.");
+
+        _platos.Remove(plato);
+    }
+
     /// <summary>Asigna el menú a un paciente (agregación <c>Asignación</c>).</summary>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
     /// <returns>La asignación registrada.</returns>
-    /// <exception cref="InvalidOperationException">Si el menú ya está asignado a ese paciente (R7-05).</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú no es final (solo se asignan menús aprobados) o si ya está asignado a ese paciente (R7-05).
+    /// </exception>
     public Asignacion AsignarPaciente(Guid pacienteId)
     {
+        if (!EsFinal)
+        {
+            throw new InvalidOperationException("Solo se asigna un menú final (aprobado).");
+        }
+
         if (_asignaciones.Any(a => a.PacienteId == pacienteId))
         {
             throw new InvalidOperationException($"El menú ya está asignado al paciente {pacienteId}.");
@@ -200,49 +260,67 @@ public sealed class Menu : AggregateRoot<Guid>
         return asignacion;
     }
 
-    /// <summary>Registra el dictamen de un nutricionista sobre el menú.</summary>
+    /// <summary>Registra que un nutricionista revisor aprobó el menú, que pasa a ser final.</summary>
     /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
-    /// <param name="fechaValidacion">Fecha y hora en que se emite el dictamen.</param>
-    /// <param name="aprobado">Indica si el menú fue aprobado.</param>
+    /// <param name="fechaValidacion">Instante de la aprobación, en UTC.</param>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
     /// <returns>La validación registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el nutricionista creó el menú o ya registró una validación para él.
+    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (R7-25).
     /// </exception>
-    /// <exception cref="ArgumentException">Si la fecha de validación no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Si la validación es anterior a la creación del menú.
-    /// </exception>
-    public Validacion Validar(
-        Guid nutricionistaId,
-        DateTime fechaValidacion,
-        bool aprobado,
-        string? observaciones = null)
+    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (R7-26).</exception>
+    public Validacion Aprobar(Guid nutricionistaId, DateTime fechaValidacion, string? observaciones = null)
     {
+        ComprobarDictamen(nutricionistaId, fechaValidacion);
+
+        var validacion = new Validacion(nutricionistaId, Id, fechaValidacion, observaciones);
+        _validaciones.Add(validacion);
+        return validacion;
+    }
+
+    /// <summary>
+    /// Comprueba que un nutricionista revisor puede rechazar el menú. El rechazo no se registra: el caso de uso
+    /// elimina el menú después de llamar a este método (decisión del equipo, 16/10).
+    /// </summary>
+    /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
+    /// <param name="fechaRechazo">Instante del rechazo, en UTC.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (R7-25).
+    /// </exception>
+    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (R7-26).</exception>
+    public void Rechazar(Guid nutricionistaId, DateTime fechaRechazo) => ComprobarDictamen(nutricionistaId, fechaRechazo);
+
+    /// <summary>Reglas comunes a la aprobación y al rechazo.</summary>
+    private void ComprobarDictamen(Guid nutricionistaId, DateTime fecha)
+    {
+        ExigirPendiente();
+
         if (nutricionistaId == NutricionistaCreadorId)
         {
-            throw new InvalidOperationException("El nutricionista que creó el menú no puede validarlo.");
-        }
-
-        if (_validaciones.Any(v => v.NutricionistaId == nutricionistaId))
-        {
-            throw new InvalidOperationException($"El nutricionista {nutricionistaId} ya validó este menú.");
+            throw new InvalidOperationException("El nutricionista que creó el menú no puede dictaminarlo.");
         }
 
         // Antes de comparar con FechaCreacion (UTC): una fecha local daría una comparación sin sentido.
-        if (fechaValidacion.Kind != DateTimeKind.Utc)
+        if (fecha.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante de validación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValidacion));
+            throw new ArgumentException("El instante del dictamen debe estar en UTC (DateTimeKind.Utc).", nameof(fecha));
         }
 
-        if (fechaValidacion < FechaCreacion)
+        if (fecha < FechaCreacion)
         {
-            throw new ArgumentOutOfRangeException(nameof(fechaValidacion), "La fecha de validación no puede ser anterior a la creación del menú.");
+            throw new ArgumentOutOfRangeException(nameof(fecha), "El dictamen no puede ser anterior a la creación del menú.");
         }
+    }
 
-        var validacion = new Validacion(nutricionistaId, Id, fechaValidacion, aprobado, observaciones);
-        _validaciones.Add(validacion);
-        return validacion;
+    /// <summary>Solo un menú pendiente se modifica o se dictamina.</summary>
+    private void ExigirPendiente()
+    {
+        if (!EsPendiente)
+        {
+            throw new InvalidOperationException("El menú ya tiene dictamen: solo se modifica o se dictamina mientras está pendiente.");
+        }
     }
 
     private void FijarDistribucion(IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion)

@@ -26,4 +26,9 @@ public sealed class TipoPreparacion : Entity<Guid>
     private TipoPreparacion(Guid id, string nombre) : base(id) => Nombre = nombre;
 
     public string Nombre { get; }
+
+    /// <summary>Indica si el identificador corresponde a uno de los tipos de preparación del catálogo (R5-08).</summary>
+    /// <param name="id">Identificador que se quiere comprobar.</param>
+    /// <returns><see langword="true"/> si es el de <see cref="Entrante"/>, <see cref="PlatoFuerte"/>, <see cref="Postre"/> o <see cref="Bebida"/>.</returns>
+    public static bool Existe(Guid id) => Todos.Any(t => t.Id == id);
 }

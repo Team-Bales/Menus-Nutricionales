@@ -20,6 +20,12 @@ internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfigura
 
         builder.HasIndex(r => r.Nombre).IsUnique();
 
+        // Excluye: Restrict, no se elimina una restricción mientras excluya algún grupo (R6-08b)
+        builder.HasMany(r => r.GruposExcluidos)
+            .WithOne()
+            .HasForeignKey(e => e.RestriccionAlimentariaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasData(
             new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000001"), "Sin gluten"),
             new RestriccionAlimentaria(new Guid("22222222-0000-0000-0000-000000000002"), "Hiposódica"),

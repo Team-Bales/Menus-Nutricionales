@@ -8,7 +8,11 @@ internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfigura
 {
     public void Configure(EntityTypeBuilder<RestriccionAlimentaria> builder)
     {
-        builder.ToTable("restricciones_alimentarias");
+        // R6-15: nombre no vacío
+        builder.ToTable("restricciones_alimentarias", t =>
+        {
+            t.HasCheckConstraint("ck_restricciones_alimentarias_r6_15_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasColumnName("id");

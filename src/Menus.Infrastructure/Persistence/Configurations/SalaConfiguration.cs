@@ -8,7 +8,11 @@ internal sealed class SalaConfiguration : IEntityTypeConfiguration<Sala>
 {
     public void Configure(EntityTypeBuilder<Sala> builder)
     {
-        builder.ToTable("salas");
+        // R6-15: nombre no vacío
+        builder.ToTable("salas", t =>
+        {
+            t.HasCheckConstraint("ck_salas_r6_15_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).HasColumnName("id");
@@ -17,6 +21,7 @@ internal sealed class SalaConfiguration : IEntityTypeConfiguration<Sala>
             .HasColumnName("nombre")
             .HasMaxLength(100)
             .IsRequired();
-        builder.HasIndex(s => s.Nombre).IsUnique();
+
+        // Sin UNIQUE: el nombre único solo se exige en los nomencladores (R6-16; #12, §6.1)
     }
 }

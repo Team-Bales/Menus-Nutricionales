@@ -9,7 +9,11 @@ internal sealed class MenuDistribucionConfiguration : IEntityTypeConfiguration<M
 {
     public void Configure(EntityTypeBuilder<MenuDistribucion> builder)
     {
-        builder.ToTable("menu_distribucion");
+        // R7-16: proporción en el intervalo (0, 1]
+        builder.ToTable("menu_distribucion", t =>
+        {
+            t.HasCheckConstraint("ck_menu_distribucion_r7_16_proporcion", "proporcion > 0 AND proporcion <= 1");
+        });
 
         builder.HasKey(md => new { md.MenuId, md.TipoPreparacionId });
         builder.Ignore(md => md.Id);

@@ -8,7 +8,11 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
 {
     public void Configure(EntityTypeBuilder<Menu> builder)
     {
-        builder.ToTable("menus");
+        // R7-15: cantidad total de alimentos estrictamente positiva
+        builder.ToTable("menus", t =>
+        {
+            t.HasCheckConstraint("ck_menus_r7_15_cantidad_total_alimentos", "cantidad_total_alimentos > 0");
+        });
 
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).HasColumnName("id");

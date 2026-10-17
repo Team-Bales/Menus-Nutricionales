@@ -9,7 +9,11 @@ internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutr
 {
     public void Configure(EntityTypeBuilder<Nutricionista> builder)
     {
-        builder.ToTable("nutricionistas");
+        // R6-15: nombre no vacío
+        builder.ToTable("nutricionistas", t =>
+        {
+            t.HasCheckConstraint("ck_nutricionistas_r6_15_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(n => n.Id);
         builder.Property(n => n.Id).HasColumnName("id");

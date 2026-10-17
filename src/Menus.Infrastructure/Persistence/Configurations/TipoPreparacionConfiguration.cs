@@ -8,7 +8,11 @@ internal sealed class TipoPreparacionConfiguration : IEntityTypeConfiguration<Ti
 {
     public void Configure(EntityTypeBuilder<TipoPreparacion> builder)
     {
-        builder.ToTable("tipos_preparacion");
+        // R5-08: catálogo cerrado con exactamente estos cuatro valores
+        builder.ToTable("tipos_preparacion", t =>
+        {
+            t.HasCheckConstraint("ck_tipos_preparacion_r5_08_nombre", "nombre IN ('Entrante', 'Plato fuerte', 'Postre', 'Bebida')");
+        });
 
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("id");

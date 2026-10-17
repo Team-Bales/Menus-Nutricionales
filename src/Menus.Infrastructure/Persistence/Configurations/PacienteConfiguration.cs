@@ -8,7 +8,12 @@ internal sealed class PacienteConfiguration : IEntityTypeConfiguration<Paciente>
 {
     public void Configure(EntityTypeBuilder<Paciente> builder)
     {
-        builder.ToTable("pacientes");
+        // R6-15: nombre no vacío; R6-14: edad mayor o igual que cero
+        builder.ToTable("pacientes", t =>
+        {
+            t.HasCheckConstraint("ck_pacientes_r6_15_nombre", "btrim(nombre) <> ''");
+            t.HasCheckConstraint("ck_pacientes_r6_14_edad", "edad >= 0");
+        });
 
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");

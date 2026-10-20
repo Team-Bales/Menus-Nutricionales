@@ -4,7 +4,7 @@ using Menus.Domain.Nomenclators;
 namespace Menus.Domain.Entidades;
 
 /// <summary>
-/// Proporción de ítems (alimentos y platos) de un tipo de preparación dentro de un menú
+/// Proporción de alimentos de un tipo de preparación dentro de un menú
 /// (relación <c>Distribuye</c>, con su atributo <c>Proporción</c>). Es un parámetro de generación
 /// del menú y solo la crea <see cref="Menu"/>.
 /// </summary>

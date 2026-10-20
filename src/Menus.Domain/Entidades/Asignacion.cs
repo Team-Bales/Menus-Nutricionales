@@ -9,9 +9,9 @@ namespace Menus.Domain.Entidades;
 /// (R7-11, R7-12). Solo la crea <see cref="Menu"/>.
 /// </summary>
 /// <remarks>
-/// En el modelo revisado (feedback del 19/10) es la única agregación, porque es la única relación que participa
-/// en otras: <c>Sirve</c> (identifica a <see cref="Servicio"/>) y <c>Evalúa</c> (la valoración). Las demás
-/// relaciones con atributos los llevan en el rombo.
+/// Sigue siendo una agregación porque participa en otras relaciones: <c>Sirve</c> (identifica a
+/// <see cref="Servicio"/>) y <c>Evalúa</c> (la valoración). Es el uso de la agregación que el profesor considera
+/// correcto (feedback del 19/10, P2-5).
 /// </remarks>
 public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
 {

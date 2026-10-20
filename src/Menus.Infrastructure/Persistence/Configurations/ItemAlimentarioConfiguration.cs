@@ -9,9 +9,12 @@ internal sealed class ItemAlimentarioConfiguration : IEntityTypeConfiguration<It
 {
     public void Configure(EntityTypeBuilder<ItemAlimentario> builder)
     {
-        // Generalización Alimento/Plato en una sola tabla con discriminador (TPH). Las subclases no tienen
-        // atributos propios, así que separarlas en tablas solo repetiría columnas; y es el esquema que da la
-        // síntesis: una sola dependencia id → nombre, clase y clasificación.
+        // Generalización Alimento/Plato en una sola tabla con discriminador (TPH). Es la traducción habitual de una
+        // especialización total y disjunta cuyas subclases no tienen atributos propios: con una tabla, la totalidad
+        // y la disyunción quedan declarativas (clase NOT NULL y CHECK), y alimentos y platos comparten un solo
+        // espacio de identificadores y de nombres (R5-16). El costo es que una FK no puede apuntar a una sola
+        // subclase, por eso R5-18 es un trigger. La clase es deducible (un plato es el ítem que tiene composición,
+        // R5-15 y R5-18); se guarda como discriminador, y esas dos reglas la mantienen coherente.
         // R5-11: nombre no vacío. R5-19: todo ítem es de exactamente una clase (especialización total y
         // disjunta); que no la cambie lo comprueba Persistence/Sql/R5_19_clase_del_item.sql.
         builder.ToTable("items_alimentarios", t =>

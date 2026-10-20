@@ -10,7 +10,7 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// <remarks>
 /// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el agregado completo, con sus ítems,
 /// distribución, grupos, validación y asignaciones con sus servicios y consumos, porque las reglas del
-/// agregado (R7-04, R7-05, R7-06, R7-07, R7-25, R7-31, R11-01) se comprueban sobre esas colecciones.
+/// agregado (R7-05, R7-06, R7-07, R7-25, R7-31, R7-32, R7-34, R11-01) se comprueban sobre esas colecciones.
 /// <see cref="Validacion"/>, <see cref="Servicio"/> y <see cref="Consumo"/> no tienen repositorio propio:
 /// dependen del menú (la validación lo tiene como clave; el servicio y el consumo, a través de la asignación)
 /// y se guardan junto con él.

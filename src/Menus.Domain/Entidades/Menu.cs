@@ -143,10 +143,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </summary>
     public DateTime FechaCreacion { get; }
 
-    /// <summary>
-    /// Cantidad total de alimentos del menú (&gt; 0). Parámetro de generación. Cuenta ítems del banco: con la
-    /// generalización <see cref="ItemAlimentario"/>, un plato es un alimento compuesto.
-    /// </summary>
+    /// <summary>Cantidad total de alimentos del menú (&gt; 0). Parámetro de generación.</summary>
     public int CantidadTotalAlimentos { get; }
 
     /// <summary>Indica si el menú fue generado automáticamente. Parámetro de generación.</summary>
@@ -155,7 +152,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Ítems del banco, alimentos y platos, incluidos en el menú (solo lectura).</summary>
     public IReadOnlyCollection<MenuItem> Items => _items.AsReadOnly();
 
-    /// <summary>Proporción de ítems por tipo de preparación (solo lectura). Parámetro de generación.</summary>
+    /// <summary>Proporción de alimentos por tipo de preparación (solo lectura). Parámetro de generación.</summary>
     public IReadOnlyCollection<MenuDistribucion> Distribuciones => _distribuciones.AsReadOnly();
 
     /// <summary>Grupos nutricionales que cubre el menú (solo lectura). Parámetro de generación.</summary>

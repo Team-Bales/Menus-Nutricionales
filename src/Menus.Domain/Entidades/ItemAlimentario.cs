@@ -22,7 +22,8 @@ namespace Menus.Domain.Entidades;
 /// <b>La especialización es total y disjunta:</b> todo ítem es un alimento o un plato, nunca los dos ni
 /// ninguno. Por eso la clase es abstracta. Las subclases no tienen atributos propios: lo que las distingue
 /// es la relación <c>Compone</c>, que va de un plato a un alimento simple (composición de un solo nivel,
-/// R5-18). Por eso la persistencia usa una sola tabla con discriminador.
+/// R5-18). Por eso la persistencia usa una sola tabla con discriminador: es la traducción habitual de una
+/// especialización así, y deja declarativas la totalidad y la disyunción.
 /// </para>
 /// <para>
 /// El nombre es único entre todos los ítems, sin distinguir mayúsculas ni espacios sobrantes (R5-16): si un

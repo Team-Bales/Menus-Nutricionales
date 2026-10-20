@@ -13,8 +13,9 @@ public interface IItemAlimentarioRepository : IRepository<ItemAlimentario, Guid>
     /// (R5-16: no existen alimentos duplicados).
     /// </summary>
     /// <remarks>
-    /// La comprobación abarca a las dos clases porque un plato es un alimento compuesto (generalización
-    /// <see cref="ItemAlimentario"/>): un alimento y un plato no pueden llamarse igual. Por eso está aquí y no
+    /// La comprobación abarca a las dos clases porque alimentos y platos son ítems de una misma generalización
+    /// (<see cref="ItemAlimentario"/>) y comparten el espacio de nombres: un alimento y un plato no pueden
+    /// llamarse igual. Por eso está aquí y no
     /// en los repositorios de cada clase.
     /// </remarks>
     /// <param name="nombre">Nombre que se quiere registrar.</param>

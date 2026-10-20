@@ -8,6 +8,8 @@ internal sealed class RevalorizacionConfiguration : IEntityTypeConfiguration<Rev
 {
     public void Configure(EntityTypeBuilder<Revalorizacion> builder)
     {
+        // Sin el paciente solicitante: se deduce de la valoración revisada (R7-29), y guardarlo dejaba la tabla
+        // fuera de la 3FN por una dependencia transitiva (#12, §2.3; revisión del 19/10).
         builder.ToTable("revalorizaciones");
 
         builder.HasKey(r => r.Id);
@@ -18,15 +20,9 @@ internal sealed class RevalorizacionConfiguration : IEntityTypeConfiguration<Rev
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
-        builder.Property(r => r.PacienteId).HasColumnName("paciente_id");
         builder.Property(r => r.NutricionistaId).HasColumnName("nutricionista_id");
         builder.Property(r => r.ValoracionRevisadaId).HasColumnName("valoracion_revisada_id");
         builder.Property(r => r.ValoracionGeneradaId).HasColumnName("valoracion_generada_id");
-
-        builder.HasOne<Paciente>()
-            .WithMany()
-            .HasForeignKey(r => r.PacienteId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Nutricionista>()
             .WithMany()

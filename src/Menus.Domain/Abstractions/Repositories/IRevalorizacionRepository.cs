@@ -14,7 +14,10 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// </remarks>
 public interface IRevalorizacionRepository : IRepository<Revalorizacion, Guid>
 {
-    /// <summary>Devuelve las revalorizaciones que solicitó un paciente (relación <c>Solicita</c>).</summary>
+    /// <summary>
+    /// Devuelve las revalorizaciones que solicitó un paciente: las que revisan alguna de sus valoraciones. El
+    /// solicitante no se guarda; se deduce de la valoración revisada (R7-29).
+    /// </summary>
     /// <param name="pacienteId">Identificador del paciente solicitante.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Revalorizacion>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default);

@@ -26,14 +26,14 @@ namespace Menus.Domain.Entidades;
 /// en <see cref="Menu.RegistrarConsumo"/>.
 /// </para>
 /// </remarks>
-public sealed class Consumo : Entity<(Guid MenuId, Guid PacienteId, DateTime FechaServicio, Guid ItemId)>
+public sealed class Consumo : Entity<(Guid MenuId, Guid PacienteId, DateOnly FechaServicio, Guid ItemId)>
 {
     /// <param name="menuId">Identificador del menú servido.</param>
     /// <param name="pacienteId">Identificador del paciente que registra el consumo.</param>
-    /// <param name="fechaServicio">Instante del servicio en que se registra, ya normalizado.</param>
+    /// <param name="fechaServicio">Día del servicio en que se registra, en el calendario UTC.</param>
     /// <param name="itemId">Identificador del alimento o plato consumido.</param>
     /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
-    internal Consumo(Guid menuId, Guid pacienteId, DateTime fechaServicio, Guid itemId, bool aceptacion)
+    internal Consumo(Guid menuId, Guid pacienteId, DateOnly fechaServicio, Guid itemId, bool aceptacion)
         : base((menuId, pacienteId, fechaServicio, itemId))
     {
         Aceptacion = aceptacion;
@@ -45,8 +45,8 @@ public sealed class Consumo : Entity<(Guid MenuId, Guid PacienteId, DateTime Fec
     /// <summary>FK → Paciente del servicio (parte de la clave compuesta).</summary>
     public Guid PacienteId => Id.PacienteId;
 
-    /// <summary>FK → Instante del servicio (parte de la clave compuesta).</summary>
-    public DateTime FechaServicio => Id.FechaServicio;
+    /// <summary>FK → Día del servicio (parte de la clave compuesta).</summary>
+    public DateOnly FechaServicio => Id.FechaServicio;
 
     /// <summary>FK → ItemAlimentario consumido (parte de la clave compuesta).</summary>
     public Guid ItemId => Id.ItemId;

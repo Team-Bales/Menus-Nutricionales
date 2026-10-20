@@ -19,7 +19,7 @@ internal sealed class ConsumoConfiguration : IEntityTypeConfiguration<Consumo>
 
         builder.Property(c => c.FechaServicio)
             .HasColumnName("fecha_servicio")
-            .HasColumnType("timestamp with time zone");
+            .HasColumnType("date");
 
         builder.Property(c => c.ItemId).HasColumnName("item_id");
 

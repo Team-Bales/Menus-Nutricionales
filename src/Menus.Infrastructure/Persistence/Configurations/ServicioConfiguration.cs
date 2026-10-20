@@ -21,7 +21,7 @@ internal sealed class ServicioConfiguration : IEntityTypeConfiguration<Servicio>
 
         builder.Property(s => s.FechaServicio)
             .HasColumnName("fecha_servicio")
-            .HasColumnType("timestamp with time zone");
+            .HasColumnType("date");
 
         // FK compuesta (menu_id, paciente_id) → Asignacion se configura desde AsignacionConfiguration (colección Servicios)
 

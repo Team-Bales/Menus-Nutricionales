@@ -31,14 +31,14 @@ public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
     public IReadOnlyCollection<Servicio> Servicios => _servicios.AsReadOnly();
 
     /// <summary>Registra un servicio del menú al paciente. Las reglas de la fecha las comprueba <see cref="Menu"/>.</summary>
-    /// <param name="fechaServicio">Instante del servicio, en UTC y ya normalizado.</param>
+    /// <param name="fechaServicio">Día del servicio, en el calendario UTC.</param>
     /// <returns>El servicio registrado.</returns>
-    /// <exception cref="InvalidOperationException">Si ya hay un servicio en ese instante.</exception>
-    internal Servicio RegistrarServicio(DateTime fechaServicio)
+    /// <exception cref="InvalidOperationException">Si ya hay un servicio ese día.</exception>
+    internal Servicio RegistrarServicio(DateOnly fechaServicio)
     {
         if (_servicios.Any(s => s.FechaServicio == fechaServicio))
         {
-            throw new InvalidOperationException($"Ya hay un servicio de este menú al paciente en {fechaServicio:O}.");
+            throw new InvalidOperationException($"Este menú ya se le sirvió al paciente el {fechaServicio:yyyy-MM-dd}.");
         }
 
         var servicio = new Servicio(MenuId, PacienteId, fechaServicio);

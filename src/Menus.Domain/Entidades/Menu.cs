@@ -246,16 +246,15 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Registra que el menú se le sirvió a un paciente al que está asignado (entidad débil <c>Servicio</c>).</summary>
     /// <param name="pacienteId">Identificador del paciente.</param>
     /// <param name="fechaServicio">
-    /// Instante del servicio, en UTC; no puede ser futuro ni anterior a la aprobación del menú (R7-31). Se trunca al
-    /// segundo (ver <see cref="Servicio"/>).
+    /// Día del servicio, en el calendario UTC. No puede ser futuro, y tampoco anterior al día de la aprobación del
+    /// menú (R7-31).
     /// </param>
     /// <returns>El servicio registrado.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú no es final, si no está asignado al paciente o si ya hay un servicio en ese instante.
+    /// Si el menú no es final, si no está asignado al paciente o si ya se le sirvió ese día.
     /// </exception>
-    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es futura o anterior a la aprobación del menú (R7-31).</exception>
-    public Servicio RegistrarServicio(Guid pacienteId, DateTime fechaServicio)
+    /// <exception cref="ArgumentOutOfRangeException">Si el día es futuro o anterior al de la aprobación del menú.</exception>
+    public Servicio RegistrarServicio(Guid pacienteId, DateOnly fechaServicio)
     {
         if (Validacion is not { } aprobacion)
         {
@@ -263,19 +262,18 @@ public sealed class Menu : AggregateRoot<Guid>
         }
 
         var asignacion = BuscarAsignacion(pacienteId);
-        var fecha = NormalizarFechaServicio(fechaServicio);
 
-        if (fecha > DateTime.UtcNow)
+        if (fechaServicio > DateOnly.FromDateTime(DateTime.UtcNow))
         {
-            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El instante del servicio no puede ser futuro.");
+            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El día del servicio no puede ser futuro.");
         }
 
-        if (fecha < aprobacion.FechaValidacion)
+        if (fechaServicio < DateOnly.FromDateTime(aprobacion.FechaValidacion))
         {
             throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El menú no puede servirse antes de su aprobación.");
         }
 
-        return asignacion.RegistrarServicio(fecha);
+        return asignacion.RegistrarServicio(fechaServicio);
     }
 
     /// <summary>
@@ -283,22 +281,20 @@ public sealed class Menu : AggregateRoot<Guid>
     /// (relación <c>Consume</c>).
     /// </summary>
     /// <param name="pacienteId">Identificador del paciente.</param>
-    /// <param name="fechaServicio">Instante del servicio, en UTC, tal como se registró (se trunca al segundo).</param>
+    /// <param name="fechaServicio">Día del servicio, en el calendario UTC.</param>
     /// <param name="itemId">Identificador del alimento o plato consumido.</param>
     /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
     /// <returns>El consumo registrado.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú no está asignado al paciente, si no hay un servicio en ese instante, si el ítem no está incluido en
-    /// el menú (R11-01) o si ya tiene un consumo registrado en ese servicio.
+    /// Si el menú no está asignado al paciente, si no se le sirvió ese día, si el ítem no está incluido en el menú
+    /// (R11-01) o si ya tiene un consumo registrado en ese servicio.
     /// </exception>
-    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    public Consumo RegistrarConsumo(Guid pacienteId, DateTime fechaServicio, Guid itemId, bool aceptacion)
+    public Consumo RegistrarConsumo(Guid pacienteId, DateOnly fechaServicio, Guid itemId, bool aceptacion)
     {
         var asignacion = BuscarAsignacion(pacienteId);
-        var fecha = NormalizarFechaServicio(fechaServicio);
 
-        var servicio = asignacion.Servicios.SingleOrDefault(s => s.FechaServicio == fecha)
-            ?? throw new InvalidOperationException($"No hay un servicio de este menú al paciente {pacienteId} en {fecha:O}.");
+        var servicio = asignacion.Servicios.SingleOrDefault(s => s.FechaServicio == fechaServicio)
+            ?? throw new InvalidOperationException($"El menú no se le sirvió al paciente {pacienteId} el {fechaServicio:yyyy-MM-dd}.");
 
         if (_items.All(i => i.ItemId != itemId))
         {
@@ -373,17 +369,6 @@ public sealed class Menu : AggregateRoot<Guid>
     private Asignacion BuscarAsignacion(Guid pacienteId)
         => _asignaciones.SingleOrDefault(a => a.PacienteId == pacienteId)
             ?? throw new InvalidOperationException($"El menú no está asignado al paciente {pacienteId}.");
-
-    /// <summary>Exige UTC antes de comparar o buscar, y trunca al segundo como la clave del servicio.</summary>
-    private static DateTime NormalizarFechaServicio(DateTime fechaServicio)
-    {
-        if (fechaServicio.Kind != DateTimeKind.Utc)
-        {
-            throw new ArgumentException("El instante del servicio debe estar en UTC (DateTimeKind.Utc).", nameof(fechaServicio));
-        }
-
-        return Servicio.Normalizar(fechaServicio);
-    }
 
     private void FijarDistribucion(IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion)
     {

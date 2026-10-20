@@ -8,8 +8,7 @@ internal sealed class ConsumoConfiguration : IEntityTypeConfiguration<Consumo>
 {
     public void Configure(EntityTypeBuilder<Consumo> builder)
     {
-        // Consume(Servicio, ItemAlimentario): un consumo por ítem en cada servicio. Que el ítem esté en el menú
-        // (R11-01) lo comprueba Persistence/Sql/R11_01_consumo_del_menu.sql.
+        // Consume(Servicio, ItemAlimentario): un consumo por ítem en cada servicio.
         builder.ToTable("consumo");
 
         builder.HasKey(c => new { c.MenuId, c.PacienteId, c.FechaServicio, c.ItemId });
@@ -29,9 +28,13 @@ internal sealed class ConsumoConfiguration : IEntityTypeConfiguration<Consumo>
             .IsRequired();
 
         // FK compuesta → Servicio se configura desde ServicioConfiguration (colección Consumos)
-        builder.HasOne<ItemAlimentario>()
+
+        // R11-01: solo se consume lo que el menú incluye. Es la dependencia de inclusión consumo[menú, ítem] ⊆
+        // menu_item[menú, ítem], así que va como FK compuesta (RESTRICT): tampoco se puede quitar del menú un ítem
+        // que ya tiene consumos. La FK hacia el ítem queda implicada, porque menu_item.item_id ya la tiene.
+        builder.HasOne<MenuItem>()
             .WithMany()
-            .HasForeignKey(c => c.ItemId)
+            .HasForeignKey(c => new { c.MenuId, c.ItemId })
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

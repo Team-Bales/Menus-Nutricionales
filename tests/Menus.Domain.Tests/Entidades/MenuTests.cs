@@ -43,6 +43,21 @@ public sealed class MenuTests
         return menu;
     }
 
+    // Un menú con un alimento y un plato, aprobado hace un día y asignado a un paciente: se puede servir desde
+    // la aprobación hasta ahora.
+    private Menu CrearMenuServido(out Guid pacienteId)
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-3));
+        menu.AgregarItem(_alimentoId);
+        menu.AgregarItem(_platoId);
+        menu.Aprobar(Guid.NewGuid(), _ahora.AddDays(-1));
+        pacienteId = Guid.NewGuid();
+        menu.AsignarPaciente(pacienteId);
+        return menu;
+    }
+
+    private static DateTime Truncar(DateTime fecha) => new(fecha.Ticks - (fecha.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Utc);
+
     [Fact]
     public void Constructor_ValidArgs_SetsProperties()
     {
@@ -422,28 +437,177 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void RegistrarConsumo_ValidArgs_AgregaYRetornaConsumo()
+    public void RegistrarServicio_ValidArgs_LoRegistraEnLaAsignacion()
     {
-        var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
-        var itemId = Guid.NewGuid();
+        var menu = CrearMenuServido(out var pacienteId);
+        var fecha = _ahora.AddHours(-12);
 
-        var consumo = asignacion.RegistrarConsumo(itemId, true);
+        var servicio = menu.RegistrarServicio(pacienteId, fecha);
 
-        Assert.Single(asignacion.Consumos);
-        Assert.Equal(asignacion.MenuId, consumo.MenuId);
-        Assert.Equal(asignacion.PacienteId, consumo.PacienteId);
-        Assert.Equal(itemId, consumo.ItemId);
+        var asignacion = Assert.Single(menu.Asignaciones);
+        Assert.Same(servicio, Assert.Single(asignacion.Servicios));
+        Assert.Equal(menu.Id, servicio.MenuId);
+        Assert.Equal(pacienteId, servicio.PacienteId);
+        Assert.Equal(Truncar(fecha), servicio.FechaServicio);
+        Assert.Empty(servicio.Consumos);
+    }
+
+    [Fact]
+    public void RegistrarServicio_VariosDias_TodosRegistrados()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-20));
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-10));
+
+        Assert.Equal(2, Assert.Single(menu.Asignaciones).Servicios.Count);
+    }
+
+    [Fact]
+    public void RegistrarServicio_MismoSegundo_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        var fecha = Truncar(_ahora.AddHours(-12));
+        menu.RegistrarServicio(pacienteId, fecha.AddMilliseconds(100));
+
+        // Dentro del mismo segundo es el mismo servicio: la fecha se trunca porque forma parte de la clave.
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarServicio(pacienteId, fecha.AddMilliseconds(900)));
+    }
+
+    [Fact]
+    public void RegistrarServicio_MenuPendiente_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarServicio(Guid.NewGuid(), _ahora));
+    }
+
+    [Fact]
+    public void RegistrarServicio_PacienteSinAsignacion_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out _);
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarServicio(Guid.NewGuid(), _ahora.AddHours(-12)));
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void RegistrarServicio_FechaNoUtc_LanzaArgumentException(DateTimeKind kind)
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+
+        Assert.Throws<ArgumentException>(() =>
+            menu.RegistrarServicio(pacienteId, DateTime.SpecifyKind(_ahora.AddHours(-12), kind)));
+    }
+
+    [Fact]
+    public void RegistrarServicio_FechaFutura_LanzaArgumentOutOfRangeException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => menu.RegistrarServicio(pacienteId, _ahora.AddHours(1)));
+    }
+
+    [Fact]
+    public void RegistrarServicio_AnteriorALaAprobacion_LanzaArgumentOutOfRangeException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => menu.RegistrarServicio(pacienteId, _ahora.AddDays(-2)));
+        Assert.Empty(Assert.Single(menu.Asignaciones).Servicios);
+    }
+
+    [Fact]
+    public void RegistrarConsumo_ValidArgs_LoRegistraEnElServicio()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        var servicio = menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
+
+        var consumo = menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-12), _alimentoId, true);
+
+        Assert.Same(consumo, Assert.Single(servicio.Consumos));
+        Assert.Equal(menu.Id, consumo.MenuId);
+        Assert.Equal(pacienteId, consumo.PacienteId);
+        Assert.Equal(servicio.FechaServicio, consumo.FechaServicio);
+        Assert.Equal(_alimentoId, consumo.ItemId);
         Assert.True(consumo.Aceptacion);
     }
 
     [Fact]
-    public void RegistrarConsumo_MismoItemDosVeces_LanzaInvalidOperationException()
+    public void RegistrarConsumo_PlatoEntero_SeRegistraComoUnItem()
     {
-        var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
-        var itemId = Guid.NewGuid();
-        asignacion.RegistrarConsumo(itemId, true);
+        var menu = CrearMenuServido(out var pacienteId);
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
 
-        Assert.Throws<InvalidOperationException>(() => asignacion.RegistrarConsumo(itemId, false));
+        var consumo = menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-12), _platoId, false);
+
+        Assert.Equal(_platoId, consumo.ItemId);
+        Assert.False(consumo.Aceptacion);
+    }
+
+    [Fact]
+    public void RegistrarConsumo_MismoItemEnDosServicios_SeRegistraEnCadaUno()
+    {
+        // El caso que el modelo anterior no admitía: el mismo menú servido en dos momentos distintos.
+        var menu = CrearMenuServido(out var pacienteId);
+        var primero = menu.RegistrarServicio(pacienteId, _ahora.AddHours(-20));
+        var segundo = menu.RegistrarServicio(pacienteId, _ahora.AddHours(-10));
+
+        menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-20), _alimentoId, true);
+        menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-10), _alimentoId, false);
+
+        Assert.True(Assert.Single(primero.Consumos).Aceptacion);
+        Assert.False(Assert.Single(segundo.Consumos).Aceptacion);
+    }
+
+    [Fact]
+    public void RegistrarConsumo_MismoItemDosVecesEnUnServicio_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
+        menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-12), _alimentoId, true);
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-12), _alimentoId, false));
+    }
+
+    [Fact]
+    public void RegistrarConsumo_ItemNoIncluidoEnElMenu_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        var servicio = menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-12), Guid.NewGuid(), true));
+        Assert.Empty(servicio.Consumos);
+    }
+
+    [Fact]
+    public void RegistrarConsumo_SinServicioEnEsaFecha_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarConsumo(pacienteId, _ahora.AddHours(-6), _alimentoId, true));
+    }
+
+    [Fact]
+    public void RegistrarConsumo_PacienteSinAsignacion_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuServido(out _);
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarConsumo(Guid.NewGuid(), _ahora.AddHours(-12), _alimentoId, true));
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void RegistrarConsumo_FechaNoUtc_LanzaArgumentException(DateTimeKind kind)
+    {
+        var menu = CrearMenuServido(out var pacienteId);
+        menu.RegistrarServicio(pacienteId, _ahora.AddHours(-12));
+
+        Assert.Throws<ArgumentException>(() =>
+            menu.RegistrarConsumo(pacienteId, DateTime.SpecifyKind(_ahora.AddHours(-12), kind), _alimentoId, true));
     }
 
     [Fact]

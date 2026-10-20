@@ -6,22 +6,34 @@ namespace Menus.Domain.Entidades;
 /// Menú creado por un nutricionista para una dieta, de forma automática o manual,
 /// junto con los parámetros con que se generó.
 /// Es la raíz del agregado: los ítems incluidos (alimentos y platos), la distribución por tipo de
-/// preparación, los grupos nutricionales cubiertos, la validación y las asignaciones a pacientes
-/// solo se registran a través de él.
+/// preparación, los grupos nutricionales cubiertos, la validación, las asignaciones a pacientes y sus
+/// servicios y consumos solo se registran a través de él.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
 /// cambian después (submodelo #7, R7-27), por eso no hay métodos para modificarlos.
+/// </para>
+/// <para>
 /// El menú no guarda un estado, se deriva de su validación (submodelo #7, §4): está pendiente mientras no
 /// tiene dictamen (<see cref="EsPendiente"/>) y es final cuando fue aprobado (<see cref="EsFinal"/>). El primer
 /// dictamen lo cierra: si es una aprobación queda registrada (<see cref="Aprobar"/>); si es un rechazo no se
 /// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Por eso un menú tiene a
 /// lo sumo una validación (R7-32). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes.
+/// </para>
+/// <para>
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
-/// (agregación <c>Asignación</c>, R7-05). Que el paciente esté inscrito en la dieta del menú (R6-23)
-/// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente; lo mismo
-/// ocurre con que el nutricionista creador esté autorizado en esa dieta (R6-22).
+/// (agregación <c>Asignación</c>, R7-05), y servirse a cada uno las veces que haga falta
+/// (<see cref="RegistrarServicio"/>). El servicio y el consumo se registran por la raíz, y no por la asignación,
+/// porque sus reglas dependen del menú: solo se sirve después de la aprobación (R7-31) y solo se consume lo que el
+/// menú incluye (R11-01).
+/// </para>
+/// <para>
+/// Que el paciente esté inscrito en la dieta del menú (R6-23) lo verifica la capa de aplicación, porque la
+/// inscripción pertenece al agregado del paciente; lo mismo ocurre con que el nutricionista creador esté
+/// autorizado en esa dieta (R6-22).
+/// </para>
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
 {
@@ -125,8 +137,8 @@ public sealed class Menu : AggregateRoot<Guid>
     public Guid NutricionistaCreadorId { get; }
 
     /// <summary>
-    /// Instante de creación del menú, en UTC (consulta 1, §2). Es el ancla temporal de las asignaciones,
-    /// los consumos y las valoraciones (consulta 4, §7-D).
+    /// Instante de creación del menú, en UTC (consulta 1, §2). Los servicios y las valoraciones tienen su propia
+    /// fecha (<see cref="Servicio.FechaServicio"/> y <see cref="ValoracionNutricional.FechaValoracion"/>).
     /// </summary>
     public DateTime FechaCreacion { get; }
 
@@ -148,7 +160,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Grupos nutricionales que cubre el menú (solo lectura). Parámetro de generación.</summary>
     public IReadOnlyCollection<MenuGrupoNutricional> GruposNutricionales => _gruposNutricionales.AsReadOnly();
 
-    /// <summary>Pacientes a los que se asignó el menú (solo lectura).</summary>
+    /// <summary>Pacientes a los que se asignó el menú, con sus servicios y consumos (solo lectura).</summary>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
     /// <summary>
@@ -222,6 +234,71 @@ public sealed class Menu : AggregateRoot<Guid>
         return asignacion;
     }
 
+    /// <summary>Registra que el menú se le sirvió a un paciente al que está asignado (entidad débil <c>Servicio</c>).</summary>
+    /// <param name="pacienteId">Identificador del paciente.</param>
+    /// <param name="fechaServicio">
+    /// Instante del servicio, en UTC; no puede ser futuro ni anterior a la aprobación del menú (R7-31). Se trunca al
+    /// segundo (ver <see cref="Servicio"/>).
+    /// </param>
+    /// <returns>El servicio registrado.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú no es final, si no está asignado al paciente o si ya hay un servicio en ese instante.
+    /// </exception>
+    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es futura o anterior a la aprobación del menú (R7-31).</exception>
+    public Servicio RegistrarServicio(Guid pacienteId, DateTime fechaServicio)
+    {
+        if (Validacion is not { Aprobado: true } aprobacion)
+        {
+            throw new InvalidOperationException("Solo se sirve un menú final (aprobado).");
+        }
+
+        var asignacion = BuscarAsignacion(pacienteId);
+        var fecha = NormalizarFechaServicio(fechaServicio);
+
+        if (fecha > DateTime.UtcNow)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El instante del servicio no puede ser futuro.");
+        }
+
+        if (fecha < aprobacion.FechaValidacion)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El menú no puede servirse antes de su aprobación.");
+        }
+
+        return asignacion.RegistrarServicio(fecha);
+    }
+
+    /// <summary>
+    /// Registra la aceptación o el rechazo de un alimento o un plato del menú en un servicio al paciente
+    /// (relación <c>Consume</c>).
+    /// </summary>
+    /// <param name="pacienteId">Identificador del paciente.</param>
+    /// <param name="fechaServicio">Instante del servicio, en UTC, tal como se registró (se trunca al segundo).</param>
+    /// <param name="itemId">Identificador del alimento o plato consumido.</param>
+    /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
+    /// <returns>El consumo registrado.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Si el menú no está asignado al paciente, si no hay un servicio en ese instante, si el ítem no está incluido en
+    /// el menú (R11-01) o si ya tiene un consumo registrado en ese servicio.
+    /// </exception>
+    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
+    public Consumo RegistrarConsumo(Guid pacienteId, DateTime fechaServicio, Guid itemId, bool aceptacion)
+    {
+        var asignacion = BuscarAsignacion(pacienteId);
+        var fecha = NormalizarFechaServicio(fechaServicio);
+
+        var servicio = asignacion.Servicios.SingleOrDefault(s => s.FechaServicio == fecha)
+            ?? throw new InvalidOperationException($"No hay un servicio de este menú al paciente {pacienteId} en {fecha:O}.");
+
+        if (_items.All(i => i.ItemId != itemId))
+        {
+            throw new InvalidOperationException($"El ítem {itemId} no está incluido en este menú: solo se consume lo que el menú incluye.");
+        }
+
+        return servicio.RegistrarConsumo(itemId, aceptacion);
+    }
+
     /// <summary>Registra que un nutricionista revisor aprobó el menú, que pasa a ser final.</summary>
     /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
     /// <param name="fechaValidacion">Instante de la aprobación, en UTC.</param>
@@ -282,6 +359,21 @@ public sealed class Menu : AggregateRoot<Guid>
         {
             throw new InvalidOperationException("El menú ya tiene dictamen: solo se modifica o se dictamina mientras está pendiente.");
         }
+    }
+
+    private Asignacion BuscarAsignacion(Guid pacienteId)
+        => _asignaciones.SingleOrDefault(a => a.PacienteId == pacienteId)
+            ?? throw new InvalidOperationException($"El menú no está asignado al paciente {pacienteId}.");
+
+    /// <summary>Exige UTC antes de comparar o buscar, y trunca al segundo como la clave del servicio.</summary>
+    private static DateTime NormalizarFechaServicio(DateTime fechaServicio)
+    {
+        if (fechaServicio.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("El instante del servicio debe estar en UTC (DateTimeKind.Utc).", nameof(fechaServicio));
+        }
+
+        return Servicio.Normalizar(fechaServicio);
     }
 
     private void FijarDistribucion(IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion)

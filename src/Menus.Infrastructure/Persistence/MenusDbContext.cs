@@ -27,13 +27,13 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     public DbSet<Paciente> Pacientes => Set<Paciente>();
     public DbSet<PacienteDieta> PacientesDietas => Set<PacienteDieta>();
 
+    public DbSet<ItemAlimentario> ItemsAlimentarios => Set<ItemAlimentario>();
     public DbSet<Alimento> Alimentos => Set<Alimento>();
     public DbSet<Plato> Platos => Set<Plato>();
     public DbSet<PlatoIngrediente> PlatosIngredientes => Set<PlatoIngrediente>();
 
     public DbSet<Menu> Menus => Set<Menu>();
-    public DbSet<MenuAlimento> MenuAlimentos => Set<MenuAlimento>();
-    public DbSet<MenuPlato> MenuPlatos => Set<MenuPlato>();
+    public DbSet<MenuItem> MenuItems => Set<MenuItem>();
     public DbSet<MenuDistribucion> MenuDistribuciones => Set<MenuDistribucion>();
     public DbSet<MenuGrupoNutricional> MenuGruposNutricionales => Set<MenuGrupoNutricional>();
     public DbSet<Asignacion> Asignaciones => Set<Asignacion>();

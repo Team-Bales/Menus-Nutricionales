@@ -8,8 +8,8 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// y a su consumo (issues #80, #84, #85, #99 y #100).
 /// </summary>
 /// <remarks>
-/// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el agregado completo, con alimentos,
-/// platos, distribución, grupos, validaciones y asignaciones con sus consumos, porque las reglas del
+/// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el agregado completo, con sus ítems,
+/// distribución, grupos, validaciones y asignaciones con sus consumos, porque las reglas del
 /// agregado (R7-04, R7-05, R7-06, R7-07, R7-25) se comprueban sobre esas colecciones.
 /// <see cref="Validacion"/> y <see cref="Consumo"/> no tienen repositorio propio: son agregaciones sin
 /// identidad propia (MERX, §0.2) y se guardan junto con el menú.

@@ -5,7 +5,7 @@ namespace Menus.Domain.Entidades;
 /// <summary>
 /// Menú creado por un nutricionista para una dieta, de forma automática o manual,
 /// junto con los parámetros con que se generó.
-/// Es la raíz del agregado: los alimentos y platos incluidos, la distribución por tipo de
+/// Es la raíz del agregado: los ítems incluidos (alimentos y platos), la distribución por tipo de
 /// preparación, los grupos nutricionales cubiertos y las asignaciones a pacientes solo se
 /// registran a través de él.
 /// </summary>
@@ -25,8 +25,7 @@ namespace Menus.Domain.Entidades;
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
 {
-    private readonly List<MenuAlimento> _alimentos = [];
-    private readonly List<MenuPlato> _platos = [];
+    private readonly List<MenuItem> _items = [];
     private readonly List<MenuDistribucion> _distribuciones = [];
     private readonly List<MenuGrupoNutricional> _gruposNutricionales = [];
     private readonly List<Asignacion> _asignaciones = [];
@@ -132,19 +131,19 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </summary>
     public DateTime FechaCreacion { get; }
 
-    /// <summary>Cantidad total de alimentos del menú (&gt; 0). Parámetro de generación.</summary>
+    /// <summary>
+    /// Cantidad total de alimentos del menú (&gt; 0). Parámetro de generación. Cuenta ítems del banco: con la
+    /// generalización <see cref="ItemAlimentario"/>, un plato es un alimento compuesto.
+    /// </summary>
     public int CantidadTotalAlimentos { get; }
 
     /// <summary>Indica si el menú fue generado automáticamente. Parámetro de generación.</summary>
     public bool EsAutomatico { get; }
 
-    /// <summary>Alimentos incluidos directamente en el menú (solo lectura).</summary>
-    public IReadOnlyCollection<MenuAlimento> Alimentos => _alimentos.AsReadOnly();
+    /// <summary>Ítems del banco, alimentos y platos, incluidos en el menú (solo lectura).</summary>
+    public IReadOnlyCollection<MenuItem> Items => _items.AsReadOnly();
 
-    /// <summary>Platos incluidos en el menú (solo lectura).</summary>
-    public IReadOnlyCollection<MenuPlato> Platos => _platos.AsReadOnly();
-
-    /// <summary>Proporción de alimentos por tipo de preparación (solo lectura). Parámetro de generación.</summary>
+    /// <summary>Proporción de ítems por tipo de preparación (solo lectura). Parámetro de generación.</summary>
     public IReadOnlyCollection<MenuDistribucion> Distribuciones => _distribuciones.AsReadOnly();
 
     /// <summary>Grupos nutricionales que cubre el menú (solo lectura). Parámetro de generación.</summary>
@@ -165,76 +164,40 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Indica si el menú es final: fue aprobado (consulta 2, §7-A).</summary>
     public bool EsFinal => _validaciones.Any(v => v.Aprobado);
 
-    /// <summary>Incluye un alimento en el menú (relación <c>Incluye(Menú, Alimento)</c>).</summary>
-    /// <param name="alimentoId">Identificador del alimento.</param>
+    /// <summary>Incluye un alimento o un plato en el menú (relación <c>Incluye(Menú, ItemAlimentario)</c>).</summary>
+    /// <param name="itemId">Identificador del alimento o plato.</param>
     /// <returns>La inclusión registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú ya tiene dictamen o si el alimento ya está incluido en el menú (R7-07).
+    /// Si el menú ya tiene dictamen o si el ítem ya está incluido en el menú (R7-07).
     /// </exception>
-    public MenuAlimento AgregarAlimento(Guid alimentoId)
+    public MenuItem AgregarItem(Guid itemId)
     {
         ExigirPendiente();
 
-        if (_alimentos.Any(a => a.AlimentoId == alimentoId))
+        if (_items.Any(i => i.ItemId == itemId))
         {
-            throw new InvalidOperationException($"El alimento {alimentoId} ya está incluido en este menú.");
+            throw new InvalidOperationException($"El ítem {itemId} ya está incluido en este menú.");
         }
 
-        var alimento = new MenuAlimento(Id, alimentoId);
-        _alimentos.Add(alimento);
-        return alimento;
-    }
-
-    /// <summary>Incluye un plato en el menú (relación <c>Incluye(Menú, Plato)</c>).</summary>
-    /// <param name="platoId">Identificador del plato.</param>
-    /// <returns>La inclusión registrada.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Si el menú ya tiene dictamen o si el plato ya está incluido en el menú (R7-07).
-    /// </exception>
-    public MenuPlato AgregarPlato(Guid platoId)
-    {
-        ExigirPendiente();
-
-        if (_platos.Any(p => p.PlatoId == platoId))
-        {
-            throw new InvalidOperationException($"El plato {platoId} ya está incluido en este menú.");
-        }
-
-        var plato = new MenuPlato(Id, platoId);
-        _platos.Add(plato);
-        return plato;
+        var item = new MenuItem(Id, itemId);
+        _items.Add(item);
+        return item;
     }
 
     /// <summary>
-    /// Quita un alimento incluido en el menú. Es parte de la modificación manual que admite un menú generado
-    /// mientras espera revisión; los parámetros de generación no se modifican (R7-27).
+    /// Quita un alimento o un plato incluido en el menú. Es parte de la modificación manual que admite un menú
+    /// generado mientras espera revisión; los parámetros de generación no se modifican (R7-27).
     /// </summary>
-    /// <param name="alimentoId">Identificador del alimento.</param>
-    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el alimento no está incluido.</exception>
-    public void QuitarAlimento(Guid alimentoId)
+    /// <param name="itemId">Identificador del alimento o plato.</param>
+    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el ítem no está incluido.</exception>
+    public void QuitarItem(Guid itemId)
     {
         ExigirPendiente();
 
-        var alimento = _alimentos.SingleOrDefault(a => a.AlimentoId == alimentoId)
-            ?? throw new InvalidOperationException($"El alimento {alimentoId} no está incluido en este menú.");
+        var item = _items.SingleOrDefault(i => i.ItemId == itemId)
+            ?? throw new InvalidOperationException($"El ítem {itemId} no está incluido en este menú.");
 
-        _alimentos.Remove(alimento);
-    }
-
-    /// <summary>
-    /// Quita un plato incluido en el menú. Es parte de la modificación manual que admite un menú generado
-    /// mientras espera revisión; los parámetros de generación no se modifican (R7-27).
-    /// </summary>
-    /// <param name="platoId">Identificador del plato.</param>
-    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el plato no está incluido.</exception>
-    public void QuitarPlato(Guid platoId)
-    {
-        ExigirPendiente();
-
-        var plato = _platos.SingleOrDefault(p => p.PlatoId == platoId)
-            ?? throw new InvalidOperationException($"El plato {platoId} no está incluido en este menú.");
-
-        _platos.Remove(plato);
+        _items.Remove(item);
     }
 
     /// <summary>Asigna el menú a un paciente (agregación <c>Asignación</c>).</summary>

@@ -45,14 +45,9 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .OnDelete(DeleteBehavior.Restrict);
 
         // Cascade solo a la parametrización del menú: Incluye, Distribución y Cubre (R11-02)
-        builder.HasMany(m => m.Alimentos)
+        builder.HasMany(m => m.Items)
             .WithOne()
-            .HasForeignKey(ma => ma.MenuId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasMany(m => m.Platos)
-            .WithOne()
-            .HasForeignKey(mp => mp.MenuId)
+            .HasForeignKey(mi => mi.MenuId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(m => m.Distribuciones)

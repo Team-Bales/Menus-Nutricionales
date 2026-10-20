@@ -1,8 +1,9 @@
 -- Deshace lo que crean los demás scripts de esta carpeta. DROP FUNCTION ... CASCADE también borra los
 -- triggers que usan cada función.
-DROP INDEX IF EXISTS ux_alimentos_r5_16_nombre;
-DROP INDEX IF EXISTS ux_platos_r5_16_nombre;
+DROP INDEX IF EXISTS ux_items_alimentarios_r5_16_nombre;
 DROP FUNCTION IF EXISTS fn_r5_15() CASCADE;
+DROP FUNCTION IF EXISTS fn_r5_18() CASCADE;
+DROP FUNCTION IF EXISTS fn_r5_19() CASCADE;
 DROP FUNCTION IF EXISTS fn_r6_21() CASCADE;
 DROP FUNCTION IF EXISTS fn_r6_22_creador() CASCADE;
 DROP FUNCTION IF EXISTS fn_validacion() CASCADE;

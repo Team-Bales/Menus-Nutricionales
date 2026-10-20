@@ -7,7 +7,7 @@ public sealed class ConsumoTests
 {
     private readonly Guid _menuId = Guid.NewGuid();
     private readonly Guid _pacienteId = Guid.NewGuid();
-    private readonly Guid _alimentoId = Guid.NewGuid();
+    private readonly Guid _itemId = Guid.NewGuid();
 
     // Consumo solo se crea a través de Asignacion.RegistrarConsumo; dos instancias de Menu con el
     // mismo Id representan el mismo menú leído dos veces. Solo se asigna un menú final (aprobado).
@@ -29,18 +29,18 @@ public sealed class ConsumoTests
     [Fact]
     public void RegistrarConsumo_ValidArgs_TomaLaClaveDeLaAsignacion()
     {
-        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
+        var consumo = CrearAsignacion().RegistrarConsumo(_itemId, true);
 
         Assert.Equal(_menuId, consumo.MenuId);
         Assert.Equal(_pacienteId, consumo.PacienteId);
-        Assert.Equal(_alimentoId, consumo.AlimentoId);
+        Assert.Equal(_itemId, consumo.ItemId);
         Assert.True(consumo.Aceptacion);
     }
 
     [Fact]
     public void RegistrarConsumo_Rechazo_GuardaAceptacionFalsa()
     {
-        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
+        var consumo = CrearAsignacion().RegistrarConsumo(_itemId, false);
 
         Assert.False(consumo.Aceptacion);
     }
@@ -48,14 +48,14 @@ public sealed class ConsumoTests
     [Fact]
     public void Equality_MismaClaveCompuesta_SonIguales()
     {
-        var aceptado = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
-        var rechazado = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
+        var aceptado = CrearAsignacion().RegistrarConsumo(_itemId, true);
+        var rechazado = CrearAsignacion().RegistrarConsumo(_itemId, false);
 
         Assert.Equal(aceptado, rechazado);
     }
 
     [Fact]
-    public void Equality_DistintoAlimento_NoSonIguales()
+    public void Equality_DistintoItem_NoSonIguales()
     {
         var asignacion = CrearAsignacion();
 

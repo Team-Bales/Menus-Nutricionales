@@ -4,12 +4,17 @@ namespace Menus.Domain.Entidades;
 
 /// <summary>
 /// Entidad de unión que representa la composición de un plato por un alimento
-/// con una cantidad específica (agregación "Composición" / relación "Compone").
+/// con una cantidad específica (relación <c>Compone</c>, con su atributo <c>Cantidad</c>).
 /// </summary>
+/// <remarks>
+/// Los dos extremos son ítems del banco (<see cref="ItemAlimentario"/>), pero con papeles fijos: el compuesto es
+/// un <see cref="Plato"/> y el componente, un <see cref="Alimento"/> simple. Así la composición tiene un solo
+/// nivel (R5-18).
+/// </remarks>
 public sealed class PlatoIngrediente : Entity<(Guid PlatoId, Guid AlimentoId)>
 {
     /// <param name="platoId">Identificador del plato compuesto.</param>
-    /// <param name="alimentoId">Identificador del alimento ingrediente.</param>
+    /// <param name="alimentoId">Identificador del alimento simple que es ingrediente.</param>
     /// <param name="cantidad">Cantidad del alimento en el plato (estrictamente positiva).</param>
     /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="cantidad"/> no es positiva.</exception>
     public PlatoIngrediente(Guid platoId, Guid alimentoId, decimal cantidad)

@@ -27,7 +27,9 @@ internal sealed class PlatoIngredienteConfiguration : IEntityTypeConfiguration<P
             .HasPrecision(10, 2)
             .IsRequired();
 
-        // FK → Alimento (RESTRICT per RX-02; el plato no elimina sus alimentos)
+        // FK → Alimento (RESTRICT per RX-02; el plato no elimina sus alimentos). En la base, las dos FK apuntan a
+        // items_alimentarios; que el compuesto sea un plato y el componente un alimento lo comprueba
+        // Persistence/Sql/R5_18_composicion_de_un_nivel.sql.
         builder.HasOne<Alimento>()
             .WithMany()
             .HasForeignKey(pi => pi.AlimentoId)

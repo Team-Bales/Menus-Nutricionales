@@ -57,8 +57,7 @@ public sealed class MenuTests
         Assert.Equal(fecha, menu.FechaCreacion);
         Assert.Equal(8, menu.CantidadTotalAlimentos);
         Assert.False(menu.EsAutomatico);
-        Assert.Empty(menu.Alimentos);
-        Assert.Empty(menu.Platos);
+        Assert.Empty(menu.Items);
         Assert.Empty(menu.Asignaciones);
         Assert.Empty(menu.Validaciones);
     }
@@ -197,45 +196,38 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void AgregarAlimento_ValidArgs_AgregaYRetornaInclusion()
+    public void AgregarItem_Alimento_AgregaYRetornaInclusion()
     {
         var menu = CrearMenu();
 
-        var inclusion = menu.AgregarAlimento(_alimentoId);
+        var inclusion = menu.AgregarItem(_alimentoId);
 
-        Assert.Single(menu.Alimentos);
+        Assert.Same(inclusion, Assert.Single(menu.Items));
         Assert.Equal(menu.Id, inclusion.MenuId);
-        Assert.Equal(_alimentoId, inclusion.AlimentoId);
+        Assert.Equal(_alimentoId, inclusion.ItemId);
     }
 
     [Fact]
-    public void AgregarAlimento_AlimentoDuplicado_LanzaInvalidOperationException()
+    public void AgregarItem_AlimentoYPlato_QuedanEnLaMismaColeccion()
     {
         var menu = CrearMenu();
-        menu.AgregarAlimento(_alimentoId);
 
-        Assert.Throws<InvalidOperationException>(() => menu.AgregarAlimento(_alimentoId));
+        menu.AgregarItem(_alimentoId);
+        menu.AgregarItem(_platoId);
+
+        Assert.Equal(2, menu.Items.Count);
+        Assert.Contains(menu.Items, i => i.ItemId == _alimentoId);
+        Assert.Contains(menu.Items, i => i.ItemId == _platoId);
     }
 
     [Fact]
-    public void AgregarPlato_ValidArgs_AgregaYRetornaInclusion()
+    public void AgregarItem_ItemDuplicado_LanzaInvalidOperationException()
     {
         var menu = CrearMenu();
+        menu.AgregarItem(_platoId);
 
-        var inclusion = menu.AgregarPlato(_platoId);
-
-        Assert.Single(menu.Platos);
-        Assert.Equal(menu.Id, inclusion.MenuId);
-        Assert.Equal(_platoId, inclusion.PlatoId);
-    }
-
-    [Fact]
-    public void AgregarPlato_PlatoDuplicado_LanzaInvalidOperationException()
-    {
-        var menu = CrearMenu();
-        menu.AgregarPlato(_platoId);
-
-        Assert.Throws<InvalidOperationException>(() => menu.AgregarPlato(_platoId));
+        Assert.Throws<InvalidOperationException>(() => menu.AgregarItem(_platoId));
+        Assert.Single(menu.Items);
     }
 
     [Fact]
@@ -255,71 +247,42 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void AgregarAlimento_MenuConDictamen_LanzaInvalidOperationException()
+    public void AgregarItem_MenuConDictamen_LanzaInvalidOperationException()
     {
         var menu = CrearMenuFinal();
 
-        Assert.Throws<InvalidOperationException>(() => menu.AgregarAlimento(_alimentoId));
+        Assert.Throws<InvalidOperationException>(() => menu.AgregarItem(_alimentoId));
     }
 
     [Fact]
-    public void AgregarPlato_MenuConDictamen_LanzaInvalidOperationException()
-    {
-        var menu = CrearMenuFinal();
-
-        Assert.Throws<InvalidOperationException>(() => menu.AgregarPlato(_platoId));
-    }
-
-    [Fact]
-    public void QuitarAlimento_AlimentoIncluido_LoQuita()
+    public void QuitarItem_ItemIncluido_LoQuita()
     {
         var menu = CrearMenu();
-        var otroAlimentoId = Guid.NewGuid();
-        menu.AgregarAlimento(_alimentoId);
-        menu.AgregarAlimento(otroAlimentoId);
+        menu.AgregarItem(_alimentoId);
+        menu.AgregarItem(_platoId);
 
-        menu.QuitarAlimento(_alimentoId);
+        menu.QuitarItem(_alimentoId);
 
-        Assert.Equal(otroAlimentoId, Assert.Single(menu.Alimentos).AlimentoId);
+        Assert.Equal(_platoId, Assert.Single(menu.Items).ItemId);
     }
 
     [Fact]
-    public void QuitarAlimento_AlimentoNoIncluido_LanzaInvalidOperationException()
+    public void QuitarItem_ItemNoIncluido_LanzaInvalidOperationException()
     {
         var menu = CrearMenu();
 
-        Assert.Throws<InvalidOperationException>(() => menu.QuitarAlimento(_alimentoId));
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarItem(_alimentoId));
     }
 
     [Fact]
-    public void QuitarPlato_PlatoIncluido_LoQuita()
-    {
-        var menu = CrearMenu();
-        menu.AgregarPlato(_platoId);
-
-        menu.QuitarPlato(_platoId);
-
-        Assert.Empty(menu.Platos);
-    }
-
-    [Fact]
-    public void QuitarPlato_PlatoNoIncluido_LanzaInvalidOperationException()
-    {
-        var menu = CrearMenu();
-
-        Assert.Throws<InvalidOperationException>(() => menu.QuitarPlato(_platoId));
-    }
-
-    [Fact]
-    public void Quitar_MenuConDictamen_LanzaInvalidOperationException()
+    public void QuitarItem_MenuConDictamen_LanzaInvalidOperationException()
     {
         var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
-        menu.AgregarAlimento(_alimentoId);
-        menu.AgregarPlato(_platoId);
+        menu.AgregarItem(_alimentoId);
         menu.Aprobar(Guid.NewGuid(), _ahora);
 
-        Assert.Throws<InvalidOperationException>(() => menu.QuitarAlimento(_alimentoId));
-        Assert.Throws<InvalidOperationException>(() => menu.QuitarPlato(_platoId));
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarItem(_alimentoId));
+        Assert.Single(menu.Items);
     }
 
     [Fact]
@@ -461,25 +424,25 @@ public sealed class MenuTests
     public void RegistrarConsumo_ValidArgs_AgregaYRetornaConsumo()
     {
         var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
-        var alimentoId = Guid.NewGuid();
+        var itemId = Guid.NewGuid();
 
-        var consumo = asignacion.RegistrarConsumo(alimentoId, true);
+        var consumo = asignacion.RegistrarConsumo(itemId, true);
 
         Assert.Single(asignacion.Consumos);
         Assert.Equal(asignacion.MenuId, consumo.MenuId);
         Assert.Equal(asignacion.PacienteId, consumo.PacienteId);
-        Assert.Equal(alimentoId, consumo.AlimentoId);
+        Assert.Equal(itemId, consumo.ItemId);
         Assert.True(consumo.Aceptacion);
     }
 
     [Fact]
-    public void RegistrarConsumo_MismoAlimentoDosVeces_LanzaInvalidOperationException()
+    public void RegistrarConsumo_MismoItemDosVeces_LanzaInvalidOperationException()
     {
         var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
-        var alimentoId = Guid.NewGuid();
-        asignacion.RegistrarConsumo(alimentoId, true);
+        var itemId = Guid.NewGuid();
+        asignacion.RegistrarConsumo(itemId, true);
 
-        Assert.Throws<InvalidOperationException>(() => asignacion.RegistrarConsumo(alimentoId, false));
+        Assert.Throws<InvalidOperationException>(() => asignacion.RegistrarConsumo(itemId, false));
     }
 
     [Fact]
@@ -487,12 +450,12 @@ public sealed class MenuTests
     {
         var menu = CrearMenu();
 
-        Assert.IsAssignableFrom<IReadOnlyCollection<MenuAlimento>>(menu.Alimentos);
-        Assert.IsAssignableFrom<IReadOnlyCollection<MenuPlato>>(menu.Platos);
+        Assert.IsAssignableFrom<IReadOnlyCollection<MenuItem>>(menu.Items);
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuDistribucion>>(menu.Distribuciones);
         Assert.IsAssignableFrom<IReadOnlyCollection<MenuGrupoNutricional>>(menu.GruposNutricionales);
         Assert.IsAssignableFrom<IReadOnlyCollection<Asignacion>>(menu.Asignaciones);
         Assert.IsAssignableFrom<IReadOnlyCollection<Validacion>>(menu.Validaciones);
+        Assert.False(menu.Items is ICollection<MenuItem> { IsReadOnly: false });
         Assert.False(menu.Distribuciones is ICollection<MenuDistribucion> { IsReadOnly: false });
         Assert.False(menu.GruposNutricionales is ICollection<MenuGrupoNutricional> { IsReadOnly: false });
     }

@@ -25,19 +25,19 @@ public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
     /// <summary>Consumos registrados para la asignación (solo lectura).</summary>
     public IReadOnlyCollection<Consumo> Consumos => _consumos.AsReadOnly();
 
-    /// <summary>Registra la aceptación o el rechazo de un alimento de este menú asignado.</summary>
-    /// <param name="alimentoId">Identificador del alimento consumido.</param>
-    /// <param name="aceptacion"><see langword="true"/> si el alimento fue aceptado; de lo contrario, <see langword="false"/>.</param>
+    /// <summary>Registra la aceptación o el rechazo de un alimento o un plato de este menú asignado.</summary>
+    /// <param name="itemId">Identificador del alimento o plato consumido.</param>
+    /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
     /// <returns>El consumo registrado.</returns>
-    /// <exception cref="InvalidOperationException">Si ya existe un consumo de ese alimento para esta asignación.</exception>
-    public Consumo RegistrarConsumo(Guid alimentoId, bool aceptacion)
+    /// <exception cref="InvalidOperationException">Si ya existe un consumo de ese ítem para esta asignación.</exception>
+    public Consumo RegistrarConsumo(Guid itemId, bool aceptacion)
     {
-        if (_consumos.Any(c => c.AlimentoId == alimentoId))
+        if (_consumos.Any(c => c.ItemId == itemId))
         {
-            throw new InvalidOperationException($"El alimento {alimentoId} ya tiene un consumo registrado para esta asignación.");
+            throw new InvalidOperationException($"El ítem {itemId} ya tiene un consumo registrado para esta asignación.");
         }
 
-        var consumo = new Consumo(MenuId, PacienteId, alimentoId, aceptacion);
+        var consumo = new Consumo(MenuId, PacienteId, itemId, aceptacion);
         _consumos.Add(consumo);
         return consumo;
     }

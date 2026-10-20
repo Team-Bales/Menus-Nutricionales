@@ -24,6 +24,7 @@ public sealed class PlatoTests
         Assert.Equal(NivelCalorico.Medio.Id, plato.NivelCaloricoId);
         Assert.Equal(_nutricionistaId, plato.NutricionistaId);
         Assert.Empty(plato.Ingredientes);
+        Assert.IsAssignableFrom<ItemAlimentario>(plato);
     }
 
     [Theory]
@@ -68,6 +69,28 @@ public sealed class PlatoTests
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => plato.AgregarIngrediente(_alimentoId1, cantidad));
+    }
+
+    [Fact]
+    public void AgregarIngrediente_ElPropioPlato_LanzaInvalidOperationException()
+    {
+        // R5-18: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
+        var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
+
+        Assert.Throws<InvalidOperationException>(() => plato.AgregarIngrediente(plato.Id, 100m));
+        Assert.Empty(plato.Ingredientes);
+    }
+
+    [Fact]
+    public void Equality_AlimentoYPlatoConElMismoId_NoSonIguales()
+    {
+        // Son subclases distintas de ItemAlimentario; en la base no pueden compartir el identificador.
+        var id = Guid.NewGuid();
+
+        var plato = new Plato(id, "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
+        var alimento = new Alimento(id, "Alimento Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
+
+        Assert.False(plato.Equals(alimento));
     }
 
     [Fact]

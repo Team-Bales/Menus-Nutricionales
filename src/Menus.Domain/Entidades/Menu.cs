@@ -20,7 +20,8 @@ namespace Menus.Domain.Entidades;
 /// tiene dictamen (<see cref="EsPendiente"/>) y es final cuando fue aprobado (<see cref="EsFinal"/>). El primer
 /// dictamen lo cierra: si es una aprobación queda registrada (<see cref="Aprobar"/>); si es un rechazo no se
 /// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Por eso un menú tiene a
-/// lo sumo una validación (R7-32). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes.
+/// lo sumo una validación (R7-32), que después no cambia (R7-33). Solo un menú pendiente se modifica y solo uno
+/// final se asigna a pacientes (R7-34).
 /// </para>
 /// <para>
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
@@ -223,7 +224,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
     /// <returns>La asignación registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú no es final (solo se asignan menús aprobados) o si ya está asignado a ese paciente (R7-05).
+    /// Si el menú no es final (solo se asignan menús aprobados, R7-34) o si ya está asignado a ese paciente (R7-05).
     /// </exception>
     public Asignacion AsignarPaciente(Guid pacienteId)
     {

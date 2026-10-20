@@ -16,6 +16,10 @@ namespace Menus.Domain.Entidades;
 /// el menú ya basta para identificar la validación.
 /// </para>
 /// <para>
+/// <b>No se modifica ni se borra (R7-33).</b> No tiene métodos para cambiarla, y la base rechaza el UPDATE y el
+/// DELETE: si se pudiera borrar, un menú ya asignado o servido volvería a estar pendiente.
+/// </para>
+/// <para>
 /// <b>Por qué no tiene un atributo «Aprobado».</b> El rechazo no se registra (decisión del equipo, 16/10), así que
 /// toda validación es una aprobación: que la fila exista ya dice que el menú se aprobó. Un atributo booleano
 /// valdría siempre lo mismo; sería la dependencia ∅ → aprobado, que viola la 3FN porque ∅ no es superclave, y la

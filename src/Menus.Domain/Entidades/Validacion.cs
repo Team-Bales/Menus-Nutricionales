@@ -16,8 +16,11 @@ namespace Menus.Domain.Entidades;
 /// el menú ya basta para identificar la validación.
 /// </para>
 /// <para>
-/// El rechazo no se registra, así que toda validación es una aprobación y <see cref="Aprobado"/> vale siempre
-/// <see langword="true"/>; el atributo se conserva porque el MERX lo define (R7-17).
+/// <b>Por qué no tiene un atributo «Aprobado».</b> El rechazo no se registra (decisión del equipo, 16/10), así que
+/// toda validación es una aprobación: que la fila exista ya dice que el menú se aprobó. Un atributo booleano
+/// valdría siempre lo mismo; sería la dependencia ∅ → aprobado, que viola la 3FN porque ∅ no es superclave, y la
+/// base no podría impedir que alguien lo cambie y deje al menú ni pendiente ni final. Por eso se quitó (revisión
+/// del 19/10); el MERX y R7-17 dejan de incluirlo en la fase de documentación.
 /// </para>
 /// </remarks>
 public sealed class Validacion : Entity<Guid>
@@ -40,7 +43,6 @@ public sealed class Validacion : Entity<Guid>
 
         NutricionistaId = nutricionistaId;
         FechaValidacion = fechaValidacion;
-        Aprobado = true;
         Observaciones = observaciones;
     }
 
@@ -50,11 +52,8 @@ public sealed class Validacion : Entity<Guid>
     /// <summary>FK → Nutricionista revisor.</summary>
     public Guid NutricionistaId { get; }
 
-    /// <summary>Fecha y hora en que se registró la validación.</summary>
+    /// <summary>Fecha y hora de la aprobación.</summary>
     public DateTime FechaValidacion { get; }
-
-    /// <summary>Indica si el dictamen aprobó el menú. Siempre <see langword="true"/>: el rechazo no se registra.</summary>
-    public bool Aprobado { get; }
 
     /// <summary>Observaciones del revisor; puede ser <see langword="null"/>.</summary>
     public string? Observaciones { get; }

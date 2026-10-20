@@ -15,7 +15,8 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// dependen del menú (la validación lo tiene como clave; el servicio y el consumo, a través de la asignación)
 /// y se guardan junto con él.
 /// El estado de un menú no se almacena, se deriva de su validación (submodelo #7, §4): está pendiente
-/// mientras no la tiene y es final cuando fue aprobado. El primer dictamen cierra el menú, y el
+/// mientras no la tiene y es final cuando fue aprobado. Por eso toda consulta que devuelva menús los trae con
+/// su validación (la configuración de EF la incluye siempre). El primer dictamen cierra el menú, y el
 /// rechazo no se registra: elimina el menú (decisión del equipo, 16/10; ver <see cref="Menu.Rechazar"/>).
 /// Por eso no hay menús rechazados que consultar.
 /// </remarks>

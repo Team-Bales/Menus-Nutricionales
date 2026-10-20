@@ -45,11 +45,16 @@ public sealed class ValidacionTests
     }
 
     [Fact]
-    public void Aprobado_SiempreEsVerdadero_PorqueElRechazoNoSeRegistra()
+    public void Aprobar_ElMenuPasaAFinalPorqueTieneSuValidacion()
     {
-        var validacion = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(2));
+        // La validación es la aprobación: no hay un atributo «Aprobado», que valdría siempre lo mismo.
+        var menu = CrearMenu();
 
-        Assert.True(validacion.Aprobado);
+        var validacion = menu.Aprobar(Guid.NewGuid(), _creacion.AddHours(2));
+
+        Assert.Same(validacion, menu.Validacion);
+        Assert.True(menu.EsFinal);
+        Assert.False(menu.EsPendiente);
     }
 
     [Theory]

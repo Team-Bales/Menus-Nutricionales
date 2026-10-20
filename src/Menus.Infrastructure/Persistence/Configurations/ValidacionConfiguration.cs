@@ -23,10 +23,6 @@ internal sealed class ValidacionConfiguration : IEntityTypeConfiguration<Validac
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
-        builder.Property(v => v.Aprobado)
-            .HasColumnName("aprobado")
-            .IsRequired();
-
         builder.Property(v => v.Observaciones).HasColumnName("observaciones");
 
         // FK → Menu se configura desde MenuConfiguration (navegación Validacion)

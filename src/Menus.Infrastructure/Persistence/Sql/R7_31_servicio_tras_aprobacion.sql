@@ -10,7 +10,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM servicios s
                WHERE s.menu_id = m
                  AND NOT EXISTS (SELECT 1 FROM validacion v
-                                 WHERE v.menu_id = s.menu_id AND v.aprobado
+                                 WHERE v.menu_id = s.menu_id
                                    AND v.fecha_validacion <= s.fecha_servicio)) THEN
         RAISE EXCEPTION 'R7-31: el menú % tiene un servicio sin aprobación previa', m;
     END IF;

@@ -164,16 +164,24 @@ public sealed class Menu : AggregateRoot<Guid>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
     /// <summary>
-    /// Validación del menú, o <see langword="null"/> si todavía no tiene dictamen. Es a lo sumo una (R7-32): el
-    /// primer dictamen cierra el menú y el rechazo lo elimina.
+    /// Aprobación del menú, o <see langword="null"/> si todavía no tiene dictamen. Es a lo sumo una (R7-32): el
+    /// primer dictamen cierra el menú y el rechazo lo elimina, así que la validación es siempre una aprobación.
     /// </summary>
+    /// <remarks>
+    /// La persistencia la carga siempre junto con el menú (<c>AutoInclude</c>), porque <see cref="EsPendiente"/> y
+    /// <see cref="EsFinal"/> se derivan de ella: un menú leído sin su validación parecería pendiente y admitiría
+    /// cambios aunque estuviera aprobado.
+    /// </remarks>
     public Validacion? Validacion { get; private set; }
 
     /// <summary>Indica si el menú está pendiente de revisión: todavía no tiene dictamen.</summary>
     public bool EsPendiente => Validacion is null;
 
-    /// <summary>Indica si el menú es final: fue aprobado (consulta 2, §7-A).</summary>
-    public bool EsFinal => Validacion is { Aprobado: true };
+    /// <summary>
+    /// Indica si el menú es final: fue aprobado (consulta 2, §7-A). Es el complemento de <see cref="EsPendiente"/>:
+    /// como el rechazo elimina el menú, un menú que existe o espera dictamen o fue aprobado.
+    /// </summary>
+    public bool EsFinal => Validacion is not null;
 
     /// <summary>Incluye un alimento o un plato en el menú (relación <c>Incluye(Menú, ItemAlimentario)</c>).</summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
@@ -248,7 +256,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <exception cref="ArgumentOutOfRangeException">Si la fecha es futura o anterior a la aprobación del menú (R7-31).</exception>
     public Servicio RegistrarServicio(Guid pacienteId, DateTime fechaServicio)
     {
-        if (Validacion is not { Aprobado: true } aprobacion)
+        if (Validacion is not { } aprobacion)
         {
             throw new InvalidOperationException("Solo se sirve un menú final (aprobado).");
         }

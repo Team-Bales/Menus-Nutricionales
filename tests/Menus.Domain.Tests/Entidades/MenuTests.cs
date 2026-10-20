@@ -312,7 +312,6 @@ public sealed class MenuTests
         Assert.Equal(revisorId, validacion.NutricionistaId);
         Assert.Equal(menu.Id, validacion.MenuId);
         Assert.Equal(_ahora, validacion.FechaValidacion);
-        Assert.True(validacion.Aprobado);
         Assert.Equal("Correcto.", validacion.Observaciones);
         Assert.True(menu.EsFinal);
         Assert.False(menu.EsPendiente);

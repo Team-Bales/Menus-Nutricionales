@@ -71,5 +71,9 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .WithOne()
             .HasForeignKey<Validacion>(v => v.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Se carga siempre con el menú: EsPendiente y EsFinal se derivan de ella, y sin cargarla un menú aprobado
+        // parecería pendiente (revisión del 19/10). Cuesta un LEFT JOIN por la clave.
+        builder.Navigation(m => m.Validacion).AutoInclude();
     }
 }

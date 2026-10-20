@@ -6,18 +6,18 @@ namespace Menus.Domain.Entidades;
 /// Menú creado por un nutricionista para una dieta, de forma automática o manual,
 /// junto con los parámetros con que se generó.
 /// Es la raíz del agregado: los ítems incluidos (alimentos y platos), la distribución por tipo de
-/// preparación, los grupos nutricionales cubiertos y las asignaciones a pacientes solo se
-/// registran a través de él.
+/// preparación, los grupos nutricionales cubiertos, la validación y las asignaciones a pacientes
+/// solo se registran a través de él.
 /// </summary>
 /// <remarks>
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
 /// cambian después (submodelo #7, R7-27), por eso no hay métodos para modificarlos.
-/// El menú no guarda un estado, se deriva de sus validaciones (submodelo #7, §4): está pendiente mientras no
+/// El menú no guarda un estado, se deriva de su validación (submodelo #7, §4): está pendiente mientras no
 /// tiene dictamen (<see cref="EsPendiente"/>) y es final cuando fue aprobado (<see cref="EsFinal"/>). El primer
 /// dictamen lo cierra: si es una aprobación queda registrada (<see cref="Aprobar"/>); si es un rechazo no se
-/// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Solo un menú pendiente
-/// se modifica y solo uno final se asigna a pacientes.
+/// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Por eso un menú tiene a
+/// lo sumo una validación (R7-32). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes.
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
 /// (agregación <c>Asignación</c>, R7-05). Que el paciente esté inscrito en la dieta del menú (R6-23)
 /// lo verifica la capa de aplicación, porque la inscripción pertenece al agregado del paciente; lo mismo
@@ -29,7 +29,6 @@ public sealed class Menu : AggregateRoot<Guid>
     private readonly List<MenuDistribucion> _distribuciones = [];
     private readonly List<MenuGrupoNutricional> _gruposNutricionales = [];
     private readonly List<Asignacion> _asignaciones = [];
-    private readonly List<Validacion> _validaciones = [];
 
     /// <summary>
     /// Diferencia máxima admitida entre la suma de las proporciones y 1 (R7-28).
@@ -153,16 +152,16 @@ public sealed class Menu : AggregateRoot<Guid>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
     /// <summary>
-    /// Validaciones registradas para el menú (solo lectura). Como el primer dictamen cierra el menú y el rechazo
-    /// lo elimina, tiene a lo sumo una, y es una aprobación.
+    /// Validación del menú, o <see langword="null"/> si todavía no tiene dictamen. Es a lo sumo una (R7-32): el
+    /// primer dictamen cierra el menú y el rechazo lo elimina.
     /// </summary>
-    public IReadOnlyCollection<Validacion> Validaciones => _validaciones.AsReadOnly();
+    public Validacion? Validacion { get; private set; }
 
     /// <summary>Indica si el menú está pendiente de revisión: todavía no tiene dictamen.</summary>
-    public bool EsPendiente => _validaciones.Count == 0;
+    public bool EsPendiente => Validacion is null;
 
     /// <summary>Indica si el menú es final: fue aprobado (consulta 2, §7-A).</summary>
-    public bool EsFinal => _validaciones.Any(v => v.Aprobado);
+    public bool EsFinal => Validacion is { Aprobado: true };
 
     /// <summary>Incluye un alimento o un plato en el menú (relación <c>Incluye(Menú, ItemAlimentario)</c>).</summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
@@ -237,9 +236,8 @@ public sealed class Menu : AggregateRoot<Guid>
     {
         ComprobarDictamen(nutricionistaId, fechaValidacion);
 
-        var validacion = new Validacion(nutricionistaId, Id, fechaValidacion, observaciones);
-        _validaciones.Add(validacion);
-        return validacion;
+        Validacion = new Validacion(Id, nutricionistaId, fechaValidacion, observaciones);
+        return Validacion;
     }
 
     /// <summary>

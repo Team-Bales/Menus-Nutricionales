@@ -10,7 +10,7 @@ public sealed class ValidacionTests
     private readonly DateTime _creacion = DateTime.UtcNow.AddDays(-1);
 
     // Validacion solo se crea a través de Menu.Aprobar; dos instancias de Menu con el mismo Id
-    // representan el mismo menú leído dos veces.
+    // representan el mismo menú leído dos veces. Su identidad es el menú (R7-32).
     private Menu CrearMenu(Guid? id = null) =>
         new(
             id ?? _menuId,
@@ -64,11 +64,20 @@ public sealed class ValidacionTests
         var menu = CrearMenu();
 
         Assert.Throws<ArgumentException>(() => menu.Aprobar(Guid.NewGuid(), fecha));
-        Assert.Empty(menu.Validaciones);
+        Assert.Null(menu.Validacion);
     }
 
     [Fact]
-    public void Equality_MismaClaveCompuesta_SonIguales()
+    public void Identidad_EsElMenu()
+    {
+        var validacion = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(1));
+
+        Assert.Equal(_menuId, validacion.Id);
+        Assert.Equal(validacion.Id, validacion.MenuId);
+    }
+
+    [Fact]
+    public void Equality_MismoMenu_SonIguales()
     {
         var nutricionistaId = Guid.NewGuid();
 
@@ -90,11 +99,13 @@ public sealed class ValidacionTests
     }
 
     [Fact]
-    public void Equality_DistintoRevisor_NoSonIguales()
+    public void Equality_MismoMenuConOtroRevisor_SonIguales_PorqueElMenuEsLaClave()
     {
+        // R7-32: un menú tiene a lo sumo una validación, así que dos lecturas del mismo menú son la misma
+        // validación aunque el revisor no coincida (en la base no pueden coexistir).
         var primera = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(1));
         var segunda = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(1));
 
-        Assert.NotEqual(primera, segunda);
+        Assert.Equal(primera, segunda);
     }
 }

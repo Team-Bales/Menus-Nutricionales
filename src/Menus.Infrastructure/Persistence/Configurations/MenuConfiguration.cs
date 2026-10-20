@@ -66,9 +66,10 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(a => a.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(m => m.Validaciones)
+        // Un menú tiene a lo sumo una validación (R7-32): la relación es 1 a 0..1 y la FK es la clave de Validacion
+        builder.HasOne(m => m.Validacion)
             .WithOne()
-            .HasForeignKey(v => v.MenuId)
+            .HasForeignKey<Validacion>(v => v.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

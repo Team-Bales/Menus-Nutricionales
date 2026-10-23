@@ -3,22 +3,24 @@ using Menus.Domain.Abstractions;
 namespace Menus.Domain.Entidades;
 
 /// <summary>
-/// Dictamen de un nutricionista sobre un menú.
-/// Cada nutricionista puede registrar una única validación por menú.
-/// Solo la crea <see cref="Menu.Validar"/>, que comprueba las reglas del dictamen.
+/// Aprobación de un menú por un nutricionista revisor (agregación <c>Validación</c>).
+/// Solo la crea <see cref="Menu.Aprobar"/>, que comprueba las reglas del dictamen.
 /// </summary>
+/// <remarks>
+/// El rechazo no se registra: elimina el menú (decisión del equipo, 16/10). Por eso toda validación es una
+/// aprobación y <see cref="Aprobado"/> vale siempre <see langword="true"/>; el atributo se conserva porque
+/// el MERX lo define (R7-17).
+/// </remarks>
 public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
 {
     /// <param name="nutricionistaId">Identificador del nutricionista que valida.</param>
     /// <param name="menuId">Identificador del menú validado.</param>
     /// <param name="fechaValidacion">Fecha y hora en que se emite el dictamen.</param>
-    /// <param name="aprobado">Indica si el menú fue aprobado.</param>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
     internal Validacion(
         Guid nutricionistaId,
         Guid menuId,
         DateTime fechaValidacion,
-        bool aprobado,
         string? observaciones = null)
         : base((nutricionistaId, menuId))
     {
@@ -28,7 +30,7 @@ public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
         }
 
         FechaValidacion = fechaValidacion;
-        Aprobado = aprobado;
+        Aprobado = true;
         Observaciones = observaciones;
     }
 
@@ -41,7 +43,7 @@ public sealed class Validacion : Entity<(Guid NutricionistaId, Guid MenuId)>
     /// <summary>Fecha y hora en que se registró la validación.</summary>
     public DateTime FechaValidacion { get; }
 
-    /// <summary>Indica si el dictamen aprobó el menú.</summary>
+    /// <summary>Indica si el dictamen aprobó el menú. Siempre <see langword="true"/>: el rechazo no se registra.</summary>
     public bool Aprobado { get; }
 
     /// <summary>Observaciones del revisor; puede ser <see langword="null"/>.</summary>

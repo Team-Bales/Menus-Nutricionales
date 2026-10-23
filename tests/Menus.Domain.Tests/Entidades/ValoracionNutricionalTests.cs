@@ -1,10 +1,12 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
 
 public sealed class ValoracionNutricionalTests
 {
     private static readonly DateTime _fecha = DateTime.UtcNow;
+    private static readonly Guid _buena = ResultadoNutricional.Buena.Id;
 
     [Fact]
     public void Constructor_ValidArgs_SetsProperties()
@@ -13,26 +15,33 @@ public sealed class ValoracionNutricionalTests
         var menuId = Guid.NewGuid();
         var pacienteId = Guid.NewGuid();
         var nutricionistaId = Guid.NewGuid();
-        var resultadoNutricionalId = Guid.NewGuid();
-        const string observaciones = "Sin novedades";
 
-        var valoracion = new ValoracionNutricional(id, menuId, pacienteId, nutricionistaId, resultadoNutricionalId, _fecha, observaciones);
+        var valoracion = new ValoracionNutricional(id, menuId, pacienteId, nutricionistaId, _buena, _fecha);
 
         Assert.Equal(id, valoracion.Id);
         Assert.Equal(menuId, valoracion.MenuId);
         Assert.Equal(pacienteId, valoracion.PacienteId);
         Assert.Equal(nutricionistaId, valoracion.NutricionistaId);
-        Assert.Equal(resultadoNutricionalId, valoracion.ResultadoNutricionalId);
+        Assert.Equal(_buena, valoracion.ResultadoNutricionalId);
         Assert.Equal(_fecha, valoracion.FechaValoracion);
-        Assert.Equal(observaciones, valoracion.Observaciones);
     }
 
     [Fact]
-    public void Constructor_ObservacionesNull_SetsNull()
+    public void Constructor_CadaCategoriaDelCatalogo_SeAcepta()
     {
-        var valoracion = new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _fecha);
+        foreach (var resultado in ResultadoNutricional.Todos)
+        {
+            var valoracion = new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), resultado.Id, _fecha);
 
-        Assert.Null(valoracion.Observaciones);
+            Assert.Equal(resultado.Id, valoracion.ResultadoNutricionalId);
+        }
+    }
+
+    [Fact]
+    public void Constructor_ResultadoFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _fecha));
     }
 
     [Fact]
@@ -41,7 +50,7 @@ public sealed class ValoracionNutricionalTests
         var fechaLocal = DateTime.Now;
 
         Assert.Throws<ArgumentException>(() =>
-            new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), fechaLocal));
+            new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _buena, fechaLocal));
     }
 
     [Fact]
@@ -49,8 +58,8 @@ public sealed class ValoracionNutricionalTests
     {
         var id = Guid.NewGuid();
 
-        var primera = new ValoracionNutricional(id, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _fecha);
-        var segunda = new ValoracionNutricional(id, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _fecha);
+        var primera = new ValoracionNutricional(id, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _buena, _fecha);
+        var segunda = new ValoracionNutricional(id, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), ResultadoNutricional.Mala.Id, _fecha);
 
         Assert.Equal(primera, segunda);
     }

@@ -22,4 +22,9 @@ public sealed class NivelCalorico : Entity<Guid>
     private NivelCalorico(Guid id, string nombre) : base(id) => Nombre = nombre;
 
     public string Nombre { get; }
+
+    /// <summary>Indica si el identificador corresponde a uno de los niveles calóricos del catálogo (R5-09).</summary>
+    /// <param name="id">Identificador que se quiere comprobar.</param>
+    /// <returns><see langword="true"/> si es el de <see cref="Bajo"/>, <see cref="Medio"/> o <see cref="Alto"/>.</returns>
+    public static bool Existe(Guid id) => Todos.Any(n => n.Id == id);
 }

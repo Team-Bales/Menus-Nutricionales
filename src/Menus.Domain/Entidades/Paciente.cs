@@ -12,16 +12,16 @@ public sealed class Paciente : Entity<Guid>
 
     /// <param name="id">Identificador único del paciente.</param>
     /// <param name="nombre">Nombre del paciente (no vacío).</param>
-    /// <param name="edad">Edad en años enteros (estrictamente positiva).</param>
+    /// <param name="edad">Edad en años enteros, mayor o igual que cero (R6-14).</param>
     /// <param name="salaId">Sala de hospitalización a la que pertenece.</param>
     /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="edad"/> es menor o igual a cero.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="edad"/> es negativa.</exception>
     public Paciente(Guid id, string nombre, int edad, Guid salaId) : base(id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
-        if (edad <= 0)
+        if (edad < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(edad), "La edad debe ser un entero estrictamente positivo.");
+            throw new ArgumentOutOfRangeException(nameof(edad), "La edad no puede ser negativa.");
         }
 
         Nombre = nombre;
@@ -32,7 +32,7 @@ public sealed class Paciente : Entity<Guid>
     /// <summary>Nombre del paciente (no vacío).</summary>
     public string Nombre { get; }
 
-    /// <summary>Edad en años enteros (> 0).</summary>
+    /// <summary>Edad en años enteros (&gt;= 0).</summary>
     public int Edad { get; }
 
     /// <summary>FK → Sala de hospitalización a la que pertenece.</summary>

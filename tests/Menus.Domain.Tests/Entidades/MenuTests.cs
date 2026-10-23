@@ -35,6 +35,14 @@ public sealed class MenuTests
             distribucion ?? DistribucionValida,
             grupos ?? [_grupoId1, _grupoId2]);
 
+    // Un menú aprobado por un revisor distinto del creador: solo los menús finales se asignan.
+    private Menu CrearMenuFinal()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        menu.Aprobar(Guid.NewGuid(), _ahora);
+        return menu;
+    }
+
     [Fact]
     public void Constructor_ValidArgs_SetsProperties()
     {
@@ -231,9 +239,190 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void AsignarPaciente_ValidArgs_AgregaYRetornaAsignacion()
+    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => CrearMenu(distribucion: [(Guid.NewGuid(), 1m)]));
+    }
+
+    [Fact]
+    public void Estado_MenuNuevo_EstaPendienteYNoEsFinal()
     {
         var menu = CrearMenu();
+
+        Assert.True(menu.EsPendiente);
+        Assert.False(menu.EsFinal);
+        Assert.Empty(menu.Validaciones);
+    }
+
+    [Fact]
+    public void AgregarAlimento_MenuConDictamen_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuFinal();
+
+        Assert.Throws<InvalidOperationException>(() => menu.AgregarAlimento(_alimentoId));
+    }
+
+    [Fact]
+    public void AgregarPlato_MenuConDictamen_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuFinal();
+
+        Assert.Throws<InvalidOperationException>(() => menu.AgregarPlato(_platoId));
+    }
+
+    [Fact]
+    public void QuitarAlimento_AlimentoIncluido_LoQuita()
+    {
+        var menu = CrearMenu();
+        var otroAlimentoId = Guid.NewGuid();
+        menu.AgregarAlimento(_alimentoId);
+        menu.AgregarAlimento(otroAlimentoId);
+
+        menu.QuitarAlimento(_alimentoId);
+
+        Assert.Equal(otroAlimentoId, Assert.Single(menu.Alimentos).AlimentoId);
+    }
+
+    [Fact]
+    public void QuitarAlimento_AlimentoNoIncluido_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarAlimento(_alimentoId));
+    }
+
+    [Fact]
+    public void QuitarPlato_PlatoIncluido_LoQuita()
+    {
+        var menu = CrearMenu();
+        menu.AgregarPlato(_platoId);
+
+        menu.QuitarPlato(_platoId);
+
+        Assert.Empty(menu.Platos);
+    }
+
+    [Fact]
+    public void QuitarPlato_PlatoNoIncluido_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarPlato(_platoId));
+    }
+
+    [Fact]
+    public void Quitar_MenuConDictamen_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        menu.AgregarAlimento(_alimentoId);
+        menu.AgregarPlato(_platoId);
+        menu.Aprobar(Guid.NewGuid(), _ahora);
+
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarAlimento(_alimentoId));
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarPlato(_platoId));
+    }
+
+    [Fact]
+    public void Aprobar_ValidArgs_RegistraLaValidacionYElMenuPasaAFinal()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        var revisorId = Guid.NewGuid();
+
+        var validacion = menu.Aprobar(revisorId, _ahora, "Correcto.");
+
+        Assert.Same(validacion, Assert.Single(menu.Validaciones));
+        Assert.Equal(revisorId, validacion.NutricionistaId);
+        Assert.Equal(menu.Id, validacion.MenuId);
+        Assert.Equal(_ahora, validacion.FechaValidacion);
+        Assert.True(validacion.Aprobado);
+        Assert.Equal("Correcto.", validacion.Observaciones);
+        Assert.True(menu.EsFinal);
+        Assert.False(menu.EsPendiente);
+    }
+
+    [Fact]
+    public void Aprobar_MenuYaAprobado_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuFinal();
+
+        Assert.Throws<InvalidOperationException>(() => menu.Aprobar(Guid.NewGuid(), _ahora));
+        Assert.Single(menu.Validaciones);
+    }
+
+    [Fact]
+    public void Aprobar_CreadorDelMenu_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.Aprobar(_nutricionistaId, _ahora));
+    }
+
+    [Fact]
+    public void Aprobar_FechaAnteriorACreacion_LanzaArgumentOutOfRangeException()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => menu.Aprobar(Guid.NewGuid(), _ahora.AddMinutes(-1)));
+    }
+
+    [Fact]
+    public void Rechazar_ValidArgs_NoRegistraNadaYElMenuSigueSinDictamen()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+
+        menu.Rechazar(Guid.NewGuid(), _ahora);
+
+        Assert.Empty(menu.Validaciones);
+        Assert.False(menu.EsFinal);
+    }
+
+    [Fact]
+    public void Rechazar_MenuYaAprobado_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenuFinal();
+
+        Assert.Throws<InvalidOperationException>(() => menu.Rechazar(Guid.NewGuid(), _ahora));
+    }
+
+    [Fact]
+    public void Rechazar_CreadorDelMenu_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.Rechazar(_nutricionistaId, _ahora));
+    }
+
+    [Fact]
+    public void Rechazar_FechaAnteriorACreacion_LanzaArgumentOutOfRangeException()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => menu.Rechazar(Guid.NewGuid(), _ahora.AddMinutes(-1)));
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Local)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void Rechazar_FechaNoUtc_LanzaArgumentException(DateTimeKind kind)
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+
+        Assert.Throws<ArgumentException>(() => menu.Rechazar(Guid.NewGuid(), DateTime.SpecifyKind(_ahora, kind)));
+    }
+
+    [Fact]
+    public void AsignarPaciente_MenuPendiente_LanzaInvalidOperationException()
+    {
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.AsignarPaciente(Guid.NewGuid()));
+        Assert.Empty(menu.Asignaciones);
+    }
+
+    [Fact]
+    public void AsignarPaciente_ValidArgs_AgregaYRetornaAsignacion()
+    {
+        var menu = CrearMenuFinal();
         var pacienteId = Guid.NewGuid();
 
         var asignacion = menu.AsignarPaciente(pacienteId);
@@ -246,7 +435,7 @@ public sealed class MenuTests
     [Fact]
     public void AsignarPaciente_VariosPacientes_TodosAsignados()
     {
-        var menu = CrearMenu();
+        var menu = CrearMenuFinal();
         var pacientes = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
         foreach (var pacienteId in pacientes)
@@ -261,7 +450,7 @@ public sealed class MenuTests
     [Fact]
     public void AsignarPaciente_PacienteDuplicado_LanzaInvalidOperationException()
     {
-        var menu = CrearMenu();
+        var menu = CrearMenuFinal();
         var pacienteId = Guid.NewGuid();
         menu.AsignarPaciente(pacienteId);
 
@@ -269,72 +458,15 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void Validar_ValidArgs_AgregaYRetornaValidacion()
-    {
-        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
-        var nutricionistaRevisorId = Guid.NewGuid();
-        var fechaValidacion = _ahora;
-
-        var validacion = menu.Validar(nutricionistaRevisorId, fechaValidacion, true, "Correcto.");
-
-        Assert.Single(menu.Validaciones);
-        Assert.Equal(nutricionistaRevisorId, validacion.NutricionistaId);
-        Assert.Equal(menu.Id, validacion.MenuId);
-        Assert.Equal(fechaValidacion, validacion.FechaValidacion);
-        Assert.True(validacion.Aprobado);
-        Assert.Equal("Correcto.", validacion.Observaciones);
-    }
-
-    [Fact]
-    public void Validar_MismoRevisorDosVeces_LanzaInvalidOperationException()
-    {
-        var menu = CrearMenu();
-        var nutricionistaRevisorId = Guid.NewGuid();
-        menu.Validar(nutricionistaRevisorId, _ahora, true);
-
-        Assert.Throws<InvalidOperationException>(() =>
-            menu.Validar(nutricionistaRevisorId, _ahora.AddMinutes(1), false));
-    }
-
-    [Fact]
-    public void Validar_RevisoresDistintos_RegistraAmbasValidaciones()
-    {
-        var menu = CrearMenu();
-
-        menu.Validar(Guid.NewGuid(), _ahora, true);
-        menu.Validar(Guid.NewGuid(), _ahora.AddMinutes(1), false);
-
-        Assert.Equal(2, menu.Validaciones.Count);
-    }
-
-    [Fact]
-    public void Validar_CreadorDelMenu_LanzaInvalidOperationException()
-    {
-        var menu = CrearMenu();
-
-        Assert.Throws<InvalidOperationException>(() => menu.Validar(_nutricionistaId, _ahora, true));
-    }
-
-    [Fact]
-    public void Validar_FechaAnteriorACreacion_LanzaArgumentOutOfRangeException()
-    {
-        var menu = CrearMenu(fechaCreacion: _ahora);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            menu.Validar(Guid.NewGuid(), _ahora.AddMinutes(-1), true));
-    }
-
-    [Fact]
     public void RegistrarConsumo_ValidArgs_AgregaYRetornaConsumo()
     {
-        var menu = CrearMenu();
-        var asignacion = menu.AsignarPaciente(Guid.NewGuid());
+        var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
         var alimentoId = Guid.NewGuid();
 
         var consumo = asignacion.RegistrarConsumo(alimentoId, true);
 
         Assert.Single(asignacion.Consumos);
-        Assert.Equal(menu.Id, consumo.MenuId);
+        Assert.Equal(asignacion.MenuId, consumo.MenuId);
         Assert.Equal(asignacion.PacienteId, consumo.PacienteId);
         Assert.Equal(alimentoId, consumo.AlimentoId);
         Assert.True(consumo.Aceptacion);
@@ -343,8 +475,7 @@ public sealed class MenuTests
     [Fact]
     public void RegistrarConsumo_MismoAlimentoDosVeces_LanzaInvalidOperationException()
     {
-        var menu = CrearMenu();
-        var asignacion = menu.AsignarPaciente(Guid.NewGuid());
+        var asignacion = CrearMenuFinal().AsignarPaciente(Guid.NewGuid());
         var alimentoId = Guid.NewGuid();
         asignacion.RegistrarConsumo(alimentoId, true);
 

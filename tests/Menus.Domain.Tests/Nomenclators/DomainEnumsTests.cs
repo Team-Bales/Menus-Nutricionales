@@ -48,4 +48,20 @@ public sealed class DomainCatalogsTests
         var ids = NivelCalorico.Todos.Select(n => n.Id).ToList();
         Assert.Equal(ids.Count, ids.Distinct().Count());
     }
+
+    [Fact]
+    public void TipoPreparacion_Existe_SoloParaLosDelCatalogo()
+    {
+        Assert.All(TipoPreparacion.Todos, t => Assert.True(TipoPreparacion.Existe(t.Id)));
+        Assert.False(TipoPreparacion.Existe(Guid.NewGuid()));
+        Assert.False(TipoPreparacion.Existe(NivelCalorico.Bajo.Id));
+    }
+
+    [Fact]
+    public void NivelCalorico_Existe_SoloParaLosDelCatalogo()
+    {
+        Assert.All(NivelCalorico.Todos, n => Assert.True(NivelCalorico.Existe(n.Id)));
+        Assert.False(NivelCalorico.Existe(Guid.NewGuid()));
+        Assert.False(NivelCalorico.Existe(TipoPreparacion.Postre.Id));
+    }
 }

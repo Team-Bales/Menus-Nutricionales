@@ -9,7 +9,11 @@ internal sealed class DietaConfiguration : IEntityTypeConfiguration<Dieta>
 {
     public void Configure(EntityTypeBuilder<Dieta> builder)
     {
-        builder.ToTable("dietas");
+        // R6-15: nombre no vacío
+        builder.ToTable("dietas", t =>
+        {
+            t.HasCheckConstraint("ck_dietas_r6_15_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).HasColumnName("id");

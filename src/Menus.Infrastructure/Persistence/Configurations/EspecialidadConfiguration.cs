@@ -8,7 +8,11 @@ internal sealed class EspecialidadConfiguration : IEntityTypeConfiguration<Espec
 {
     public void Configure(EntityTypeBuilder<Especialidad> builder)
     {
-        builder.ToTable("especialidades");
+        // R6-15: nombre no vacío
+        builder.ToTable("especialidades", t =>
+        {
+            t.HasCheckConstraint("ck_especialidades_r6_15_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");

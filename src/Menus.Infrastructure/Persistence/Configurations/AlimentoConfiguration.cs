@@ -9,7 +9,11 @@ internal sealed class AlimentoConfiguration : IEntityTypeConfiguration<Alimento>
 {
     public void Configure(EntityTypeBuilder<Alimento> builder)
     {
-        builder.ToTable("alimentos");
+        // R5-11: nombre no vacío
+        builder.ToTable("alimentos", t =>
+        {
+            t.HasCheckConstraint("ck_alimentos_r5_11_nombre", "btrim(nombre) <> ''");
+        });
 
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).HasColumnName("id");
@@ -18,7 +22,8 @@ internal sealed class AlimentoConfiguration : IEntityTypeConfiguration<Alimento>
             .HasColumnName("nombre")
             .HasMaxLength(150)
             .IsRequired();
-        builder.HasIndex(a => a.Nombre).IsUnique();
+        // R5-16: el nombre único es el normalizado, lower(btrim(nombre)). Ese índice está en
+        // Persistence/Sql/R5_16_nombre_normalizado.sql, porque EF no declara índices sobre expresiones.
 
         builder.Property(a => a.GrupoNutricionalId).HasColumnName("grupo_nutricional_id");
 

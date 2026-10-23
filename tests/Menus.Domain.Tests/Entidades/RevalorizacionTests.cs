@@ -9,15 +9,13 @@ public sealed class RevalorizacionTests
     {
         var id = Guid.NewGuid();
         var fecha = DateTime.UtcNow;
-        var pacienteId = Guid.NewGuid();
         var nutricionistaId = Guid.NewGuid();
         var valoracionRevisadaId = Guid.NewGuid();
 
-        var revalorizacion = new Revalorizacion(id, fecha, pacienteId, nutricionistaId, valoracionRevisadaId);
+        var revalorizacion = new Revalorizacion(id, fecha, nutricionistaId, valoracionRevisadaId);
 
         Assert.Equal(id, revalorizacion.Id);
         Assert.Equal(fecha, revalorizacion.FechaSolicitud);
-        Assert.Equal(pacienteId, revalorizacion.PacienteId);
         Assert.Equal(nutricionistaId, revalorizacion.NutricionistaId);
         Assert.Equal(valoracionRevisadaId, revalorizacion.ValoracionRevisadaId);
         Assert.Null(revalorizacion.ValoracionGeneradaId);
@@ -31,7 +29,7 @@ public sealed class RevalorizacionTests
         var fecha = DateTime.SpecifyKind(DateTime.UtcNow, kind);
 
         Assert.Throws<ArgumentException>(() =>
-            new Revalorizacion(Guid.NewGuid(), fecha, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()));
+            new Revalorizacion(Guid.NewGuid(), fecha, Guid.NewGuid(), Guid.NewGuid()));
     }
 
     [Fact]
@@ -59,12 +57,12 @@ public sealed class RevalorizacionTests
     {
         var id = Guid.NewGuid();
 
-        var primera = new Revalorizacion(id, DateTime.UtcNow, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
-        var segunda = new Revalorizacion(id, DateTime.UtcNow.AddMinutes(1), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var primera = new Revalorizacion(id, DateTime.UtcNow, Guid.NewGuid(), Guid.NewGuid());
+        var segunda = new Revalorizacion(id, DateTime.UtcNow.AddMinutes(1), Guid.NewGuid(), Guid.NewGuid());
 
         Assert.Equal(primera, segunda);
     }
 
     private static Revalorizacion CrearRevalorizacion() =>
-        new(Guid.NewGuid(), DateTime.UtcNow, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        new(Guid.NewGuid(), DateTime.UtcNow, Guid.NewGuid(), Guid.NewGuid());
 }

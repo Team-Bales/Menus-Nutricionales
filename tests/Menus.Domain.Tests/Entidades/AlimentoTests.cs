@@ -21,6 +21,7 @@ public sealed class AlimentoTests
         Assert.Equal(TipoPreparacion.Postre.Id, alimento.TipoPreparacionId);
         Assert.Equal(NivelCalorico.Bajo.Id, alimento.NivelCaloricoId);
         Assert.Equal(_nutricionistaId, alimento.NutricionistaId);
+        Assert.IsAssignableFrom<ItemAlimentario>(alimento);
     }
 
     [Theory]

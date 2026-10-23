@@ -45,14 +45,9 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .OnDelete(DeleteBehavior.Restrict);
 
         // Cascade solo a la parametrización del menú: Incluye, Distribución y Cubre (R11-02)
-        builder.HasMany(m => m.Alimentos)
+        builder.HasMany(m => m.Items)
             .WithOne()
-            .HasForeignKey(ma => ma.MenuId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder.HasMany(m => m.Platos)
-            .WithOne()
-            .HasForeignKey(mp => mp.MenuId)
+            .HasForeignKey(mi => mi.MenuId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(m => m.Distribuciones)
@@ -71,9 +66,14 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(a => a.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(m => m.Validaciones)
+        // Un menú tiene a lo sumo una validación (R7-32): la relación es 1 a 0..1 y la FK es la clave de Validacion
+        builder.HasOne(m => m.Validacion)
             .WithOne()
-            .HasForeignKey(v => v.MenuId)
+            .HasForeignKey<Validacion>(v => v.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Se carga siempre con el menú: EsPendiente y EsFinal se derivan de ella, y sin cargarla un menú aprobado
+        // parecería pendiente (revisión del 19/10). Cuesta un LEFT JOIN por la clave.
+        builder.Navigation(m => m.Validacion).AutoInclude();
     }
 }

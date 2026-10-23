@@ -5,12 +5,17 @@ namespace Menus.Domain.Entidades;
 /// <summary>
 /// Asignación de un menú a un paciente (agregación <c>Asignación</c> / relación <c>Asigna</c>).
 /// Un menú puede asignarse a varios pacientes, pero una sola vez a cada uno (R7-05).
-/// De la asignación dependen los consumos y las valoraciones del paciente ante ese menú (R7-11, R7-12).
-/// Solo la crea <see cref="Menu"/>.
+/// De la asignación dependen los servicios del menú al paciente (con sus consumos) y las valoraciones
+/// (R7-11, R7-12). Solo la crea <see cref="Menu"/>.
 /// </summary>
+/// <remarks>
+/// Sigue siendo una agregación porque participa en otras relaciones: <c>Sirve</c> (identifica a
+/// <see cref="Servicio"/>) y <c>Evalúa</c> (la valoración). Es el uso de la agregación que el profesor considera
+/// correcto (feedback del 19/10, P2-5).
+/// </remarks>
 public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
 {
-    private readonly List<Consumo> _consumos = [];
+    private readonly List<Servicio> _servicios = [];
 
     /// <param name="menuId">Identificador del menú asignado.</param>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
@@ -22,23 +27,22 @@ public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
     /// <summary>FK → Paciente (parte de la clave compuesta).</summary>
     public Guid PacienteId => Id.PacienteId;
 
-    /// <summary>Consumos registrados para la asignación (solo lectura).</summary>
-    public IReadOnlyCollection<Consumo> Consumos => _consumos.AsReadOnly();
+    /// <summary>Servicios del menú a este paciente, cada uno con sus consumos (solo lectura).</summary>
+    public IReadOnlyCollection<Servicio> Servicios => _servicios.AsReadOnly();
 
-    /// <summary>Registra la aceptación o el rechazo de un alimento de este menú asignado.</summary>
-    /// <param name="alimentoId">Identificador del alimento consumido.</param>
-    /// <param name="aceptacion"><see langword="true"/> si el alimento fue aceptado; de lo contrario, <see langword="false"/>.</param>
-    /// <returns>El consumo registrado.</returns>
-    /// <exception cref="InvalidOperationException">Si ya existe un consumo de ese alimento para esta asignación.</exception>
-    public Consumo RegistrarConsumo(Guid alimentoId, bool aceptacion)
+    /// <summary>Registra un servicio del menú al paciente. Las reglas de la fecha las comprueba <see cref="Menu"/>.</summary>
+    /// <param name="fechaServicio">Día del servicio, en el calendario UTC.</param>
+    /// <returns>El servicio registrado.</returns>
+    /// <exception cref="InvalidOperationException">Si ya hay un servicio ese día.</exception>
+    internal Servicio RegistrarServicio(DateOnly fechaServicio)
     {
-        if (_consumos.Any(c => c.AlimentoId == alimentoId))
+        if (_servicios.Any(s => s.FechaServicio == fechaServicio))
         {
-            throw new InvalidOperationException($"El alimento {alimentoId} ya tiene un consumo registrado para esta asignación.");
+            throw new InvalidOperationException($"Este menú ya se le sirvió al paciente el {fechaServicio:yyyy-MM-dd}.");
         }
 
-        var consumo = new Consumo(MenuId, PacienteId, alimentoId, aceptacion);
-        _consumos.Add(consumo);
-        return consumo;
+        var servicio = new Servicio(MenuId, PacienteId, fechaServicio);
+        _servicios.Add(servicio);
+        return servicio;
     }
 }

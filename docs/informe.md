@@ -431,9 +431,10 @@ El punto de partida no es el cubrimiento minimal, sino el conjunto **F** de depe
 
 1. **Conjuntos de entidades.** Por cada entidad con clave K y atributos U, se añade `K → U`.
 2. **Entidades débiles.** Su clave es la de la entidad de la que dependen más su llave parcial. `Servicio` no tiene atributos fuera de esa clave, de modo que no aporta ninguna dependencia no trivial.
-3. **Interrelaciones con atributos propios.** Por cada una con clave compuesta K, se añade `K → atributos`.
-4. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando el extremo 1 es obligatorio en ambos lados, la dependencia vale en los dos sentidos.
-5. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, el nombre normalizado de los ítems y las dos relaciones 1:1 opcionales.
+3. **Especialización.** El discriminador de una especialización es un atributo de la superclase, aunque en el diagrama se dibuje sobre la propia especialización y no como un óvalo. El de `ItemAlimentario` se llama `Clase`, distingue las dos subclases y aparece en F como el atributo `clase`, determinado por `id_item`. Las subclases no aportan dependencias propias, porque no tienen atributos que la superclase no tenga: lo que las distingue es la relación `Compone`, en la que un plato se compone de alimentos simples.
+4. **Interrelaciones con atributos propios.** Por cada una con clave compuesta K, se añade `K → atributos`.
+5. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando el extremo 1 es obligatorio en ambos lados, la dependencia vale en los dos sentidos.
+6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, el nombre normalizado de los ítems y las dos relaciones 1:1 opcionales.
 
 #### 5.1.2 Nombres de rol
 

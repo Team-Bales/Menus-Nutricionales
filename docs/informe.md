@@ -228,7 +228,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-20 | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. |
 | RR-21 | No se elimina una restricción alimentaria ni un grupo nutricional mientras figuren en `Excluye`. |
 
-> Las cuatro restricciones de borrado marcadas con `ON DELETE RESTRICT` (RR-04, RR-12, RR-19 y RR-21) impiden borrar un hecho del que dependen otros. La política que las coordina entre submodelos se define en §4.4.
+> RR-04, RR-12, RR-19 y RR-21 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
 
 #### 4.1.3 Dominio
 
@@ -321,9 +321,40 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 | # | Restricción |
 |---|---|
 | RX-01 | Solo se registra consumo de alimentos que están en el menú asignado, directamente (`IncluyeAlimento`) o dentro de un plato incluido (`IncluyePlato` + `Composición`). |
-| RX-02 | Política de borrado entre submodelos: `RESTRICT` en todas las claves foráneas, salvo las que van del dueño a sus propias filas de composición o parametrización, que son `CASCADE`: `Plato → Composición`; `Menú → Distribución`, `CubreMenú`, `IncluyeAlimento` e `IncluyePlato`; `Dieta → CubreDieta` y `Restringe`. |
+| RX-02 | Política de borrado entre submodelos: `CASCADE` únicamente en las seis claves foráneas que van de un dueño a sus propias filas de composición o parametrización; `RESTRICT` en todas las demás. El detalle está en la tabla siguiente. |
 
-**Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar (esta restricción amplía las políticas de borrado de §4.1.2). Las filas que solo describen a su dueño desaparecen con él, lo que permite borrar un menú nuevo sin validaciones ni asignaciones de forma completa. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
+**Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar. Las filas que solo describen a su dueño, en cambio, desaparecen con él: así un menú que todavía no tiene dictamen se borra por completo, con su parametrización y sus ítems. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
+
+El criterio distingue dos situaciones. Una fila **existe por su dueño y carece de sentido sin él** —la composición de un plato, la parametrización de un menú—: se borra con él, en `CASCADE`. Una fila **registra un hecho propio** —una validación, una asignación, un consumo— o **referencia un catálogo compartido**: el borrado se impide, en `RESTRICT`, porque perderla falsearía el historial o dejaría huérfanas a otras filas.
+
+**Las seis claves foráneas en `CASCADE`:**
+
+| Clave foránea | Por qué |
+|---|---|
+| `Plato → Composición` | Los ingredientes describen al plato; sin él no existen. |
+| `Menú → Incluye` | Los ítems incluidos son el contenido del menú. |
+| `Menú → Distribución` | Parámetro de generación del menú. |
+| `Menú → CubreMenú` | Parámetro de generación del menú. |
+| `Dieta → CubreDieta` | La cobertura define a la dieta. |
+| `Dieta → Restringe` | Las restricciones definen a la dieta. |
+
+**Las claves foráneas en `RESTRICT`,** agrupadas por lo que protegen:
+
+| Grupo | Claves foráneas | Por qué |
+|---|---|---|
+| Clasificación de los ítems | `ItemAlimentario` → `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `Nutricionista` descriptor | No se borra un valor de nomenclador en uso, ni el nutricionista que describió un ítem (RR-04). |
+| Composición | `Composición` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
+| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribución` → `TipoPreparación`; `CubreMenú` y `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | El borrado en cascada del dueño no debe arrastrar lo que la fila referencia (RR-12). |
+| Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12). |
+| Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta, un nutricionista ni un paciente con vínculos vigentes (RR-12). |
+| Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
+| Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
+| Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consumo`; `Consumo` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
+| Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo. |
+| Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta (RR-19). |
+| Revalorización | `Revalorización` → `Nutricionista` ejecutor, `Valoración` revisada, `Valoración` generada | No se borra una valoración que una revalorización revisa o generó (RR-19). |
+
+Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas distintas. En particular, que `Menú → Incluye` sea `CASCADE` no choca con que `Menú → Asignación` sea `RESTRICT`, porque un menú asignado no llega a borrarse.
 
 ---
 

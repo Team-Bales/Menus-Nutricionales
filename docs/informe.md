@@ -431,7 +431,7 @@ El punto de partida no es el cubrimiento minimal, sino el conjunto **F** de depe
 
 1. **Conjuntos de entidades.** Por cada entidad con clave K y atributos U, se añade `K → U`.
 2. **Entidades débiles.** Su clave es la de la entidad de la que dependen más su llave parcial. `Servicio` no tiene atributos fuera de esa clave, de modo que no aporta ninguna dependencia no trivial.
-3. **Especialización.** El discriminador de una especialización es un atributo de la superclase, aunque en el diagrama se dibuje sobre la propia especialización y no como un óvalo. El de `ItemAlimentario` se llama `Clase`, distingue las dos subclases y aparece en F como el atributo `clase`, determinado por `id_item`. Las subclases no aportan dependencias propias, porque no tienen atributos que la superclase no tenga: lo que las distingue es la relación `Compone`, en la que un plato se compone de alimentos simples.
+3. **Especialización.** El discriminador de una especialización es un atributo de la superclase, y en el diagrama se rotula además sobre la propia especialización. El de `ItemAlimentario` se llama `Clase`, distingue las dos subclases y aparece en F como el atributo `clase`, determinado por `id_item`. Las subclases no aportan dependencias propias, porque no tienen atributos que la superclase no tenga: lo que las distingue es la relación `Compone`, en la que un plato se compone de alimentos simples.
 4. **Interrelaciones con atributos propios.** Por cada una con clave compuesta K, se añade `K → atributos`.
 5. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando el extremo 1 es obligatorio en ambos lados, la dependencia vale en los dos sentidos.
 6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, el nombre normalizado de los ítems y las dos relaciones 1:1 opcionales.
@@ -815,7 +815,7 @@ Esa última merece una palabra, porque es el punto de extensión más claro del 
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 88 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa; y valoración formal de la corrección.
+El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 98 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa; y valoración formal de la corrección.
 
 El esquema relacional se obtuvo aplicando el algoritmo de síntesis al cubrimiento minimal extraído del modelo conceptual, y consta de **28 esquemas**. La descomposición cumple las tres condiciones del criterio de corrección: cada esquema alcanza al menos la 3FN, se preservan todas las dependencias funcionales del dominio —garantizado por construcción del algoritmo— y el join natural no introduce tuplas espurias, por contener la descomposición una clave candidata del esquema universal. La verificación adicional muestra que los 28 esquemas alcanzan además la Forma Normal de Boyce-Codd, condición más fuerte que la exigida.
 

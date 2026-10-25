@@ -58,7 +58,7 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 - **Plato como entidad separada** de Alimento (`Composición(Plato, Alimento, Cantidad)`). Un menú incluye alimentos y platos directamente; los alimentos de un plato se acceden vía `Composición`.
 - **Jefe de nutrición** es un rol de Nutricionista, no una entidad. El estado del menú se deriva de la existencia de un registro aprobado en `Validación`.
 - **Asignación** se modela como N:M (`Asignación(MenúId, PacienteId)`); la clave primaria compuesta garantiza la unicidad por par.
-- **Compatibilidad alimentaria** se resuelve con dos relaciones independientes: `CubreDieta` (grupos requeridos) y `Restringe + Excluye` (grupos excluidos por restricción clínica).
+- **Compatibilidad alimentaria** se resuelve con dos vías independientes. `CubreDieta` relaciona la dieta con los grupos nutricionales que le conciernen y califica cada uno con el atributo `Tipo`: *Requerido* si la dieta debe cubrirlo a lo largo del tratamiento, *Restringido* si lo prohíbe por un criterio propio de esa dieta. `Restringe + Excluye` aporta la segunda vía: las restricciones alimentarias son un catálogo institucional, y cada una excluye los grupos que le correspondan, una sola vez, para todas las dietas que la declaren. Los **grupos prohibidos** de una dieta son la unión de las dos vías; sus **grupos requeridos**, los de `Tipo` *Requerido*. Que un grupo quede prohibido por ambas vías es válido: la prohibición se repite sin contradecirse. Lo que no se admite es que un grupo sea a la vez requerido y excluido por una restricción de la misma dieta (RS-11).
 - **Parámetros de generación**: `CantidadTotalAlimentos` y `EsAutomático` son escalares de Menú; proporción y cobertura son relaciones (`Distribución`, `CubreMenú`). `Cubre` se desambigua en `CubreDieta` y `CubreMenú`.
 - **`ResultadoNutricional`** es un nomenclador con `Nombre` y `Valor` únicos, evitando texto libre y habilitando cálculo de promedios.
 - **`Consumo`** no incluye fecha; su clave es `(MenúId, PacienteId, AlimentoId)` y el ancla temporal es `Menú.FechaCreación`.
@@ -198,7 +198,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RC-15 | Un alimento, un plato o un grupo nutricional aparece a lo sumo una vez en un mismo menú: los pares de `IncluyeAlimento` (`MenúId`, `AlimentoId`), `IncluyePlato` (`MenúId`, `PlatoId`) y `CubreMenú` (`MenúId`, `GrupoNutricionalId`) son únicos. |
 | RC-16 | El par (`RestricciónAlimentariaId`, `GrupoNutricionalId`) identifica cada ocurrencia de `Excluye`. |
 
-> `Autoriza`, `Inscribe`, `CubreDieta` y `Restringe` son tablas de interconexión sin atributos propios: su identidad es el par de claves primarias de los participantes.
+> `Autoriza`, `Inscribe` y `Restringe` son tablas de interconexión sin atributos propios: su identidad es el par de claves primarias de los participantes. `CubreDieta` también se identifica por ese par, pero **sí tiene un atributo propio**, `Tipo`, que califica cada grupo de la dieta como *Requerido* o *Restringido* (§2.1, RD-16).
 
 #### 4.1.2 Referenciales
 
@@ -247,6 +247,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RD-13 | `Aceptación` de `Consumo` toma exactamente los valores *aceptado* y *rechazado*. |
 | RD-14 | `ResultadoNutricional` tiene exactamente cinco categorías — *Muy mala*, *Mala*, *Normal*, *Buena* y *Excelente* —, con `Valor` 1, 2, 3, 4 y 5 respectivamente; `Nombre` y `Valor` son únicos y obligatorios. |
 | RD-15 | `FechaCreación`, `FechaValidación` y `FechaSolicitud` son obligatorias. `Observaciones` es opcional. |
+| RD-16 | `Tipo` de `CubreDieta` es obligatorio y toma exactamente los valores *Requerido* y *Restringido*. |
 
 > Las restricciones de catálogo cerrado (RD-01, RD-02 y RD-14) se garantizan en dos niveles: la FK impide usar un valor ajeno al catálogo, y el CHECK sobre el propio catálogo impide ampliarlo.
 

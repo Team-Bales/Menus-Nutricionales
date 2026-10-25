@@ -101,9 +101,17 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 | RF-15 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
 | RF-16 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
 
+**Requerimientos no funcionales**
+
+| # | Requerimiento |
+|---|---|
+| RNF-01 | Las consultas de disponibilidad calórica de una dieta y de valoraciones más recientes de un paciente responden de forma prácticamente inmediata, incluso en los horarios de mayor concurrencia. |
+
+RNF-01 recoge una exigencia explícita del enunciado: esas dos consultas las repiten nutricionistas y pacientes a lo largo de toda la jornada, de modo que su latencia no puede depender de la carga del motor relacional. Se tratan en §2.2, bajo *Consultas recurrentes*, junto con la estrategia que las sostiene.
+
 ### 2.2 Requerimientos informacionales
 
-El sistema debe dar respuesta a seis consultas informacionales. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
+El sistema debe dar respuesta a seis consultas informacionales y a dos consultas recurrentes. Las primeras son los reportes que el enunciado enumera como funcionalidades; las segundas son las peticiones que se repiten durante la jornada y están sujetas a RNF-01. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
 
 ---
 
@@ -160,6 +168,32 @@ Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base
 - **Parte B — Top-10 alimentos rechazados:** sobre todos los registros de `Consumo` del sistema, calcula la tasa de rechazo por alimento y selecciona los 10 con mayor tasa. Por cada uno reporta el nutricionista que lo **describió** en el banco (no el creador del menú) y la dieta a la que pertenece de forma indirecta, vía los menús en que aparece el consumo rechazado.
 
 - **Parte C — Revalorizados frente al promedio de su sala:** para cada paciente que solicitó una revalorización, compara el valor numérico de la nueva valoración generada con el promedio de las valoraciones de los demás pacientes de la misma sala inscritos en la misma dieta. La dieta de referencia se obtiene de forma transitiva: `Revalorización → Valoración revisada → Menú → Dieta`.
+
+---
+
+#### Consultas recurrentes
+
+> *«Dado que la disponibilidad calórica de las dietas y las valoraciones más recientes son consultadas de forma reiterada por nutricionistas y pacientes a lo largo de toda la jornada, el sistema debe garantizar respuestas prácticamente inmediatas ante esas peticiones recurrentes, incluso en los horarios de mayor concurrencia.»*
+
+A diferencia de las seis anteriores, estas dos no son reportes que se piden de vez en cuando, sino consultas de fondo que acompañan el trabajo diario. El enunciado no las define, así que el primer paso es precisar qué significan en términos del modelo.
+
+**R1 — Disponibilidad calórica de una dieta.** Para cada nivel calórico, cuántos ítems del banco son compatibles con la dieta y cómo se distribuyen por nivel calórico los ítems de sus menús finales. Un ítem es compatible cuando su grupo nutricional no está prohibido para esa dieta, es decir, cuando no lo excluye ninguna de sus restricciones (`Restringe + Excluye`) ni lo marca como *Restringido* su propia cobertura (`CubreDieta`). Es el dato que un nutricionista consulta antes de confeccionar un menú: con qué cuenta, y en qué franja calórica.
+
+> La disponibilidad se expresa en los tres niveles del nomenclador `NivelCalórico` —bajo, medio y alto—, no en kilocalorías. El modelo relacional no almacena ningún valor energético: los macronutrientes pertenecen a la ficha nutricional (§4.3), cuya estructura es variable y no se presta a agregación. La alternativa de que cada dieta declarase los niveles calóricos que admite, mediante una relación `Dieta`–`NivelCalórico`, se descartó: el enunciado habla de lo que está *disponible* para la dieta, no de un límite que la dieta imponga.
+
+**R2 — Valoraciones más recientes de un paciente.** Las N valoraciones del paciente con mayor `FechaValoración`, con su resultado nutricional y el menú evaluado. Ordenarlas es posible porque la valoración tiene fecha propia; el modelo no depende para ello de la fecha de creación del menú.
+
+**Trayectoria.** R1 recorre `Dieta → Restringe → Excluye → GrupoNutricional` y `Dieta → CubreDieta` para obtener los grupos prohibidos, `ItemAlimentario → NivelCalórico` para clasificar el banco, y `Dieta ← Menú` (final) `→ Incluye → ItemAlimentario → NivelCalórico` para la parte de los menús. R2 recorre `Paciente ← Asignación ← Valoración → ResultadoNutricional`, ordenando por `FechaValoración`. Ninguna de las dos almacena su resultado: ambas son derivadas.
+
+**Cómo se garantiza la respuesta inmediata (RNF-01).** Las dos consultas son costosas en relación con su frecuencia —R1 recorre el banco completo y R2 ordena el historial del paciente— y sus resultados cambian poco entre una petición y la siguiente. Por eso se resuelven con un **caché de tipo clave-valor en memoria, en Redis, por delante de PostgreSQL**, que sigue siendo la única fuente de verdad:
+
+| | Disponibilidad calórica | Valoraciones recientes |
+|---|---|---|
+| Clave | `dieta:{DietaId}:disponibilidad-calorica` | `paciente:{PacienteId}:valoraciones-recientes` |
+| Valor | Conteo de ítems por nivel calórico | Las N valoraciones más recientes, ya ordenadas |
+| Se invalida al | Alta o baja de un ítem del banco, cambio de su nivel calórico o de su grupo; cambio en la cobertura o en las restricciones de la dieta; aprobación de un menú suyo | Registrar una valoración o una revalorización de ese paciente |
+
+El patrón es *cache-aside*: la consulta busca primero en el caché y, si no encuentra la clave, la calcula contra PostgreSQL y la guarda. Las claves llevan además un tiempo de vida como respaldo, de modo que un fallo en la invalidación se corrige solo. Si Redis no está disponible, la consulta se resuelve contra PostgreSQL: se pierde la latencia, no la corrección. La elección de Redis y el reparto de responsabilidades entre los tres motores se justifican en el ADR correspondiente del repositorio.
 
 ## 3. MERX de la Base de Datos
 

@@ -8,10 +8,11 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
 {
     public void Configure(EntityTypeBuilder<Menu> builder)
     {
-        // R7-15: cantidad total de alimentos estrictamente positiva
+        // R7-15: cantidad total de alimentos estrictamente positiva. R7-37: un menú no es reemplazo de sí mismo.
         builder.ToTable("menus", t =>
         {
             t.HasCheckConstraint("ck_menus_r7_15_cantidad_total_alimentos", "cantidad_total_alimentos > 0");
+            t.HasCheckConstraint("ck_menus_r7_37_validacion_origen", "validacion_origen_id <> id");
         });
 
         builder.HasKey(m => m.Id);
@@ -72,8 +73,24 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey<Validacion>(v => v.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Se carga siempre con el menú: EsPendiente y EsFinal se derivan de ella, y sin cargarla un menú aprobado
-        // parecería pendiente (revisión del 19/10). Cuesta un LEFT JOIN por la clave.
+        // Se carga siempre con el menú: EsPendiente, EsFinal y EsRechazado se derivan de ella, y sin cargarla un
+        // menú con dictamen parecería pendiente (revisión del 19/10). Cuesta un LEFT JOIN por la clave.
         builder.Navigation(m => m.Validacion).AutoInclude();
+
+        // Origina (#155, P1-5): la validación rechazada origina a lo sumo un menú de reemplazo, y un menú reemplaza
+        // a lo sumo una validación, (0,1) en los dos lados (R7-38). Por eso la FK está en el menú, admite nulos y
+        // es única. RESTRICT, como todas las FK que no van del dueño a sus propias filas (R11-02). Que el origen sea
+        // un rechazo y de la misma dieta (R7-35 y R7-36) lo comprueba
+        // Persistence/Sql/R7_35_R7_36_menu_de_reemplazo.sql.
+        builder.Property(m => m.ValidacionOrigenId).HasColumnName("validacion_origen_id");
+
+        builder.HasOne<Validacion>()
+            .WithOne()
+            .HasForeignKey<Menu>(m => m.ValidacionOrigenId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(m => m.ValidacionOrigenId)
+            .IsUnique()
+            .HasDatabaseName("ux_menus_r7_38_validacion_origen");
     }
 }

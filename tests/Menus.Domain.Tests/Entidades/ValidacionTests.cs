@@ -45,16 +45,29 @@ public sealed class ValidacionTests
     }
 
     [Fact]
-    public void Aprobar_ElMenuPasaAFinalPorqueTieneSuValidacion()
+    public void Aprobar_RegistraUnDictamenAprobado()
     {
-        // La validación es la aprobación: no hay un atributo «Aprobado», que valdría siempre lo mismo.
         var menu = CrearMenu();
 
         var validacion = menu.Aprobar(Guid.NewGuid(), _creacion.AddHours(2));
 
+        Assert.True(validacion.Aprobado);
         Assert.Same(validacion, menu.Validacion);
         Assert.True(menu.EsFinal);
-        Assert.False(menu.EsPendiente);
+    }
+
+    [Fact]
+    public void Rechazar_RegistraUnDictamenRechazadoConSusObservaciones()
+    {
+        // Con el rechazo registrado (#155), Aprobado toma los dos valores.
+        var menu = CrearMenu();
+
+        var validacion = menu.Rechazar(Guid.NewGuid(), _creacion.AddHours(2), "Excede el nivel calórico.");
+
+        Assert.False(validacion.Aprobado);
+        Assert.Equal("Excede el nivel calórico.", validacion.Observaciones);
+        Assert.Equal(_menuId, validacion.MenuId);
+        Assert.True(menu.EsRechazado);
     }
 
     [Theory]

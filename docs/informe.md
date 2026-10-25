@@ -272,7 +272,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RD-02 | `NivelCalórico` toma exactamente los valores *bajo*, *medio* y *alto*. |
 | RD-03 | `GrupoNutricional` es un catálogo abierto; se exige únicamente que cada nombre sea único. |
 | RD-04 | `Nombre` es obligatorio y no vacío en `Alimento`, `Plato` y los tres nomencladores. |
-| RD-05 | `Cantidad` de `Composición` es estrictamente positiva. |
+| RD-05 | `Cantidad` de `Composición` se expresa en gramos, como un decimal estrictamente positivo. |
 | RD-06 | `Edad` es mayor o igual que cero. |
 | RD-07 | `Nombre` es obligatorio y no vacío en `Dieta`, `Nutricionista`, `Paciente`, `Sala` y en los tres nomencladores. |
 | RD-08 | `Nombre` es único dentro de cada nomenclador. |
@@ -409,6 +409,7 @@ Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas d
 | No hay fechas en la asignación, el consumo ni la valoración: el ancla temporal es `Menú.FechaCreación`. |
 | Una asignación puede no tener consumos ni valoraciones. |
 | El consumo no registra cantidades, solo la aceptación por alimento. |
+| La correspondencia entre las restricciones alimentarias de una dieta y los alérgenos de sus ítems no se modela. La compatibilidad por grupo nutricional sí está en el esquema (`Restringe` y `Excluye`); la compatibilidad por alérgeno la comprueba la capa de aplicación contra la ficha nutricional, y no es una restricción de integridad: la base no impide el menú, lo advierte el sistema. Saber qué alérgeno excluye cada restricción es configuración de la aplicación (§5.5). |
 | Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La compatibilidad alimentaria se comprueba en dos niveles, y ninguno de los dos es una restricción de integridad: por **grupo nutricional**, que el modelo relacional resuelve con `Restringe` y `Excluye` sin consultar la ficha; y por **alérgeno**, que la capa de aplicación contrasta contra la ficha nutricional al generar o validar un menú, para advertir al nutricionista (§4.3). Imponer el primero en la base tampoco sería prudente: `GrupoNutricional` es un catálogo institucional abierto, de modo que el criterio clínico sobre qué grupo es admisible en qué menú no le corresponde al esquema. El control queda en tres filtros previos al paciente: la generación automática no incluye grupos prohibidos, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
 
 ---
@@ -608,7 +609,9 @@ Los cálculos — tasas, promedios, correlaciones, el corte del top-10 — no es
 
 El diseño presenta una estructura modular que facilita su evolución ante cambios del dominio nutricional. La independencia entre entidades base (alimentos, platos, grupos nutricionales) y las estructuras operativas (menús, dietas, consumos) permite incorporar nuevos tipos de alimento, criterios dietéticos o modalidades de valoración sin alterar las tablas existentes. La separación entre los parámetros de generación de un menú (`Distribucion`, `CubreMenu`) y su composición efectiva (`IncluyeAlimento`, `IncluyePlato`) garantiza que las reglas de negocio puedan ajustarse sin reestructurar el esquema. El uso de nomencladores abiertos para `GrupoNutricional` y `ProgramaDeAtencion` permite ampliar los catálogos sin cambios estructurales. La externalización de la ficha nutricional a MongoDB ofrece flexibilidad para extender los datos de nutrientes sin migraciones relacionales.
 
-Quedan abiertas cuatro decisiones de modelado: la unidad de `Cantidad` en `Composicion`, la escala de `Proporcion` en `Distribucion` (fracción o porcentaje), la precisión de `Edad` en `Paciente` (años enteros, meses o fecha de nacimiento) y la correspondencia entre las restricciones de una dieta y los alérgenos de los alimentos, que residen en la ficha nutricional fuera del modelo relacional.
+No quedan decisiones de modelado abiertas. Las cuatro que el diseño podía dejar en suspenso están fijadas: la `Cantidad` de la composición se expresa en gramos (RD-05); la `Proporción` de la distribución es una fracción en el intervalo (0, 1] y la suma de las de un menú es 1 (RD-11, RS-08); la `Edad` del paciente es un número entero de años mayor o igual que cero (RD-06, RD-09); y la correspondencia entre las restricciones de una dieta y los alérgenos de sus ítems queda deliberadamente fuera del modelo relacional (§4.5).
+
+Esa última merece una palabra, porque es el punto de extensión más claro del diseño. La compatibilidad alimentaria se resuelve hoy en dos niveles: por grupo nutricional dentro de PostgreSQL, y por alérgeno en la capa de aplicación, que contrasta la ficha de cada ítem contra las restricciones de la dieta. Lo que el modelo relacional no registra es **qué alérgeno excluye cada restricción** —que *sin gluten* excluye *gluten*—, una correspondencia que hoy vive en la configuración de la aplicación. Llevarla al esquema, con un nomenclador de alérgenos y una relación hacia `RestricciónAlimentaria`, permitiría comprobar la compatibilidad por alérgeno sin salir del modelo. Es una extensión aditiva: no obliga a reestructurar ninguna tabla existente, porque el mecanismo por grupo seguiría funcionando igual.
 
 ## 6. Conclusiones
 

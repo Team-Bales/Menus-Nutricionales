@@ -47,7 +47,7 @@ El sistema gestiona la **generación automática de menús nutricionales** dentr
 | **Entidades (10)** | Alimento, Plato, Dieta, Menú, Nutricionista, Paciente, Sala, Valoración Nutricional, Revalorización, Consumo |
 | **Nomencladores (7)** | Grupo nutricional, Tipo de preparación *(entrante, plato fuerte, postre, bebida)*, Nivel calórico *(bajo, medio, alto)*, Restricción alimentaria, Programa de atención, Especialidad, Resultado nutricional |
 
-Cada **alimento** y cada **plato** se clasifican por grupo nutricional, tipo de preparación y nivel calórico, y pueden contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación) cuya estructura variable se gestiona de forma independiente en un almacén NoSQL.
+Cada **alimento** y cada **plato** se clasifican por grupo nutricional, tipo de preparación y nivel calórico, y pueden contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento, y se justifica en la §4.3: la ficha reside en MongoDB, referenciada desde el modelo relacional por la clave del alimento o del plato.
 
 Una **dieta** define los grupos nutricionales a cubrir durante el tratamiento (`CubreDieta`), las restricciones alimentarias a respetar (`Restringe`) y el programa de atención institucional al que corresponde. Los **menús** generados para una dieta almacenan los parámetros de generación como datos inmutables: cantidad total de alimentos y origen automático (`EsAutomático`) como atributos escalares, y la proporción por tipo de preparación y cobertura de grupos nutricionales como relaciones propias (`Distribución`, `CubreMenú`).
 
@@ -70,33 +70,36 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 | RF-01 | El sistema permite registrar alimentos con nombre único, grupo nutricional, tipo de preparación, nivel calórico y nutricionista descritor. |
 | RF-02 | El sistema impide el registro de alimentos con nombre duplicado (normalizado). |
 | RF-03 | El sistema permite registrar platos como composiciones de alimentos con cantidades, clasificados con los mismos atributos que los alimentos. |
-| RF-04 | El sistema permite almacenar fichas nutricionales de estructura variable (macronutrientes, micronutrientes, alérgenos, modo de preparación) en un almacén NoSQL referenciado por la clave del alimento o plato. |
+| RF-04 | El sistema permite asociar a cada alimento y a cada plato una ficha nutricional ampliada (macronutrientes, micronutrientes, alérgenos, modo de preparación), cuyos campos varían de un elemento a otro, y consultarla o modificarla de forma independiente del resto de sus datos. |
 
 **Usuarios y roles**
 
 | # | Requerimiento |
 |---|---|
-| RF-05 | El sistema gestiona nutricionistas con especialidad y estado en línea, y pacientes con sala de hospitalización asignada. |
+| RF-05 | El sistema gestiona nutricionistas con especialidad, y pacientes con sala de hospitalización asignada. |
 | RF-06 | El sistema controla qué nutricionistas están autorizados para crear y validar menús de cada dieta. |
-| RF-07 | El sistema registra la inscripción de pacientes en dietas activas. |
+| RF-07 | El sistema permite a cada nutricionista consultar los menús de las dietas en las que está autorizado, cualquiera sea el nutricionista que los creó. |
+| RF-08 | El sistema registra la inscripción de pacientes en dietas activas. |
+
+> **RF-07 no requiere estructura nueva.** «Atender la misma dieta» es estar autorizado en ella, de modo que los menús visibles para un nutricionista se obtienen recorriendo `Nutricionista` → `Autoriza` → `Dieta` ← `Pertenece` ← `Menú`. La autorización, que RF-06 ya exige para crear y validar, delimita también lo que se puede consultar.
 
 **Dietas y menús**
 
 | # | Requerimiento |
 |---|---|
-| RF-08 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
-| RF-09 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
-| RF-10 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. |
-| RF-11 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
-| RF-12 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
+| RF-09 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
+| RF-10 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
+| RF-11 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. |
+| RF-12 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
+| RF-13 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
 
 **Registro clínico y valoraciones**
 
 | # | Requerimiento |
 |---|---|
-| RF-13 | El sistema registra, para cada alimento de un menú asignado, si el paciente lo aceptó o rechazó. |
-| RF-14 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
-| RF-15 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
+| RF-14 | El sistema registra, para cada alimento de un menú asignado, si el paciente lo aceptó o rechazó. |
+| RF-15 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
+| RF-16 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
 
 ### 2.2 Requerimientos informacionales
 

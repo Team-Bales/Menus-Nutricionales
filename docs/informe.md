@@ -44,24 +44,34 @@ El sistema gestiona la **generación automática de menús nutricionales** dentr
 
 | Tipo | Elementos |
 |---|---|
-| **Entidades (10)** | Alimento, Plato, Dieta, Menú, Nutricionista, Paciente, Sala, Valoración Nutricional, Revalorización, Consumo |
+| **Entidades (11)** | Ítem alimentario, con sus dos subclases, Alimento y Plato; Dieta; Menú; Nutricionista; Paciente; Sala; Valoración Nutricional; Revalorización; Servicio (entidad débil de la asignación) |
 | **Nomencladores (7)** | Grupo nutricional, Tipo de preparación *(entrante, plato fuerte, postre, bebida)*, Nivel calórico *(bajo, medio, alto)*, Restricción alimentaria, Programa de atención, Especialidad, Resultado nutricional |
 
-Cada **alimento** y cada **plato** se clasifican por grupo nutricional, tipo de preparación y nivel calórico, y pueden contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento, y se justifica en la §4.3: la ficha reside en MongoDB, referenciada desde el modelo relacional por la clave del alimento o del plato.
+El enunciado llama «alimento» tanto al alimento simple como al plato. En este informe, **ítem alimentario** (o simplemente *ítem*) designa lo genérico, y «alimento» queda solo para el simple. Cada ítem —un **alimento** o un **plato**— se clasifica por grupo nutricional, tipo de preparación y nivel calórico, y puede contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento, y se justifica en la §4.3: la ficha reside en MongoDB, referenciada desde el modelo relacional por la clave del ítem.
 
-Una **dieta** define los grupos nutricionales a cubrir durante el tratamiento (`CubreDieta`), las restricciones alimentarias a respetar (`Restringe`) y el programa de atención institucional al que corresponde. Los **menús** generados para una dieta almacenan los parámetros de generación como datos inmutables: cantidad total de alimentos y origen automático (`EsAutomático`) como atributos escalares, y la proporción por tipo de preparación y cobertura de grupos nutricionales como relaciones propias (`Distribución`, `CubreMenú`).
+Una **dieta** define los grupos nutricionales a cubrir durante el tratamiento (`CubreDieta`), las restricciones alimentarias a respetar (`Restringe`) y el programa de atención institucional al que corresponde. Los **menús** generados para una dieta almacenan los parámetros de generación como datos inmutables: cantidad total de alimentos y origen automático (`EsAutomático`) como atributos escalares, y la proporción por tipo de preparación y cobertura de grupos nutricionales como relaciones propias (`Distribuye`, `CubreMenú`).
 
-El **consumo** registra, para cada alimento de un menú asignado a un paciente, si fue aceptado o rechazado; su clave es el trío `(MenúId, PacienteId, AlimentoId)` y no incluye fecha propia. Las **valoraciones nutricionales** documentan el resultado del estado del paciente para un menú recibido, referenciando un valor del nomenclador `ResultadoNutricional`. Las **revalorizaciones** registran la solicitud virtual del paciente de revisión de una valoración previa, identificando el nutricionista ejecutante y, cuando ya fue atendida, la nueva valoración generada.
+Cada día en que un menú asignado se sirve a un paciente queda registrado como un **servicio**. El **consumo** registra, en cada servicio, si el paciente aceptó o rechazó cada ítem del menú, sea un alimento o un plato completo. Las **valoraciones nutricionales** documentan, con su fecha, el resultado del estado del paciente ante un menú recibido, referenciando un valor del nomenclador `ResultadoNutricional`. Las **revalorizaciones** registran la solicitud virtual del paciente de revisión de una valoración previa, identificando el nutricionista ejecutante y, cuando ya fue atendida, la nueva valoración generada.
 
 #### Decisiones de modelado relevantes
 
-- **Plato como entidad separada** de Alimento (`Composición(Plato, Alimento, Cantidad)`). Un menú incluye alimentos y platos directamente; los alimentos de un plato se acceden vía `Composición`.
-- **Jefe de nutrición** es un rol de Nutricionista, no una entidad. El estado del menú se deriva de la existencia de un registro aprobado en `Validación`.
+- **Generalización `ItemAlimentario`.** Alimento y plato comparten las cuatro clasificaciones (grupo nutricional, tipo de preparación, nivel calórico y nutricionista que lo describe) y su inclusión en el menú. Por eso son subclases de una superclase, `ItemAlimentario`, con especialización **total** (todo ítem es alimento o plato) y **disjunta** (es solo uno de los dos), distinguidas por el discriminador `Clase`. Las relaciones comunes se modelan una sola vez, contra el ítem. La composición, en cambio, queda entre las subclases: `Compone` relaciona un plato con los alimentos simples que lo forman, con su `Cantidad`. Un menú incluye ítems (`Incluye`).
+- **Jefe de nutrición** es un rol de Nutricionista, no una entidad. Un menú recibe **a lo sumo un dictamen**. Su estado no se almacena, sino que se deriva de ese dictamen:
+  - **pendiente**, si no tiene validación;
+  - **final**, si su validación está aprobada;
+  - **rechazado**, si no lo está.
+
+  Como cada menú tiene un único dictamen, no hace falta comparar fechas entre revisores para saber cuál vale. Si el jefe rechaza un menú e indica confeccionar otro, el menú nuevo referencia la validación que lo originó (`Origina`).
 - **Asignación** se modela como N:M (`Asignación(MenúId, PacienteId)`); la clave primaria compuesta garantiza la unicidad por par.
 - **Compatibilidad alimentaria** se resuelve con dos vías independientes. `CubreDieta` relaciona la dieta con los grupos nutricionales que le conciernen y califica cada uno con el atributo `Tipo`: *Requerido* si la dieta debe cubrirlo a lo largo del tratamiento, *Restringido* si lo prohíbe por un criterio propio de esa dieta. `Restringe + Excluye` aporta la segunda vía: las restricciones alimentarias son un catálogo institucional, y cada una excluye los grupos que le correspondan, una sola vez, para todas las dietas que la declaren. Los **grupos prohibidos** de una dieta son la unión de las dos vías; sus **grupos requeridos**, los de `Tipo` *Requerido*. Que un grupo quede prohibido por ambas vías es válido: la prohibición se repite sin contradecirse. Lo que no se admite es que un grupo sea a la vez requerido y excluido por una restricción de la misma dieta (RS-11).
-- **Parámetros de generación**: `CantidadTotalAlimentos` y `EsAutomático` son escalares de Menú; proporción y cobertura son relaciones (`Distribución`, `CubreMenú`). `Cubre` se desambigua en `CubreDieta` y `CubreMenú`.
+- **Parámetros de generación**: `CantidadTotalAlimentos` y `EsAutomático` son escalares de Menú; proporción y cobertura son relaciones (`Distribuye`, `CubreMenú`). `Cubre` se desambigua en `CubreDieta` y `CubreMenú`.
 - **`ResultadoNutricional`** es un nomenclador con `Nombre` y `Valor` únicos, evitando texto libre y habilitando cálculo de promedios.
-- **`Consumo`** no incluye fecha; su clave es `(MenúId, PacienteId, AlimentoId)` y el ancla temporal es `Menú.FechaCreación`.
+- **Servicio y consumo.** El consumo se registra por servicio:
+  - **`Servicio`** es una entidad débil de la asignación, identificada por el día en que el menú se sirvió (`FechaServicio`).
+  - **`Consume`** relaciona el servicio con cada ítem del menú y registra su `Aceptación`. Como el consumo es por ítem, el rechazo de un plato completo se registra como tal.
+  - **Supuesto:** un menú asignado se sirve a lo sumo una vez por día al mismo paciente.
+- **`FechaValoración`.** La valoración tiene fecha propia, de modo que las valoraciones de un paciente se ordenan sin depender de la fecha de creación del menú.
+- **El solicitante de una revalorización se deriva.** Es el paciente de la valoración revisada; registrarlo aparte repetía un dato, así que no se almacena ni se dibuja (RS-09).
 
 **Catálogo de alimentos y platos**
 
@@ -81,7 +91,7 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 | RF-07 | El sistema permite a cada nutricionista consultar los menús de las dietas en las que está autorizado, cualquiera sea el nutricionista que los creó. |
 | RF-08 | El sistema registra la inscripción de pacientes en dietas activas. |
 
-> **RF-07 no requiere estructura nueva.** «Atender la misma dieta» es estar autorizado en ella, de modo que los menús visibles para un nutricionista se obtienen recorriendo `Nutricionista` → `Autoriza` → `Dieta` ← `Pertenece` ← `Menú`. La autorización, que RF-06 ya exige para crear y validar, delimita también lo que se puede consultar.
+> **RF-07 no requiere estructura nueva.** «Atender la misma dieta» es estar autorizado en ella, de modo que los menús visibles para un nutricionista se obtienen recorriendo `Nutricionista` → `Autoriza` → `Dieta` ← `PerteneceDieta` ← `Menú`. La autorización, que RF-06 ya exige para crear y validar, delimita también lo que se puede consultar.
 
 **Dietas y menús**
 
@@ -97,8 +107,8 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 
 | # | Requerimiento |
 |---|---|
-| RF-14 | El sistema registra, para cada alimento de un menú asignado, si el paciente lo aceptó o rechazó. |
-| RF-15 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
+| RF-14 | El sistema registra cada día en que un menú asignado se sirve al paciente y, en cada servicio, si el paciente aceptó o rechazó cada ítem del menú, alimento o plato. |
+| RF-15 | El sistema registra valoraciones nutricionales del estado del paciente, con su fecha, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
 | RF-16 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
 
 **Requerimientos no funcionales**
@@ -119,7 +129,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Obtener el listado de menús generados automáticamente para una dieta específica, indicando el nombre del creador, la fecha de creación y los parámetros utilizados.»*
 
-**Reformulación:** Dado el identificador de una dieta, el sistema recupera el historial auditable de todos sus menús con `EsAutomático = TRUE`. Por cada uno proyecta: el nombre del nutricionista creador (quien ejecutó la parametrización algorítmica, no necesariamente quien ingresó los alimentos al banco), la marca temporal de creación (`FechaCreación`) y el detalle completo de los parámetros almacenados de forma inmutable junto al menú: cantidad total de alimentos, proporciones por tipo de preparación (`Distribución`) y grupos nutricionales cubiertos (`CubreMenú`). Los resultados son ordenables por cualquier columna y exportables a PDF.
+**Reformulación:** Dado el identificador de una dieta, el sistema recupera el historial auditable de todos sus menús con `EsAutomático = TRUE`. Por cada uno proyecta: el nombre del nutricionista creador (quien ejecutó la parametrización algorítmica, no necesariamente quien ingresó los alimentos al banco), la marca temporal de creación (`FechaCreación`) y el detalle completo de los parámetros almacenados de forma inmutable junto al menú: cantidad total de alimentos, proporciones por tipo de preparación (`Distribuye`) y grupos nutricionales cubiertos (`CubreMenú`). Los resultados son ordenables por cualquier columna y exportables a PDF.
 
 ---
 
@@ -127,7 +137,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Obtener los alimentos más utilizados en los menús finales de una dieta, clasificados por nivel calórico y grupo nutricional.»*
 
-**Reformulación:** Dado el identificador de una dieta, el sistema filtra los **menús finales** — aquellos con al menos una validación aprobada — y sobre ellos cuenta cuántos menús distintos contienen cada alimento (presencia, no cantidad servida). Los alimentos que llegan al menú a través de platos (`IncluyePlato` + `Composición`) se suman a los incluidos directamente (`IncluyeAlimento`) para no subcontar el uso real. El resultado es una tabla de alimentos con número de apariciones, nivel calórico y grupo nutricional, ordenable y filtrable por top-N, exportable a PDF.
+**Reformulación:** Dado el identificador de una dieta, el sistema filtra los **menús finales** — aquellos cuya validación está aprobada — y sobre ellos cuenta cuántos menús distintos contienen cada alimento (presencia, no cantidad servida). Los alimentos que llegan al menú dentro de un plato (`Incluye` + `Compone`) se suman a los incluidos directamente (`Incluye`) para no subcontar el uso real. El resultado es una tabla de alimentos con número de apariciones, nivel calórico y grupo nutricional, ordenable y filtrable por top-N, exportable a PDF.
 
 ---
 
@@ -143,7 +153,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Generar un reporte sobre el desempeño nutricional de los pacientes ante un menú, clasificando los alimentos por nivel calórico y comparando las tasas de aceptación.»*
 
-**Reformulación:** Dado un menú, el sistema recupera los alimentos que lo componen (directos e indirectos vía platos) y los registros de consumo de los pacientes que lo recibieron. Por cada alimento calcula: número de servicios con consumo registrado, número de aceptaciones, número de rechazos y **tasa de aceptación** (aceptaciones ÷ servicios registrados). Los resultados se clasifican por nivel calórico del alimento y se presentan en tabla y gráfico comparativo. Los pacientes asignados sin consumo registrado quedan fuera del denominador; las tasas son derivadas y `Aceptación` en `Consumo` es el único dato almacenado.
+**Reformulación:** Dado un menú, el sistema recupera los alimentos que lo componen (directos e indirectos vía platos) y los registros de consumo de los pacientes que lo recibieron. Por cada alimento calcula: número de servicios con consumo registrado, número de aceptaciones, número de rechazos y **tasa de aceptación** (aceptaciones ÷ servicios registrados). Los resultados se clasifican por nivel calórico del alimento y se presentan en tabla y gráfico comparativo. Los pacientes asignados sin consumo registrado quedan fuera del denominador; las tasas son derivadas y `Aceptación` en `Consume` es el único dato almacenado.
 
 ---
 
@@ -151,7 +161,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Comparar los menús generados para diferentes dietas, verificando la distribución de alimentos por grupo nutricional y nivel calórico y si los criterios de equilibrio fueron cumplidos.»*
 
-**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos que exige cubrir (`CubreDieta` con `Tipo` *Requerido*) están presentes en el menú y si los que tiene prohibidos están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribución` y `CantidadTotalAlimentos`. Los grupos prohibidos de una dieta son la unión de dos vías: los excluidos por sus restricciones (`Restringe + Excluye`) y los que su propia cobertura marca como *Restringido*.
+**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos que exige cubrir (`CubreDieta` con `Tipo` *Requerido*) están presentes en el menú y si los que tiene prohibidos están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribuye` y `CantidadTotalAlimentos`. Los grupos prohibidos de una dieta son la unión de dos vías: los excluidos por sus restricciones (`Restringe + Excluye`) y los que su propia cobertura marca como *Restringido*.
 
 Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base imponga (§4.5), y de ahí que el enunciado pida verificar «si fueron cumplidos». Ningún resultado se almacena: proporciones, tasas y dictámenes de cumplimiento son todos derivados.
 
@@ -163,9 +173,9 @@ Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base
 
 **Reformulación:** La consulta tiene tres partes independientes:
 
-- **Parte A — Correlación por dieta:** para cada dieta, une dos ramas del modelo: la rama alimentaria (dieta → menús → alimentos con nivel calórico) y la rama clínica (pacientes con valoraciones ancladas a esos menús). La unión se hace por el par `(MenúId, PacienteId)` de la asignación; el resultado es el promedio del valor numérico de `ResultadoNutricional` segmentado por nivel calórico, sin necesidad de fechas en `Valoración` ni en `Consumo` (el orden temporal se deriva de `Menú.FechaCreación`).
+- **Parte A — Correlación por dieta:** para cada dieta, une dos ramas del modelo: la rama alimentaria (dieta → menús → alimentos con nivel calórico) y la rama clínica (pacientes con valoraciones ancladas a esos menús). La unión se hace por el par `(MenúId, PacienteId)` de la asignación; el resultado es el promedio del valor numérico de `ResultadoNutricional` segmentado por nivel calórico. Si hace falta acotar un período, la valoración y el servicio tienen fecha propia (`FechaValoración`, `FechaServicio`).
 
-- **Parte B — Top-10 alimentos rechazados:** sobre todos los registros de `Consumo` del sistema, calcula la tasa de rechazo por alimento y selecciona los 10 con mayor tasa. Por cada uno reporta el nutricionista que lo **describió** en el banco (no el creador del menú) y la dieta a la que pertenece de forma indirecta, vía los menús en que aparece el consumo rechazado.
+- **Parte B — Top-10 alimentos rechazados:** sobre todos los registros de `Consume` del sistema, calcula la tasa de rechazo por alimento y selecciona los 10 con mayor tasa. Por cada uno reporta el nutricionista que lo **describió** en el banco (no el creador del menú) y la dieta a la que pertenece de forma indirecta, vía los menús en que aparece el consumo rechazado.
 
 - **Parte C — Revalorizados frente al promedio de su sala:** para cada paciente que solicitó una revalorización, compara el valor numérico de la nueva valoración generada con el promedio de las valoraciones de los demás pacientes de la misma sala inscritos en la misma dieta. La dieta de referencia se obtiene de forma transitiva: `Revalorización → Valoración revisada → Menú → Dieta`.
 
@@ -197,7 +207,17 @@ El patrón es *cache-aside*: la consulta busca primero en el caché y, si no enc
 
 ## 3. MERX de la Base de Datos
 
-El Modelo Entidad-Relación Extendido (MERX) consolidado del sistema se presenta a continuación.
+El Modelo Entidad-Relación Extendido (MERX) consolidado del sistema se presenta a continuación, en cuatro láminas: una con las entidades y sus atributos, y tres con las relaciones, agrupadas por área. Cinco convenciones ayudan a leerlo:
+
+- **Cardinalidad.** El par `(mínimo, máximo)` junto a una entidad indica cuántas instancias de esa entidad se asocian a una sola instancia de la otra. Por ejemplo, `(0,1)` junto a `Nutricionista` en `Valida` significa que un menú recibe a lo sumo un dictamen.
+- **Agregación.** Una relación se envuelve en una agregación solo cuando participa a su vez en otra relación, y sus atributos, si los tiene, cuelgan del rombo. Por eso quedan dos agregaciones:
+  - `Validación`, que participa en `Origina`;
+  - `Asignación`, que participa en `Evalúa` y en `Sirve`.
+- **Especialización.** La de `ItemAlimentario` es total y disjunta. Que es total lo indica la línea doble entre la superclase y el discriminador; que es disjunta, el discriminador `Clase`. La notación del curso no fija cómo marcar la totalidad, así que la lámina de entidades lleva una leyenda.
+- **Entidad débil.** `Servicio` (rectángulo de borde doble) depende de la agregación `Asignación` por la relación identificadora `Sirve` (rombo de borde doble). Su llave es la heredada de la asignación más `FechaServicio`.
+- **Atributos heredados.** Los óvalos punteados son atributos heredados de una agregación, de una entidad débil o de una superclase; los subrayados forman parte de la llave.
+
+Cada relación tiene un nombre único: cuando dos comparten verbo, se distinguen por el participante (`PerteneceGrupo`, `PerteneceDieta`, `PerteneceSala`, `CubreDieta`, `CubreMenú`, …).
 
 ![MERX — Entidades y nomencladores](MERX%20consolidado/MERXInforme-Entidades.png)
 
@@ -217,9 +237,9 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 
 | # | Restricción |
 |---|---|
-| RC-01 | `AlimentoId` identifica unívocamente a cada alimento y `PlatoId` a cada plato. |
+| RC-01 | `ItemId` identifica unívocamente a cada ítem alimentario; alimentos y platos lo heredan de la superclase. El nombre normalizado es clave candidata: no hay dos ítems con el mismo nombre, sean alimentos o platos. |
 | RC-02 | `GrupoNutricionalId`, `TipoPreparaciónId` y `NivelCalóricoId` identifican unívocamente a cada valor de su nomenclador. |
-| RC-03 | Un mismo alimento aparece a lo sumo una vez en la composición de un plato: el par (`PlatoId`, `AlimentoId`) identifica cada ocurrencia de `Composición`. |
+| RC-03 | Un mismo alimento aparece a lo sumo una vez en la composición de un plato: el par (`PlatoId`, `AlimentoId`) identifica cada ocurrencia de `Compone`. Ambos son nombres de rol de `ItemId`. |
 | RC-04 | `DietaId` identifica unívocamente a cada dieta, `NutricionistaId` a cada nutricionista, `PacienteId` a cada paciente y `SalaId` a cada sala. |
 | RC-05 | `ProgramaDeAtenciónId`, `RestricciónAlimentariaId` y `EspecialidadId` identifican unívocamente a cada valor de su nomenclador. |
 | RC-06 | El par (`NutricionistaId`, `DietaId`) identifica cada autorización. |
@@ -227,12 +247,13 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RC-08 | El par (`DietaId`, `GrupoNutricionalId`) y el par (`DietaId`, `RestricciónAlimentariaId`) identifican cada ocurrencia de `CubreDieta` y de `Restringe`, respectivamente. |
 | RC-09 | `MenúId` identifica unívocamente a cada menú, `ValoraciónId` a cada valoración y `RevalorizaciónId` a cada revalorización. |
 | RC-10 | `ResultadoNutricionalId` identifica unívocamente a cada categoría del nomenclador `ResultadoNutricional`. |
-| RC-11 | Un menú registra a lo sumo una proporción por tipo de preparación: el par (`MenúId`, `TipoPreparaciónId`) identifica cada ocurrencia de `Distribución`. |
-| RC-12 | Un revisor registra a lo sumo una validación por menú: el par (`NutricionistaId`, `MenúId`) identifica cada ocurrencia de `Validación`. |
+| RC-11 | Un menú registra a lo sumo una proporción por tipo de preparación: el par (`MenúId`, `TipoPreparaciónId`) identifica cada ocurrencia de `Distribuye`. |
+| RC-12 | Un menú recibe a lo sumo un dictamen: `MenúId` identifica cada validación. |
 | RC-13 | Un menú se asigna a lo sumo una vez a un mismo paciente: el par (`MenúId`, `PacienteId`) identifica cada ocurrencia de `Asignación`. |
-| RC-14 | Cada alimento tiene a lo sumo un registro de consumo por asignación: la terna (`MenúId`, `PacienteId`, `AlimentoId`) identifica cada ocurrencia de `Consumo`. |
-| RC-15 | Un alimento, un plato o un grupo nutricional aparece a lo sumo una vez en un mismo menú: los pares de `IncluyeAlimento` (`MenúId`, `AlimentoId`), `IncluyePlato` (`MenúId`, `PlatoId`) y `CubreMenú` (`MenúId`, `GrupoNutricionalId`) son únicos. |
+| RC-14 | Cada ítem tiene a lo sumo un registro de consumo por servicio: (`MenúId`, `PacienteId`, `FechaServicio`, `ItemId`) identifica cada ocurrencia de `Consume`. |
+| RC-15 | Un ítem o un grupo nutricional aparece a lo sumo una vez en un mismo menú: los pares de `Incluye` (`MenúId`, `ItemId`) y de `CubreMenú` (`MenúId`, `GrupoNutricionalId`) son únicos. |
 | RC-16 | El par (`RestricciónAlimentariaId`, `GrupoNutricionalId`) identifica cada ocurrencia de `Excluye`. |
+| RC-17 | Un menú asignado se sirve a lo sumo una vez por día al mismo paciente: la terna (`MenúId`, `PacienteId`, `FechaServicio`) identifica cada servicio. `FechaServicio` es la llave parcial de la entidad débil. |
 
 > `Autoriza`, `Inscribe` y `Restringe` son tablas de interconexión sin atributos propios: su identidad es el par de claves primarias de los participantes. `CubreDieta` también se identifica por ese par, pero **sí tiene un atributo propio**, `Tipo`, que califica cada grupo de la dieta como *Requerido* o *Restringido* (§2.1, RD-16).
 
@@ -240,10 +261,10 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 
 | # | Restricción |
 |---|---|
-| RR-01 | Toda clasificación de un alimento o de un plato referencia un valor existente del nomenclador correspondiente. |
-| RR-02 | Toda ocurrencia de `Composición` referencia un plato y un alimento existentes. |
-| RR-03 | Todo alimento y todo plato referencia al nutricionista que lo describió. |
-| RR-04 | No se elimina un valor de nomenclador mientras lo use algún alimento o plato, ni un alimento mientras forme parte de algún plato. |
+| RR-01 | Toda clasificación de un ítem referencia un valor existente del nomenclador correspondiente. |
+| RR-02 | Toda ocurrencia de `Compone` referencia un plato y un alimento existentes. |
+| RR-03 | Todo ítem referencia al nutricionista que lo describió. |
+| RR-04 | No se elimina un valor de nomenclador mientras lo use algún ítem, ni un alimento mientras forme parte de algún plato. |
 | RR-05 | Toda dieta corresponde a un programa de atención existente. |
 | RR-06 | Toda ocurrencia de `CubreDieta` referencia una dieta y un grupo nutricional existentes. |
 | RR-07 | Toda ocurrencia de `Restringe` referencia una dieta y una restricción alimentaria existentes. |
@@ -253,12 +274,12 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-11 | Todo nutricionista referencia la especialidad que ejerce. |
 | RR-12 | No se elimina un valor de nomenclador mientras lo use alguna dieta o algún nutricionista, ni una dieta mientras figure en alguna autorización o inscripción. |
 | RR-13 | Todo menú referencia la dieta a la que pertenece y el nutricionista que lo creó. |
-| RR-14 | Toda ocurrencia de `IncluyeAlimento`, `IncluyePlato`, `CubreMenú` y `Distribución` referencia un menú existente y la entidad correspondiente. |
+| RR-14 | Toda ocurrencia de `Incluye`, `CubreMenú` y `Distribuye` referencia un menú existente y el ítem o el valor de nomenclador correspondiente. |
 | RR-15 | Toda ocurrencia de `Validación` referencia un nutricionista y un menú existentes. |
-| RR-16 | Toda ocurrencia de `Asignación` referencia un menú y un paciente existentes; todo `Consumo` referencia una asignación existente y un alimento existente. |
+| RR-16 | Toda ocurrencia de `Asignación` referencia un menú y un paciente existentes, y todo servicio referencia una asignación existente. Toda ocurrencia de `Consume` referencia un servicio existente y un ítem **incluido en el menú servido**: la referencia es a la inclusión (`MenúId`, `ItemId`), no al ítem suelto (RX-01). |
 | RR-17 | Toda valoración referencia la asignación que evalúa, el nutricionista que la emite y una categoría existente de `ResultadoNutricional`. |
-| RR-18 | Toda revalorización referencia al paciente que la solicita, al nutricionista que la ejecuta y a la valoración que revisa; la valoración generada, cuando existe, también debe existir. |
-| RR-19 | No se elimina un menú mientras tenga validaciones o asignaciones, ni una asignación mientras tenga consumos o valoraciones, ni una valoración mientras una revalorización la revise o la haya generado. |
+| RR-18 | Toda revalorización referencia al nutricionista que la ejecuta y a la valoración que revisa; la valoración generada, cuando existe, también debe existir. El paciente solicitante no se referencia: es el de la valoración revisada (RS-09). |
+| RR-19 | No se elimina un menú mientras tenga validación o asignaciones, ni una asignación mientras tenga servicios o valoraciones, ni un servicio mientras tenga consumos, ni una valoración mientras una revalorización la revise o la haya generado. |
 | RR-20 | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. |
 | RR-21 | No se elimina una restricción alimentaria ni un grupo nutricional mientras figuren en `Excluye`. |
 | RR-22 | No se elimina un nutricionista ni un paciente mientras tengan hechos asociados: ítems descritos, menús creados, validaciones, valoraciones emitidas, revalorizaciones ejecutadas, autorizaciones o inscripciones. Tampoco se elimina un ítem alimentario que figure en algún menú, ni un valor de nomenclador que use algún menú. |
@@ -272,19 +293,20 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RD-01 | `TipoPreparación` toma exactamente los valores *entrante*, *plato fuerte*, *postre* y *bebida*. |
 | RD-02 | `NivelCalórico` toma exactamente los valores *bajo*, *medio* y *alto*. |
 | RD-03 | `GrupoNutricional` es un catálogo abierto; se exige únicamente que cada nombre sea único. |
-| RD-04 | `Nombre` es obligatorio y no vacío en `Alimento`, `Plato` y los tres nomencladores. |
-| RD-05 | `Cantidad` de `Composición` se expresa en gramos, como un decimal estrictamente positivo. |
+| RD-04 | `Nombre` es obligatorio y no vacío en `ItemAlimentario` y los tres nomencladores. |
+| RD-05 | `Cantidad` de `Compone` se expresa en gramos, como un decimal estrictamente positivo. |
 | RD-06 | `Edad` es mayor o igual que cero. |
 | RD-07 | `Nombre` es obligatorio y no vacío en `Dieta`, `Nutricionista`, `Paciente`, `Sala` y en los tres nomencladores. |
 | RD-08 | `Nombre` es único dentro de cada nomenclador. |
 | RD-09 | `Edad` se registra como un número entero de años. |
 | RD-10 | `CantidadTotalAlimentos` es un entero estrictamente positivo. |
-| RD-11 | `Proporción` de `Distribución` está en el intervalo (0, 1]. |
+| RD-11 | `Proporción` de `Distribuye` está en el intervalo (0, 1]. |
 | RD-12 | `EsAutomático` (menú) y `Aprobado` (validación) son booleanos obligatorios. |
-| RD-13 | `Aceptación` de `Consumo` toma exactamente los valores *aceptado* y *rechazado*. |
+| RD-13 | `Aceptación` de `Consume` toma exactamente los valores *aceptado* y *rechazado*. |
 | RD-14 | `ResultadoNutricional` tiene exactamente cinco categorías — *Muy mala*, *Mala*, *Normal*, *Buena* y *Excelente* —, con `Valor` 1, 2, 3, 4 y 5 respectivamente; `Nombre` y `Valor` son únicos y obligatorios. |
-| RD-15 | `FechaCreación`, `FechaValidación` y `FechaSolicitud` son obligatorias. `Observaciones` es opcional. |
+| RD-15 | `FechaCreación`, `FechaValidación`, `FechaSolicitud`, `FechaValoración` y `FechaServicio` son obligatorias. `FechaServicio` es un día, sin hora. `Observaciones` es opcional. |
 | RD-16 | `Tipo` de `CubreDieta` es obligatorio y toma exactamente los valores *Requerido* y *Restringido*. |
+| RD-17 | `Clase` es obligatoria y toma exactamente los valores *Alimento* y *Plato*. |
 
 > Las restricciones de catálogo cerrado (RD-01, RD-02 y RD-14) se garantizan en dos niveles: la FK impide usar un valor ajeno al catálogo, y el CHECK sobre el propio catálogo impide ampliarlo.
 
@@ -292,9 +314,9 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 
 | # | Restricción |
 |---|---|
-| RK-01 | Cada alimento y cada plato tiene exactamente un grupo nutricional, un tipo de preparación y un nivel calórico. |
-| RK-02 | Cada alimento y cada plato tiene exactamente un nutricionista que lo describió. |
-| RK-03 | Todo plato se compone de al menos un alimento: `(1,*)` del lado de `Alimento` en `Composición`. |
+| RK-01 | Cada ítem tiene exactamente un grupo nutricional, un tipo de preparación y un nivel calórico. |
+| RK-02 | Cada ítem tiene exactamente un nutricionista que lo describió. |
+| RK-03 | Todo plato se compone de al menos un alimento: `(1,*)` del lado de `Alimento` en `Compone`. |
 | RK-04 | Cada dieta corresponde a exactamente un programa de atención. |
 | RK-05 | Cada paciente pertenece a exactamente una sala. |
 | RK-06 | Cada nutricionista ejerce exactamente una especialidad. |
@@ -302,7 +324,10 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RK-08 | Cada menú tiene exactamente un creador y una dieta. |
 | RK-09 | Todo menú tiene al menos una proporción por tipo de preparación y al menos un grupo nutricional cubierto. |
 | RK-10 | Cada valoración evalúa exactamente una asignación, la emite exactamente un nutricionista y tiene exactamente un resultado. |
-| RK-11 | Cada revalorización tiene exactamente un solicitante, un ejecutor y una valoración revisada. Genera a lo sumo una valoración, y cada valoración es generada por a lo sumo una revalorización. |
+| RK-11 | Cada revalorización tiene exactamente un ejecutor y una valoración revisada, cuyo paciente es el solicitante. Genera a lo sumo una valoración, y cada valoración es generada por a lo sumo una revalorización. |
+| RK-12 | Cada ítem es exactamente un alimento o un plato: la especialización de `ItemAlimentario` es total y disjunta. |
+| RK-13 | Cada menú recibe a lo sumo un dictamen: `(0,1)` del lado de `Nutricionista` en `Valida`. |
+| RK-14 | Cada servicio pertenece a exactamente una asignación: `(1,1)` del lado de `Asignación` en `Sirve`. Una asignación puede tener cero o más servicios. |
 
 > Las restricciones de cardinalidad mínima ≥ 1 (RK-03, RK-07 y RK-09) no son expresables con claves foráneas: la entidad se registra antes que sus ocurrencias y la comprobación solo tiene sentido al cierre de la operación. En la capa de aplicación, el alta y su detalle se registran en una misma unidad de trabajo; en PostgreSQL se refuerzan con un trigger de restricción diferido (`DEFERRABLE INITIALLY DEFERRED`).
 
@@ -314,17 +339,22 @@ Las restricciones semánticas no acotan los valores que se pueden almacenar, sin
 
 | # | Restricción |
 |---|---|
-| RS-01 | No existen alimentos duplicados. |
-| RS-02 | Un nutricionista solo clasifica los alimentos que él mismo describió. |
+| RS-01 | No existen ítems duplicados: dos ítems, sean alimentos o platos, no tienen el mismo nombre normalizado (RC-01). |
+| RS-02 | Un nutricionista solo clasifica los ítems que él mismo describió. |
 | RS-03 | Un nutricionista solo genera o valida menús de las dietas en las que está autorizado. |
 | RS-04 | Un paciente solo recibe menús de las dietas en las que está inscrito. |
 | RS-05 | Un nutricionista no valida un menú que él mismo creó. |
 | RS-06 | La fecha de validación no es anterior a la fecha de creación del menú validado. |
-| RS-07 | La parametrización de un menú (`CantidadTotalAlimentos`, `EsAutomático`, `Distribución`, `CubreMenú`) no cambia después de creado el menú. |
+| RS-07 | La parametrización de un menú (`CantidadTotalAlimentos`, `EsAutomático`, `Distribuye`, `CubreMenú`) no cambia después de creado el menú. |
 | RS-08 | La suma de las proporciones de un menú es 1. |
-| RS-09 | El paciente que solicita una revalorización es el mismo de la valoración que revisa. |
+| RS-09 | El paciente que solicita una revalorización es el mismo de la valoración que revisa. Se cumple por estructura: el solicitante no se registra aparte, sino que se obtiene de la valoración revisada. |
 | RS-10 | La valoración generada por una revalorización evalúa la misma asignación que la valoración revisada y la emite el nutricionista que ejecutó la revalorización. |
 | RS-11 | Un grupo que una dieta exige cubrir (`CubreDieta` con `Tipo` *Requerido*) no puede estar excluido por una de sus restricciones (`Restringe` seguido de `Excluye`). |
+| RS-12 | La composición tiene un solo nivel: en `Compone`, el compuesto es un plato y el componente es un alimento simple, nunca otro plato. |
+| RS-13 | La clase de un ítem no cambia después de registrado. |
+| RS-14 | Ningún servicio es anterior al día en que se aprobó el menú. |
+| RS-15 | La validación de un menú no se modifica ni se borra: el primer dictamen cierra el menú. |
+| RS-16 | Solo se asigna un menú final: un menú pendiente o rechazado no se asigna. |
 
 > **RS-11 restringe la definición de la dieta, no el contenido de sus menús.** Una dieta que exige un grupo y a la vez lo prohíbe es incoherente: ningún menú podría cumplirla. Por eso solo cuenta `Tipo` *Requerido*; un grupo marcado *Restringido* que además esté excluido por una restricción repite la prohibición sin contradecirla. Que un **menú** incluya ítems de un grupo prohibido por su dieta es una cuestión distinta, y no es una restricción: se trata en §4.5.
 
@@ -341,7 +371,7 @@ Las restricciones siguientes pertenecen a la ficha nutricional, almacenada en Mo
 | RM-03 | `tipo` es `simple` o `compuesto`, coherente con la tabla: `Alimento` → `simple`, `Plato` → `compuesto`; solo las fichas de plato llevan `ingredientes`. |
 | RM-04 | Los valores numéricos de la porción son positivos y los alérgenos no se repiten. |
 | RM-05 | Los bloques `macronutrientes`, `micronutrientes` y `modoPreparacion` no tienen campos obligatorios. |
-| RM-06 | En la ficha de un plato, el conjunto de `ingredientes.alimentoId` coincide con los alimentos del plato en `Composición`. |
+| RM-06 | En la ficha de un plato, el conjunto de `ingredientes.alimentoId` coincide con los alimentos del plato en `Compone`. |
 | RM-07 | Solo existe ficha para filas existentes de `Alimento` o `Plato`. |
 | RM-08 | Cada fila tiene a lo sumo una ficha. |
 | RM-09 | Al eliminar un alimento o un plato se elimina su ficha. |
@@ -355,7 +385,7 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 
 | # | Restricción |
 |---|---|
-| RX-01 | Solo se registra consumo de alimentos que están en el menú asignado, directamente (`IncluyeAlimento`) o dentro de un plato incluido (`IncluyePlato` + `Composición`). |
+| RX-01 | Solo se registra consumo de los ítems incluidos en el menú servido (`Incluye`). Un plato se acepta o se rechaza completo, no por ingrediente. Se impone de forma declarativa: `Consume` referencia la inclusión (`MenúId`, `ItemId`), no el ítem suelto (RR-16), y por eso no se dibuja en el MERX. |
 | RX-02 | Política de borrado entre submodelos: `CASCADE` únicamente en las seis claves foráneas que van de un dueño a sus propias filas de composición o parametrización; `RESTRICT` en todas las demás. El detalle está en la tabla siguiente. |
 
 **Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar. Las filas que solo describen a su dueño, en cambio, desaparecen con él: así un menú que todavía no tiene dictamen se borra por completo, con su parametrización y sus ítems. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
@@ -366,9 +396,9 @@ El criterio distingue dos situaciones. Una fila **existe por su dueño y carece 
 
 | Clave foránea | Por qué |
 |---|---|
-| `Plato → Composición` | Los ingredientes describen al plato; sin él no existen. |
+| `Plato → Compone` | Los ingredientes describen al plato; sin él no existen. |
 | `Menú → Incluye` | Los ítems incluidos son el contenido del menú. |
-| `Menú → Distribución` | Parámetro de generación del menú. |
+| `Menú → Distribuye` | Parámetro de generación del menú. |
 | `Menú → CubreMenú` | Parámetro de generación del menú. |
 | `Dieta → CubreDieta` | La cobertura define a la dieta. |
 | `Dieta → Restringe` | Las restricciones definen a la dieta. |
@@ -378,14 +408,14 @@ El criterio distingue dos situaciones. Una fila **existe por su dueño y carece 
 | Grupo | Claves foráneas | Por qué |
 |---|---|---|
 | Clasificación de los ítems | `ItemAlimentario` → `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `Nutricionista` descriptor | No se borra un valor de nomenclador en uso (RR-04) ni el nutricionista que describió un ítem (RR-22). |
-| Composición | `Composición` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
-| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribución` → `TipoPreparación`; `CubreMenú` → `GrupoNutricional` | El borrado en cascada del menú no debe arrastrar el ítem ni el nomenclador que la fila referencia (RR-22). |
+| Composición | `Compone` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
+| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribuye` → `TipoPreparación`; `CubreMenú` → `GrupoNutricional` | El borrado en cascada del menú no debe arrastrar el ítem ni el nomenclador que la fila referencia (RR-22). |
 | Cobertura y restricciones de una dieta | `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | Lo mismo del lado de la dieta: su borrado en cascada no arrastra los nomencladores (RR-12). |
 | Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12). |
 | Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta que figure en alguna autorización o inscripción (RR-12), ni el nutricionista o el paciente del vínculo (RR-22). |
 | Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
 | Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
-| Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consumo`; `Consumo` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
+| Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consume`; `Consume` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
 | Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo. |
 | Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta (RR-19). |
 | Revalorización | `Revalorización` → `Nutricionista` ejecutor, `Valoración` revisada, `Valoración` generada | No se borra una valoración que una revalorización revisa o generó (RR-19). |
@@ -400,17 +430,16 @@ Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas d
 |---|
 | La clasificación de un plato no se deriva de sus ingredientes: un plato de nivel calórico bajo puede contener alimentos de nivel alto. |
 | Un alimento puede no formar parte de ningún plato, y un valor de nomenclador puede no estar en uso. |
-| La composición tiene un solo nivel: un plato se compone de alimentos, no de otros platos. |
 | Una dieta puede no declarar ninguna restricción alimentaria. |
 | Un paciente puede no estar inscrito en ninguna dieta y un nutricionista puede no estar autorizado en ninguna. |
-| Los nombres de las entidades no son únicos: la unicidad de nombre solo se exige en los nomencladores (RD-08). |
+| Los nombres de `Dieta`, `Nutricionista`, `Paciente` y `Sala` no son únicos. Sí lo son el nombre normalizado de los ítems, porque alimentos y platos comparten un mismo espacio de nombres (RC-01, RS-01), y el de cada valor de nomenclador (RD-08). |
 | `Especialidad` no se deriva de `Autoriza`: un nutricionista puede estar autorizado en una dieta ajena a su especialidad. |
 | El traslado de un paciente entre salas actualiza la fila del paciente, sin historial. |
 | La composición real de un menú no se contrasta con su parametrización. |
-| El estado final de un menú se deduce de su validación más reciente; no se almacena. |
-| No hay fechas en la asignación, el consumo ni la valoración: el ancla temporal es `Menú.FechaCreación`. |
-| Una asignación puede no tener consumos ni valoraciones. |
-| El consumo no registra cantidades, solo la aceptación por alimento. |
+| El estado de un menú (pendiente, final o rechazado) no se almacena: se deriva de su único dictamen (§2.1). |
+| La asignación no tiene fecha propia: lo que ocurre en el tiempo son sus servicios. |
+| Una asignación puede no tener servicios ni valoraciones, y un servicio puede no tener consumos registrados. |
+| El consumo no registra cantidades, solo la aceptación por ítem. |
 | La correspondencia entre las restricciones alimentarias de una dieta y los alérgenos de sus ítems no se modela. La compatibilidad por grupo nutricional sí está en el esquema (`Restringe` y `Excluye`); la compatibilidad por alérgeno la comprueba la capa de aplicación contra la ficha nutricional, y no es una restricción de integridad: la base no impide el menú, lo advierte el sistema. Saber qué alérgeno excluye cada restricción es configuración de la aplicación (§5.5). |
 | Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La compatibilidad alimentaria se comprueba en dos niveles, y ninguno de los dos es una restricción de integridad: por **grupo nutricional**, que el modelo relacional resuelve con `Restringe` y `Excluye` sin consultar la ficha; y por **alérgeno**, que la capa de aplicación contrasta contra la ficha nutricional al generar o validar un menú, para advertir al nutricionista (fila anterior). Imponer el primero en la base, además, vaciaría la consulta 5: su propósito es verificar si los criterios de equilibrio fueron cumplidos, y una de sus comprobaciones es precisamente que ningún ítem del menú pertenezca a un grupo prohibido por su dieta. Si la base impidiera esos menús, la comprobación daría siempre el mismo resultado y la consulta no tendría nada que detectar. El control queda en tres filtros previos al paciente: la generación automática no incluye grupos prohibidos, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
 

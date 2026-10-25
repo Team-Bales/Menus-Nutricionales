@@ -20,7 +20,7 @@ menús nutricionales**
 
 El presente informe describe el diseño de la base de datos para el sistema de gestión de menús nutricionales en un entorno hospitalario. El sistema atiende a cuatro tipos de actores: pacientes que reciben y consumen menús, nutricionistas que los crean y administran alimentos, un jefe de nutrición que supervisa y valida los contenidos, y administradores que gestionan las cuentas del sistema. Su función central es automatizar la generación de menús a partir de dietas definidas institucionalmente, garantizar su validación clínica y registrar el consumo y los resultados nutricionales de cada paciente.
 
-El trabajo sigue una metodología progresiva de cuatro etapas. En primer lugar, se analizan y reformulan los requerimientos funcionales e informacionales para precisar las operaciones que el sistema debe soportar y las consultas que debe responder. A partir de ese análisis se construye el Modelo Entidad-Relación Extendido (MERX) consolidado, que integra las entidades, atributos, relaciones y agregaciones del dominio en un único diagrama coherente. Sobre ese modelo se especifican las restricciones de integridad del esquema, clasificadas por su origen y declaradas mediante los mecanismos estándar del motor de base de datos. Finalmente, se verifica la corrección formal del diseño comprobando que el esquema satisface la Forma Normal de Boyce-Codd (BCNF), la Propiedad de Preservación de Dependencias Funcionales (PPDF) y la Propiedad del Join sin Pérdida de Información (PLJ).
+El trabajo sigue una metodología progresiva de cuatro etapas. En primer lugar, se analizan y reformulan los requerimientos funcionales e informacionales para precisar las operaciones que el sistema debe soportar y las consultas que debe responder. A partir de ese análisis se construye el Modelo Entidad-Relación Extendido (MERX) consolidado, que integra las entidades, atributos, relaciones y agregaciones del dominio en un único diagrama coherente. Sobre ese modelo se especifican las restricciones de integridad del esquema, clasificadas por su origen y declaradas mediante los mecanismos estándar del motor de base de datos. Finalmente, se verifica la corrección formal del diseño comprobando que cada esquema de la descomposición alcanza al menos la Tercera Forma Normal (3FN) y que la descomposición satisface la Propiedad de Preservación de Dependencias Funcionales (PPDF) y la Propiedad del Join sin Pérdida de Información (PLJ). La Forma Normal de Boyce-Codd (BCNF) se comprueba después, como verificación adicional.
 
 ## 2. Análisis y reformulación enriquecedora de los requerimientos funcionales e informacionales del sistema
 
@@ -47,7 +47,7 @@ El sistema gestiona la **generación automática de menús nutricionales** dentr
 | **Entidades (10)** | Alimento, Plato, Dieta, Menú, Nutricionista, Paciente, Sala, Valoración Nutricional, Revalorización, Consumo |
 | **Nomencladores (7)** | Grupo nutricional, Tipo de preparación *(entrante, plato fuerte, postre, bebida)*, Nivel calórico *(bajo, medio, alto)*, Restricción alimentaria, Programa de atención, Especialidad, Resultado nutricional |
 
-Cada **alimento** y cada **plato** se clasifican por grupo nutricional, tipo de preparación y nivel calórico, y pueden contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación) cuya estructura variable se gestiona de forma independiente en un almacén NoSQL.
+Cada **alimento** y cada **plato** se clasifican por grupo nutricional, tipo de preparación y nivel calórico, y pueden contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento, y se justifica en la §4.3: la ficha reside en MongoDB, referenciada desde el modelo relacional por la clave del alimento o del plato.
 
 Una **dieta** define los grupos nutricionales a cubrir durante el tratamiento (`CubreDieta`), las restricciones alimentarias a respetar (`Restringe`) y el programa de atención institucional al que corresponde. Los **menús** generados para una dieta almacenan los parámetros de generación como datos inmutables: cantidad total de alimentos y origen automático (`EsAutomático`) como atributos escalares, y la proporción por tipo de preparación y cobertura de grupos nutricionales como relaciones propias (`Distribución`, `CubreMenú`).
 
@@ -58,7 +58,7 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 - **Plato como entidad separada** de Alimento (`Composición(Plato, Alimento, Cantidad)`). Un menú incluye alimentos y platos directamente; los alimentos de un plato se acceden vía `Composición`.
 - **Jefe de nutrición** es un rol de Nutricionista, no una entidad. El estado del menú se deriva de la existencia de un registro aprobado en `Validación`.
 - **Asignación** se modela como N:M (`Asignación(MenúId, PacienteId)`); la clave primaria compuesta garantiza la unicidad por par.
-- **Compatibilidad alimentaria** se resuelve con dos relaciones independientes: `CubreDieta` (grupos requeridos) y `Restringe + Excluye` (grupos excluidos por restricción clínica).
+- **Compatibilidad alimentaria** se resuelve con dos vías independientes. `CubreDieta` relaciona la dieta con los grupos nutricionales que le conciernen y califica cada uno con el atributo `Tipo`: *Requerido* si la dieta debe cubrirlo a lo largo del tratamiento, *Restringido* si lo prohíbe por un criterio propio de esa dieta. `Restringe + Excluye` aporta la segunda vía: las restricciones alimentarias son un catálogo institucional, y cada una excluye los grupos que le correspondan, una sola vez, para todas las dietas que la declaren. Los **grupos prohibidos** de una dieta son la unión de las dos vías; sus **grupos requeridos**, los de `Tipo` *Requerido*. Que un grupo quede prohibido por ambas vías es válido: la prohibición se repite sin contradecirse. Lo que no se admite es que un grupo sea a la vez requerido y excluido por una restricción de la misma dieta (RS-11).
 - **Parámetros de generación**: `CantidadTotalAlimentos` y `EsAutomático` son escalares de Menú; proporción y cobertura son relaciones (`Distribución`, `CubreMenú`). `Cubre` se desambigua en `CubreDieta` y `CubreMenú`.
 - **`ResultadoNutricional`** es un nomenclador con `Nombre` y `Valor` únicos, evitando texto libre y habilitando cálculo de promedios.
 - **`Consumo`** no incluye fecha; su clave es `(MenúId, PacienteId, AlimentoId)` y el ancla temporal es `Menú.FechaCreación`.
@@ -70,37 +70,48 @@ El **consumo** registra, para cada alimento de un menú asignado a un paciente, 
 | RF-01 | El sistema permite registrar alimentos con nombre único, grupo nutricional, tipo de preparación, nivel calórico y nutricionista descritor. |
 | RF-02 | El sistema impide el registro de alimentos con nombre duplicado (normalizado). |
 | RF-03 | El sistema permite registrar platos como composiciones de alimentos con cantidades, clasificados con los mismos atributos que los alimentos. |
-| RF-04 | El sistema permite almacenar fichas nutricionales de estructura variable (macronutrientes, micronutrientes, alérgenos, modo de preparación) en un almacén NoSQL referenciado por la clave del alimento o plato. |
+| RF-04 | El sistema permite asociar a cada alimento y a cada plato una ficha nutricional ampliada (macronutrientes, micronutrientes, alérgenos, modo de preparación), cuyos campos varían de un elemento a otro, y consultarla o modificarla de forma independiente del resto de sus datos. |
 
 **Usuarios y roles**
 
 | # | Requerimiento |
 |---|---|
-| RF-05 | El sistema gestiona nutricionistas con especialidad y estado en línea, y pacientes con sala de hospitalización asignada. |
+| RF-05 | El sistema gestiona nutricionistas con especialidad, y pacientes con sala de hospitalización asignada. |
 | RF-06 | El sistema controla qué nutricionistas están autorizados para crear y validar menús de cada dieta. |
-| RF-07 | El sistema registra la inscripción de pacientes en dietas activas. |
+| RF-07 | El sistema permite a cada nutricionista consultar los menús de las dietas en las que está autorizado, cualquiera sea el nutricionista que los creó. |
+| RF-08 | El sistema registra la inscripción de pacientes en dietas activas. |
+
+> **RF-07 no requiere estructura nueva.** «Atender la misma dieta» es estar autorizado en ella, de modo que los menús visibles para un nutricionista se obtienen recorriendo `Nutricionista` → `Autoriza` → `Dieta` ← `Pertenece` ← `Menú`. La autorización, que RF-06 ya exige para crear y validar, delimita también lo que se puede consultar.
 
 **Dietas y menús**
 
 | # | Requerimiento |
 |---|---|
-| RF-08 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
-| RF-09 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
-| RF-10 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. |
-| RF-11 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
-| RF-12 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
+| RF-09 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
+| RF-10 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
+| RF-11 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. |
+| RF-12 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
+| RF-13 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
 
 **Registro clínico y valoraciones**
 
 | # | Requerimiento |
 |---|---|
-| RF-13 | El sistema registra, para cada alimento de un menú asignado, si el paciente lo aceptó o rechazó. |
-| RF-14 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
-| RF-15 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
+| RF-14 | El sistema registra, para cada alimento de un menú asignado, si el paciente lo aceptó o rechazó. |
+| RF-15 | El sistema registra valoraciones nutricionales del estado del paciente, referenciando un valor del nomenclador de resultados y el nutricionista emisor. |
+| RF-16 | El sistema procesa solicitudes virtuales de revalorización, identificando el nutricionista ejecutante y la valoración revisada, y vincula la nueva valoración cuando se completa. |
+
+**Requerimientos no funcionales**
+
+| # | Requerimiento |
+|---|---|
+| RNF-01 | Las consultas de disponibilidad calórica de una dieta y de valoraciones más recientes de un paciente responden de forma prácticamente inmediata, incluso en los horarios de mayor concurrencia. |
+
+RNF-01 recoge una exigencia explícita del enunciado: esas dos consultas las repiten nutricionistas y pacientes a lo largo de toda la jornada, de modo que su latencia no puede depender de la carga del motor relacional. Se tratan en §2.2, bajo *Consultas recurrentes*, junto con la estrategia que las sostiene.
 
 ### 2.2 Requerimientos informacionales
 
-El sistema debe dar respuesta a seis consultas informacionales. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
+El sistema debe dar respuesta a seis consultas informacionales y a dos consultas recurrentes. Las primeras son los reportes que el enunciado enumera como funcionalidades; las segundas son las peticiones que se repiten durante la jornada y están sujetas a RNF-01. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
 
 ---
 
@@ -140,7 +151,9 @@ El sistema debe dar respuesta a seis consultas informacionales. A continuación 
 
 > *«Comparar los menús generados para diferentes dietas, verificando la distribución de alimentos por grupo nutricional y nivel calórico y si los criterios de equilibrio fueron cumplidos.»*
 
-**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos requeridos (`CubreDieta`) están presentes en el menú y los grupos excluidos por sus restricciones (`Restringe + Excluye`) están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribución` y `CantidadTotalAlimentos`. Ningún resultado se almacena: proporciones, tasas y dictámenes de cumplimiento son todos derivados.
+**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos que exige cubrir (`CubreDieta` con `Tipo` *Requerido*) están presentes en el menú y si los que tiene prohibidos están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribución` y `CantidadTotalAlimentos`. Los grupos prohibidos de una dieta son la unión de dos vías: los excluidos por sus restricciones (`Restringe + Excluye`) y los que su propia cobertura marca como *Restringido*.
+
+Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base imponga (§4.5), y de ahí que el enunciado pida verificar «si fueron cumplidos». Ningún resultado se almacena: proporciones, tasas y dictámenes de cumplimiento son todos derivados.
 
 ---
 
@@ -155,6 +168,32 @@ El sistema debe dar respuesta a seis consultas informacionales. A continuación 
 - **Parte B — Top-10 alimentos rechazados:** sobre todos los registros de `Consumo` del sistema, calcula la tasa de rechazo por alimento y selecciona los 10 con mayor tasa. Por cada uno reporta el nutricionista que lo **describió** en el banco (no el creador del menú) y la dieta a la que pertenece de forma indirecta, vía los menús en que aparece el consumo rechazado.
 
 - **Parte C — Revalorizados frente al promedio de su sala:** para cada paciente que solicitó una revalorización, compara el valor numérico de la nueva valoración generada con el promedio de las valoraciones de los demás pacientes de la misma sala inscritos en la misma dieta. La dieta de referencia se obtiene de forma transitiva: `Revalorización → Valoración revisada → Menú → Dieta`.
+
+---
+
+#### Consultas recurrentes
+
+> *«Dado que la disponibilidad calórica de las dietas y las valoraciones más recientes son consultadas de forma reiterada por nutricionistas y pacientes a lo largo de toda la jornada, el sistema debe garantizar respuestas prácticamente inmediatas ante esas peticiones recurrentes, incluso en los horarios de mayor concurrencia.»*
+
+A diferencia de las seis anteriores, estas dos no son reportes que se piden de vez en cuando, sino consultas de fondo que acompañan el trabajo diario. El enunciado no las define, así que el primer paso es precisar qué significan en términos del modelo.
+
+**R1 — Disponibilidad calórica de una dieta.** Para cada nivel calórico, cuántos ítems del banco son compatibles con la dieta y cómo se distribuyen por nivel calórico los ítems de sus menús finales. Un ítem es compatible cuando su grupo nutricional no está prohibido para esa dieta, es decir, cuando no lo excluye ninguna de sus restricciones (`Restringe + Excluye`) ni lo marca como *Restringido* su propia cobertura (`CubreDieta`). Es el dato que un nutricionista consulta antes de confeccionar un menú: con qué cuenta, y en qué franja calórica.
+
+> La disponibilidad se expresa en los tres niveles del nomenclador `NivelCalórico` —bajo, medio y alto—, no en kilocalorías. El modelo relacional no almacena ningún valor energético: los macronutrientes pertenecen a la ficha nutricional (§4.3), cuya estructura es variable y no se presta a agregación. La alternativa de que cada dieta declarase los niveles calóricos que admite, mediante una relación `Dieta`–`NivelCalórico`, se descartó: el enunciado habla de lo que está *disponible* para la dieta, no de un límite que la dieta imponga.
+
+**R2 — Valoraciones más recientes de un paciente.** Las N valoraciones del paciente con mayor `FechaValoración`, con su resultado nutricional y el menú evaluado. Ordenarlas es posible porque la valoración tiene fecha propia; el modelo no depende para ello de la fecha de creación del menú.
+
+**Trayectoria.** R1 recorre `Dieta → Restringe → Excluye → GrupoNutricional` y `Dieta → CubreDieta` para obtener los grupos prohibidos, `ItemAlimentario → NivelCalórico` para clasificar el banco, y `Dieta ← Menú` (final) `→ Incluye → ItemAlimentario → NivelCalórico` para la parte de los menús. R2 recorre `Paciente ← Asignación ← Valoración → ResultadoNutricional`, ordenando por `FechaValoración`. Ninguna de las dos almacena su resultado: ambas son derivadas.
+
+**Cómo se garantiza la respuesta inmediata (RNF-01).** Las dos consultas son costosas en relación con su frecuencia —R1 recorre el banco completo y R2 ordena el historial del paciente— y sus resultados cambian poco entre una petición y la siguiente. Por eso se resuelven con un **caché de tipo clave-valor en memoria, en Redis, por delante de PostgreSQL**, que sigue siendo la única fuente de verdad:
+
+| | Disponibilidad calórica | Valoraciones recientes |
+|---|---|---|
+| Clave | `dieta:{DietaId}:disponibilidad-calorica` | `paciente:{PacienteId}:valoraciones-recientes` |
+| Valor | Conteo de ítems por nivel calórico | Las N valoraciones más recientes, ya ordenadas |
+| Se invalida al | Alta o baja de un ítem del banco, o cambio de su nivel calórico o de su grupo; cambio en la cobertura o en las restricciones de la dieta; cambio en los grupos que excluye una restricción, que alcanza a todas las dietas que la declaran; aprobación de un menú suyo | Registrar una valoración de ese paciente, sea la original o la que genera una revalorización |
+
+El patrón es *cache-aside*: la consulta busca primero en el caché y, si no encuentra la clave, la calcula contra PostgreSQL y la guarda. Las claves llevan además un tiempo de vida como respaldo, de modo que un fallo en la invalidación se corrige solo. Si Redis no está disponible, la consulta se resuelve contra PostgreSQL: se pierde la latencia, no la corrección. La elección de Redis y el reparto de responsabilidades entre los tres motores se justifican en el ADR correspondiente del repositorio.
 
 ## 3. MERX de la Base de Datos
 
@@ -195,7 +234,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RC-15 | Un alimento, un plato o un grupo nutricional aparece a lo sumo una vez en un mismo menú: los pares de `IncluyeAlimento` (`MenúId`, `AlimentoId`), `IncluyePlato` (`MenúId`, `PlatoId`) y `CubreMenú` (`MenúId`, `GrupoNutricionalId`) son únicos. |
 | RC-16 | El par (`RestricciónAlimentariaId`, `GrupoNutricionalId`) identifica cada ocurrencia de `Excluye`. |
 
-> `Autoriza`, `Inscribe`, `CubreDieta` y `Restringe` son tablas de interconexión sin atributos propios: su identidad es el par de claves primarias de los participantes.
+> `Autoriza`, `Inscribe` y `Restringe` son tablas de interconexión sin atributos propios: su identidad es el par de claves primarias de los participantes. `CubreDieta` también se identifica por ese par, pero **sí tiene un atributo propio**, `Tipo`, que califica cada grupo de la dieta como *Requerido* o *Restringido* (§2.1, RD-16).
 
 #### 4.1.2 Referenciales
 
@@ -222,8 +261,9 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-19 | No se elimina un menú mientras tenga validaciones o asignaciones, ni una asignación mientras tenga consumos o valoraciones, ni una valoración mientras una revalorización la revise o la haya generado. |
 | RR-20 | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. |
 | RR-21 | No se elimina una restricción alimentaria ni un grupo nutricional mientras figuren en `Excluye`. |
+| RR-22 | No se elimina un nutricionista ni un paciente mientras tengan hechos asociados: ítems descritos, menús creados, validaciones, valoraciones emitidas, revalorizaciones ejecutadas, autorizaciones o inscripciones. Tampoco se elimina un ítem alimentario que figure en algún menú, ni un valor de nomenclador que use algún menú. |
 
-> Las cuatro restricciones de borrado marcadas con `ON DELETE RESTRICT` (RR-04, RR-12, RR-19 y RR-21) impiden borrar un hecho del que dependen otros. La política que las coordina entre submodelos se define en §4.4.
+> RR-04, RR-12, RR-19 y RR-21 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
 
 #### 4.1.3 Dominio
 
@@ -233,7 +273,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RD-02 | `NivelCalórico` toma exactamente los valores *bajo*, *medio* y *alto*. |
 | RD-03 | `GrupoNutricional` es un catálogo abierto; se exige únicamente que cada nombre sea único. |
 | RD-04 | `Nombre` es obligatorio y no vacío en `Alimento`, `Plato` y los tres nomencladores. |
-| RD-05 | `Cantidad` de `Composición` es estrictamente positiva. |
+| RD-05 | `Cantidad` de `Composición` se expresa en gramos, como un decimal estrictamente positivo. |
 | RD-06 | `Edad` es mayor o igual que cero. |
 | RD-07 | `Nombre` es obligatorio y no vacío en `Dieta`, `Nutricionista`, `Paciente`, `Sala` y en los tres nomencladores. |
 | RD-08 | `Nombre` es único dentro de cada nomenclador. |
@@ -244,6 +284,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RD-13 | `Aceptación` de `Consumo` toma exactamente los valores *aceptado* y *rechazado*. |
 | RD-14 | `ResultadoNutricional` tiene exactamente cinco categorías — *Muy mala*, *Mala*, *Normal*, *Buena* y *Excelente* —, con `Valor` 1, 2, 3, 4 y 5 respectivamente; `Nombre` y `Valor` son únicos y obligatorios. |
 | RD-15 | `FechaCreación`, `FechaValidación` y `FechaSolicitud` son obligatorias. `Observaciones` es opcional. |
+| RD-16 | `Tipo` de `CubreDieta` es obligatorio y toma exactamente los valores *Requerido* y *Restringido*. |
 
 > Las restricciones de catálogo cerrado (RD-01, RD-02 y RD-14) se garantizan en dos niveles: la FK impide usar un valor ajeno al catálogo, y el CHECK sobre el propio catálogo impide ampliarlo.
 
@@ -283,7 +324,9 @@ Las restricciones semánticas no acotan los valores que se pueden almacenar, sin
 | RS-08 | La suma de las proporciones de un menú es 1. |
 | RS-09 | El paciente que solicita una revalorización es el mismo de la valoración que revisa. |
 | RS-10 | La valoración generada por una revalorización evalúa la misma asignación que la valoración revisada y la emite el nutricionista que ejecutó la revalorización. |
-| RS-11 | Un grupo que una dieta exige cubrir (`CubreDieta`) no puede estar excluido por una de sus restricciones (`Restringe` seguido de `Excluye`). |
+| RS-11 | Un grupo que una dieta exige cubrir (`CubreDieta` con `Tipo` *Requerido*) no puede estar excluido por una de sus restricciones (`Restringe` seguido de `Excluye`). |
+
+> **RS-11 restringe la definición de la dieta, no el contenido de sus menús.** Una dieta que exige un grupo y a la vez lo prohíbe es incoherente: ningún menú podría cumplirla. Por eso solo cuenta `Tipo` *Requerido*; un grupo marcado *Restringido* que además esté excluido por una restricción repite la prohibición sin contradecirla. Que un **menú** incluya ítems de un grupo prohibido por su dieta es una cuestión distinta, y no es una restricción: se trata en §4.5.
 
 ---
 
@@ -313,9 +356,41 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 | # | Restricción |
 |---|---|
 | RX-01 | Solo se registra consumo de alimentos que están en el menú asignado, directamente (`IncluyeAlimento`) o dentro de un plato incluido (`IncluyePlato` + `Composición`). |
-| RX-02 | Política de borrado entre submodelos: `RESTRICT` en todas las claves foráneas, salvo las que van del dueño a sus propias filas de composición o parametrización, que son `CASCADE`: `Plato → Composición`; `Menú → Distribución`, `CubreMenú`, `IncluyeAlimento` e `IncluyePlato`; `Dieta → CubreDieta` y `Restringe`. |
+| RX-02 | Política de borrado entre submodelos: `CASCADE` únicamente en las seis claves foráneas que van de un dueño a sus propias filas de composición o parametrización; `RESTRICT` en todas las demás. El detalle está en la tabla siguiente. |
 
-**Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar (esta restricción amplía las políticas de borrado de §4.1.2). Las filas que solo describen a su dueño desaparecen con él, lo que permite borrar un menú nuevo sin validaciones ni asignaciones de forma completa. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
+**Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar. Las filas que solo describen a su dueño, en cambio, desaparecen con él: así un menú que todavía no tiene dictamen se borra por completo, con su parametrización y sus ítems. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
+
+El criterio distingue dos situaciones. Una fila **existe por su dueño y carece de sentido sin él** —la composición de un plato, la parametrización de un menú—: se borra con él, en `CASCADE`. Una fila **registra un hecho propio** —una validación, una asignación, un consumo— o **referencia un catálogo compartido**: el borrado se impide, en `RESTRICT`, porque perderla falsearía el historial o dejaría huérfanas a otras filas.
+
+**Las seis claves foráneas en `CASCADE`:**
+
+| Clave foránea | Por qué |
+|---|---|
+| `Plato → Composición` | Los ingredientes describen al plato; sin él no existen. |
+| `Menú → Incluye` | Los ítems incluidos son el contenido del menú. |
+| `Menú → Distribución` | Parámetro de generación del menú. |
+| `Menú → CubreMenú` | Parámetro de generación del menú. |
+| `Dieta → CubreDieta` | La cobertura define a la dieta. |
+| `Dieta → Restringe` | Las restricciones definen a la dieta. |
+
+**Las claves foráneas en `RESTRICT`,** agrupadas por lo que protegen:
+
+| Grupo | Claves foráneas | Por qué |
+|---|---|---|
+| Clasificación de los ítems | `ItemAlimentario` → `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `Nutricionista` descriptor | No se borra un valor de nomenclador en uso (RR-04) ni el nutricionista que describió un ítem (RR-22). |
+| Composición | `Composición` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
+| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribución` → `TipoPreparación`; `CubreMenú` → `GrupoNutricional` | El borrado en cascada del menú no debe arrastrar el ítem ni el nomenclador que la fila referencia (RR-22). |
+| Cobertura y restricciones de una dieta | `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | Lo mismo del lado de la dieta: su borrado en cascada no arrastra los nomencladores (RR-12). |
+| Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12). |
+| Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta que figure en alguna autorización o inscripción (RR-12), ni el nutricionista o el paciente del vínculo (RR-22). |
+| Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
+| Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
+| Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consumo`; `Consumo` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
+| Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo. |
+| Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta (RR-19). |
+| Revalorización | `Revalorización` → `Nutricionista` ejecutor, `Valoración` revisada, `Valoración` generada | No se borra una valoración que una revalorización revisa o generó (RR-19). |
+
+Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas distintas. En particular, que `Menú → Incluye` sea `CASCADE` no choca con que `Menú → Asignación` sea `RESTRICT`, porque un menú asignado no llega a borrarse.
 
 ---
 
@@ -336,14 +411,17 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 | No hay fechas en la asignación, el consumo ni la valoración: el ancla temporal es `Menú.FechaCreación`. |
 | Una asignación puede no tener consumos ni valoraciones. |
 | El consumo no registra cantidades, solo la aceptación por alimento. |
-| Un menú puede contener alimentos de grupos excluidos por su dieta. |
+| La correspondencia entre las restricciones alimentarias de una dieta y los alérgenos de sus ítems no se modela. La compatibilidad por grupo nutricional sí está en el esquema (`Restringe` y `Excluye`); la compatibilidad por alérgeno la comprueba la capa de aplicación contra la ficha nutricional, y no es una restricción de integridad: la base no impide el menú, lo advierte el sistema. Saber qué alérgeno excluye cada restricción es configuración de la aplicación (§5.5). |
+| Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La compatibilidad alimentaria se comprueba en dos niveles, y ninguno de los dos es una restricción de integridad: por **grupo nutricional**, que el modelo relacional resuelve con `Restringe` y `Excluye` sin consultar la ficha; y por **alérgeno**, que la capa de aplicación contrasta contra la ficha nutricional al generar o validar un menú, para advertir al nutricionista (fila anterior). Imponer el primero en la base, además, vaciaría la consulta 5: su propósito es verificar si los criterios de equilibrio fueron cumplidos, y una de sus comprobaciones es precisamente que ningún ítem del menú pertenezca a un grupo prohibido por su dieta. Si la base impidiera esos menús, la comprobación daría siempre el mismo resultado y la consulta no tendría nada que detectar. El control queda en tres filtros previos al paciente: la generación automática no incluye grupos prohibidos, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
 
 ---
 
 
 ## 5. Valoración de la corrección del diseño de la base de datos
 
-Un diseño relacional se considera teóricamente correcto si y solo si cumple tres condiciones: cada esquema de la descomposición alcanza la Forma Normal de Boyce-Codd (BCNF), se preserva el conjunto completo de dependencias funcionales del dominio (PPDF) y la reconstrucción por join natural no introduce tuplas espurias (PLJ).
+Un diseño relacional se considera teóricamente correcto cuando cumple tres condiciones: cada esquema de la descomposición alcanza **al menos** la Tercera Forma Normal (3FN), se preserva el conjunto completo de dependencias funcionales del dominio (PPDF) y la reconstrucción por join natural no introduce tuplas espurias (PLJ).
+
+La Forma Normal de Boyce-Codd no forma parte del criterio: es una condición más fuerte que la 3FN y no siempre es alcanzable junto con la PPDF, de modo que exigirla descartaría diseños correctos. Aquí se verifica al final, esquema por esquema, como propiedad adicional.
 
 ### 5.1 Demostración formal de normalización (BCNF), PPDF y PLJ
 
@@ -533,8 +611,10 @@ Los cálculos — tasas, promedios, correlaciones, el corte del top-10 — no es
 
 El diseño presenta una estructura modular que facilita su evolución ante cambios del dominio nutricional. La independencia entre entidades base (alimentos, platos, grupos nutricionales) y las estructuras operativas (menús, dietas, consumos) permite incorporar nuevos tipos de alimento, criterios dietéticos o modalidades de valoración sin alterar las tablas existentes. La separación entre los parámetros de generación de un menú (`Distribucion`, `CubreMenu`) y su composición efectiva (`IncluyeAlimento`, `IncluyePlato`) garantiza que las reglas de negocio puedan ajustarse sin reestructurar el esquema. El uso de nomencladores abiertos para `GrupoNutricional` y `ProgramaDeAtencion` permite ampliar los catálogos sin cambios estructurales. La externalización de la ficha nutricional a MongoDB ofrece flexibilidad para extender los datos de nutrientes sin migraciones relacionales.
 
-Quedan abiertas cuatro decisiones de modelado: la unidad de `Cantidad` en `Composicion`, la escala de `Proporcion` en `Distribucion` (fracción o porcentaje), la precisión de `Edad` en `Paciente` (años enteros, meses o fecha de nacimiento) y la correspondencia entre las restricciones de una dieta y los alérgenos de los alimentos, que residen en la ficha nutricional fuera del modelo relacional.
+No quedan decisiones de modelado abiertas. Las cuatro que el diseño podía dejar en suspenso están fijadas: la `Cantidad` de la composición se expresa en gramos (RD-05); la `Proporción` de la distribución es una fracción en el intervalo (0, 1] y la suma de las de un menú es 1 (RD-11, RS-08); la `Edad` del paciente es un número entero de años mayor o igual que cero (RD-06, RD-09); y la correspondencia entre las restricciones de una dieta y los alérgenos de sus ítems queda deliberadamente fuera del modelo relacional (§4.5).
+
+Esa última merece una palabra, porque es el punto de extensión más claro del diseño. La compatibilidad alimentaria se resuelve hoy en dos niveles: por grupo nutricional dentro de PostgreSQL, y por alérgeno en la capa de aplicación, que contrasta la ficha de cada ítem contra las restricciones de la dieta. Lo que el modelo relacional no registra es **qué alérgeno excluye cada restricción** —que *sin gluten* excluye *gluten*—, una correspondencia que hoy vive en la configuración de la aplicación. Llevarla al esquema, con un nomenclador de alérgenos y una relación hacia `RestricciónAlimentaria`, permitiría comprobar la compatibilidad por alérgeno sin salir del modelo. Es una extensión aditiva: no obliga a reestructurar ninguna tabla existente, porque el mecanismo por grupo seguiría funcionando igual.
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de 86 restricciones de integridad y valoración formal. El esquema relacional obtenido alcanza BCNF en sus 29 tablas, preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida, confirmando que la base de datos propuesta es estructuralmente correcta y está preparada para su implementación.
+El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de las restricciones de integridad y valoración formal. Cada esquema de la descomposición obtenida alcanza al menos la 3FN, y la descomposición preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida. La §5 verifica además, esquema por esquema, hasta dónde llega cada uno respecto de la BCNF. La base de datos propuesta es, por tanto, estructuralmente correcta y está preparada para su implementación.

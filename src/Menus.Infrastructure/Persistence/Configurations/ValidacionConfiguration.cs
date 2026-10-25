@@ -23,6 +23,11 @@ internal sealed class ValidacionConfiguration : IEntityTypeConfiguration<Validac
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
+        // R7-17: el dictamen es obligatorio. Vuelve con el rechazo registrado (#155): toma los dos valores.
+        builder.Property(v => v.Aprobado)
+            .HasColumnName("aprobado")
+            .IsRequired();
+
         builder.Property(v => v.Observaciones).HasColumnName("observaciones");
 
         // FK → Menu se configura desde MenuConfiguration (navegación Validacion)

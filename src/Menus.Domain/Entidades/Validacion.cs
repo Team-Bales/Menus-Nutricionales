@@ -3,40 +3,49 @@ using Menus.Domain.Abstractions;
 namespace Menus.Domain.Entidades;
 
 /// <summary>
-/// Aprobación de un menú por un nutricionista revisor (relación <c>Valida</c>, con sus atributos).
-/// Solo la crea <see cref="Menu.Aprobar"/>, que comprueba las reglas del dictamen.
+/// Dictamen de un nutricionista revisor sobre un menú: aprobación o rechazo (relación <c>Valida</c>, con sus
+/// atributos). Solo la crean <see cref="Menu.Aprobar"/> y <see cref="Menu.Rechazar"/>, que comprueban las reglas
+/// del dictamen.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Un menú tiene a lo sumo una validación (R7-32), y por eso su identidad es el menú.</b> El primer dictamen
-/// cierra el menú y el rechazo lo elimina (decisión del equipo, 16/10): un menú no llega a tener dos dictámenes.
-/// El profesor señaló que el modelo admitía varias validaciones de revisores distintos sin una fecha comparable
-/// entre ellas, y dos definiciones de «menú final» (feedback del 19/10). Con una sola validación por menú, final
-/// es el menú que la tiene, sin ambigüedad. Si la clave siguiera siendo el par (revisor, menú), no sería mínima:
-/// el menú ya basta para identificar la validación.
+/// <b>Un menú tiene a lo sumo un dictamen (R7-32), y por eso su identidad es el menú.</b> El primer dictamen
+/// cierra el menú: si es una aprobación, el menú pasa a ser final; si es un rechazo, el menú queda rechazado y,
+/// cuando el jefe indica confeccionar otro, el nuevo menú lo referencia (relación <c>Origina</c>,
+/// <see cref="Menu.RegistrarComoReemplazo"/>). Un menú rechazado no se vuelve a revisar: se confecciona otro. Con
+/// un solo dictamen por menú, «menú final» tiene una sola definición (el menú cuya validación está aprobada) y no
+/// hace falta comparar fechas entre revisores. El par (revisor, menú) no sería una clave mínima.
+/// </para>
+/// <para>
+/// <b>El rechazo se registra (decisión del equipo, 24/10; #155).</b> Revierte la decisión del 16/10 de borrar el
+/// menú rechazado sin dejar registro, por dos razones. La consulta 3 del enunciado pide «las observaciones hechas
+/// durante el proceso», que también son las de los rechazos. Y el profesor señaló que el jefe «puede indicar la
+/// confección de otro [menú] bajo sus criterios» no estaba modelado (P1-5): con el rechazo registrado, es la
+/// relación <c>Origina</c> desde el dictamen rechazado hacia el menú de reemplazo.
+/// </para>
+/// <para>
+/// <b>Por qué vuelve <see cref="Aprobado"/>.</b> Mientras el rechazo no se registraba, el atributo valía siempre
+/// <see langword="true"/> (la dependencia ∅ → aprobado, que viola la 3FN), y por eso se quitó en el #153. Con los
+/// dos dictámenes registrados, toma los dos valores y depende de la clave, como cualquier otro atributo.
 /// </para>
 /// <para>
 /// <b>No se modifica ni se borra (R7-33).</b> No tiene métodos para cambiarla, y la base rechaza el UPDATE y el
-/// DELETE: si se pudiera borrar, un menú ya asignado o servido volvería a estar pendiente.
-/// </para>
-/// <para>
-/// <b>Por qué no tiene un atributo «Aprobado».</b> El rechazo no se registra (decisión del equipo, 16/10), así que
-/// toda validación es una aprobación: que la fila exista ya dice que el menú se aprobó. Un atributo booleano
-/// valdría siempre lo mismo; sería la dependencia ∅ → aprobado, que viola la 3FN porque ∅ no es superclave, y la
-/// base no podría impedir que alguien lo cambie y deje al menú ni pendiente ni final. Por eso se quitó (revisión
-/// del 19/10); el MERX y R7-17 dejan de incluirlo en la fase de documentación.
+/// DELETE: si se pudiera borrar o cambiar, un menú ya asignado o servido volvería a estar pendiente, y un menú de
+/// reemplazo quedaría colgado de una aprobación.
 /// </para>
 /// </remarks>
 public sealed class Validacion : Entity<Guid>
 {
-    /// <param name="menuId">Identificador del menú validado, que identifica la validación.</param>
-    /// <param name="nutricionistaId">Identificador del nutricionista que valida.</param>
+    /// <param name="menuId">Identificador del menú dictaminado, que identifica la validación.</param>
+    /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
     /// <param name="fechaValidacion">Fecha y hora en que se emite el dictamen.</param>
+    /// <param name="aprobado"><see langword="true"/> si el dictamen aprueba el menú; <see langword="false"/> si lo rechaza.</param>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
     internal Validacion(
         Guid menuId,
         Guid nutricionistaId,
         DateTime fechaValidacion,
+        bool aprobado,
         string? observaciones = null)
         : base(menuId)
     {
@@ -47,17 +56,24 @@ public sealed class Validacion : Entity<Guid>
 
         NutricionistaId = nutricionistaId;
         FechaValidacion = fechaValidacion;
+        Aprobado = aprobado;
         Observaciones = observaciones;
     }
 
-    /// <summary>FK → Menú validado, que es también la clave (R7-32).</summary>
+    /// <summary>FK → Menú dictaminado, que es también la clave (R7-32).</summary>
     public Guid MenuId => Id;
 
     /// <summary>FK → Nutricionista revisor.</summary>
     public Guid NutricionistaId { get; }
 
-    /// <summary>Fecha y hora de la aprobación.</summary>
+    /// <summary>Fecha y hora del dictamen.</summary>
     public DateTime FechaValidacion { get; }
+
+    /// <summary>
+    /// Indica si el dictamen aprobó el menú (<see langword="true"/>) o lo rechazó (<see langword="false"/>). Es
+    /// obligatorio (R7-17).
+    /// </summary>
+    public bool Aprobado { get; }
 
     /// <summary>Observaciones del revisor; puede ser <see langword="null"/>.</summary>
     public string? Observaciones { get; }

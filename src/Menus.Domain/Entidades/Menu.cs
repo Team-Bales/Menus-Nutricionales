@@ -17,11 +17,13 @@ namespace Menus.Domain.Entidades;
 /// </para>
 /// <para>
 /// El menú no guarda un estado, se deriva de su validación (submodelo #7, §4): está pendiente mientras no
-/// tiene dictamen (<see cref="EsPendiente"/>) y es final cuando fue aprobado (<see cref="EsFinal"/>). El primer
-/// dictamen lo cierra: si es una aprobación queda registrada (<see cref="Aprobar"/>); si es un rechazo no se
-/// registra y el menú se elimina (<see cref="Rechazar"/>; decisión del equipo, 16/10). Por eso un menú tiene a
-/// lo sumo una validación (R7-32), que después no cambia (R7-33). Solo un menú pendiente se modifica y solo uno
-/// final se asigna a pacientes (R7-34).
+/// tiene dictamen (<see cref="EsPendiente"/>), es final cuando fue aprobado (<see cref="EsFinal"/>) y está
+/// rechazado cuando el dictamen lo rechazó (<see cref="EsRechazado"/>). El primer dictamen lo cierra, y los dos se
+/// registran (<see cref="Aprobar"/> y <see cref="Rechazar"/>; decisión del equipo del 24/10, que revierte la del
+/// 16/10 de borrar el menú rechazado). Por eso un menú tiene a lo sumo una validación (R7-32), que después no
+/// cambia (R7-33). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes (R7-34). Un menú
+/// rechazado no se vuelve a revisar: se confecciona otro, que lo referencia (<see cref="RegistrarComoReemplazo"/>,
+/// relación <c>Origina</c>).
 /// </para>
 /// <para>
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
@@ -162,24 +164,30 @@ public sealed class Menu : AggregateRoot<Guid>
     public IReadOnlyCollection<Asignacion> Asignaciones => _asignaciones.AsReadOnly();
 
     /// <summary>
-    /// Aprobación del menú, o <see langword="null"/> si todavía no tiene dictamen. Es a lo sumo una (R7-32): el
-    /// primer dictamen cierra el menú y el rechazo lo elimina, así que la validación es siempre una aprobación.
+    /// Dictamen del menú (aprobación o rechazo), o <see langword="null"/> si todavía no lo tiene. Es a lo sumo uno
+    /// (R7-32): el primer dictamen cierra el menú.
     /// </summary>
     /// <remarks>
-    /// La persistencia la carga siempre junto con el menú (<c>AutoInclude</c>), porque <see cref="EsPendiente"/> y
-    /// <see cref="EsFinal"/> se derivan de ella: un menú leído sin su validación parecería pendiente y admitiría
-    /// cambios aunque estuviera aprobado.
+    /// La persistencia la carga siempre junto con el menú (<c>AutoInclude</c>), porque <see cref="EsPendiente"/>,
+    /// <see cref="EsFinal"/> y <see cref="EsRechazado"/> se derivan de ella: un menú leído sin su validación
+    /// parecería pendiente y admitiría cambios aunque ya tuviera dictamen.
     /// </remarks>
     public Validacion? Validacion { get; private set; }
+
+    /// <summary>
+    /// FK → Validación rechazada que originó este menú (relación <c>Origina</c>), o <see langword="null"/> si el
+    /// menú no reemplaza a otro. Su valor es el identificador del menú rechazado, que es la clave de su validación.
+    /// </summary>
+    public Guid? ValidacionOrigenId { get; private set; }
 
     /// <summary>Indica si el menú está pendiente de revisión: todavía no tiene dictamen.</summary>
     public bool EsPendiente => Validacion is null;
 
-    /// <summary>
-    /// Indica si el menú es final: fue aprobado (consulta 2, §7-A). Es el complemento de <see cref="EsPendiente"/>:
-    /// como el rechazo elimina el menú, un menú que existe o espera dictamen o fue aprobado.
-    /// </summary>
-    public bool EsFinal => Validacion is not null;
+    /// <summary>Indica si el menú es final: fue aprobado (consulta 2, §7-A).</summary>
+    public bool EsFinal => Validacion is { Aprobado: true };
+
+    /// <summary>Indica si el menú fue rechazado. No se modifica, no se asigna y no se vuelve a revisar.</summary>
+    public bool EsRechazado => Validacion is { Aprobado: false };
 
     /// <summary>Incluye un alimento o un plato en el menú (relación <c>Incluye(Menú, ItemAlimentario)</c>).</summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
@@ -221,7 +229,8 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
     /// <returns>La asignación registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú no es final (solo se asignan menús aprobados, R7-34) o si ya está asignado a ese paciente (R7-05).
+    /// Si el menú no es final (solo se asignan menús aprobados, R7-34; un menú pendiente o rechazado no) o si ya
+    /// está asignado a ese paciente (R7-05).
     /// </exception>
     public Asignacion AsignarPaciente(Guid pacienteId)
     {
@@ -253,7 +262,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <exception cref="ArgumentOutOfRangeException">Si el día es futuro o anterior al de la aprobación del menú.</exception>
     public Servicio RegistrarServicio(Guid pacienteId, DateOnly fechaServicio)
     {
-        if (Validacion is not { } aprobacion)
+        if (Validacion is not { Aprobado: true } aprobacion)
         {
             throw new InvalidOperationException("Solo se sirve un menú final (aprobado).");
         }
@@ -315,22 +324,78 @@ public sealed class Menu : AggregateRoot<Guid>
     {
         ComprobarDictamen(nutricionistaId, fechaValidacion);
 
-        Validacion = new Validacion(Id, nutricionistaId, fechaValidacion, observaciones);
+        Validacion = new Validacion(Id, nutricionistaId, fechaValidacion, aprobado: true, observaciones);
         return Validacion;
     }
 
     /// <summary>
-    /// Comprueba que un nutricionista revisor puede rechazar el menú. El rechazo no se registra: el caso de uso
-    /// elimina el menú después de llamar a este método (decisión del equipo, 16/10).
+    /// Registra que un nutricionista revisor rechazó el menú, que queda rechazado: no se modifica, no se asigna y
+    /// no se vuelve a revisar. El menú no se borra; si el jefe indica confeccionar otro, el nuevo lo referencia
+    /// (<see cref="RegistrarComoReemplazo"/>). Decisión del equipo del 24/10 (#155), que revierte la del 16/10.
     /// </summary>
     /// <param name="nutricionistaId">Identificador del nutricionista revisor.</param>
     /// <param name="fechaRechazo">Instante del rechazo, en UTC.</param>
+    /// <param name="observaciones">
+    /// Señalamientos del revisor, si existen. Son los criterios con los que se pide confeccionar otro menú, y los
+    /// que lista la consulta 3.
+    /// </param>
+    /// <returns>La validación registrada, con <see cref="Validacion.Aprobado"/> en <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (R7-25).
     /// </exception>
     /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (R7-26).</exception>
-    public void Rechazar(Guid nutricionistaId, DateTime fechaRechazo) => ComprobarDictamen(nutricionistaId, fechaRechazo);
+    public Validacion Rechazar(Guid nutricionistaId, DateTime fechaRechazo, string? observaciones = null)
+    {
+        ComprobarDictamen(nutricionistaId, fechaRechazo);
+
+        Validacion = new Validacion(Id, nutricionistaId, fechaRechazo, aprobado: false, observaciones);
+        return Validacion;
+    }
+
+    /// <summary>
+    /// Registra que este menú se confeccionó en lugar de un menú rechazado (relación <c>Origina</c>, desde el
+    /// dictamen rechazado hacia el menú de reemplazo). Es como queda modelado que el jefe de nutrición «puede indicar
+    /// la confección de otro [menú] bajo sus criterios» (P1-5).
+    /// </summary>
+    /// <remarks>
+    /// El menú de reemplazo se crea como cualquier otro, generado o manual, con sus parámetros; el vínculo se registra
+    /// mientras espera revisión. Que una validación rechazada origine a lo sumo un menú (R7-38) no lo puede comprobar
+    /// el agregado, porque abarca a otros menús: lo garantiza la base con una clave única.
+    /// </remarks>
+    /// <param name="menuRechazado">El menú rechazado al que este reemplaza.</param>
+    /// <exception cref="ArgumentNullException">Si <paramref name="menuRechazado"/> es nulo.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Si este menú ya tiene dictamen o ya reemplaza a otro, si se indica a sí mismo (R7-37), si el otro menú no fue
+    /// rechazado (R7-35) o si es de otra dieta (R7-36).
+    /// </exception>
+    public void RegistrarComoReemplazo(Menu menuRechazado)
+    {
+        ArgumentNullException.ThrowIfNull(menuRechazado);
+        ExigirPendiente();
+
+        if (ValidacionOrigenId is not null)
+        {
+            throw new InvalidOperationException("Este menú ya está registrado como reemplazo de otro.");
+        }
+
+        if (menuRechazado.Id == Id)
+        {
+            throw new InvalidOperationException("Un menú no puede ser reemplazo de sí mismo.");
+        }
+
+        if (!menuRechazado.EsRechazado)
+        {
+            throw new InvalidOperationException("Solo un menú rechazado origina un menú de reemplazo.");
+        }
+
+        if (menuRechazado.DietaId != DietaId)
+        {
+            throw new InvalidOperationException("El menú de reemplazo tiene que ser de la misma dieta que el rechazado.");
+        }
+
+        ValidacionOrigenId = menuRechazado.Id;
+    }
 
     /// <summary>Reglas comunes a la aprobación y al rechazo.</summary>
     private void ComprobarDictamen(Guid nutricionistaId, DateTime fecha)

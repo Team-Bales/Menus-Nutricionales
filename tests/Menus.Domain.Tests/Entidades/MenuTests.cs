@@ -43,6 +43,14 @@ public sealed class MenuTests
         return menu;
     }
 
+    // Un menú de la misma dieta, rechazado por un revisor distinto del creador.
+    private Menu CrearMenuRechazado()
+    {
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        menu.Rechazar(Guid.NewGuid(), _ahora, "Rehacer con más frutas.");
+        return menu;
+    }
+
     // Un menú con un alimento y un plato, aprobado ayer y asignado a un paciente: se puede servir desde el día de
     // la aprobación hasta hoy.
     private Menu CrearMenuServido(out Guid pacienteId)
@@ -259,7 +267,9 @@ public sealed class MenuTests
 
         Assert.True(menu.EsPendiente);
         Assert.False(menu.EsFinal);
+        Assert.False(menu.EsRechazado);
         Assert.Null(menu.Validacion);
+        Assert.Null(menu.ValidacionOrigenId);
     }
 
     [Fact]
@@ -314,8 +324,10 @@ public sealed class MenuTests
         Assert.Equal(menu.Id, validacion.MenuId);
         Assert.Equal(_ahora, validacion.FechaValidacion);
         Assert.Equal("Correcto.", validacion.Observaciones);
+        Assert.True(validacion.Aprobado);
         Assert.True(menu.EsFinal);
         Assert.False(menu.EsPendiente);
+        Assert.False(menu.EsRechazado);
     }
 
     [Fact]
@@ -345,14 +357,123 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void Rechazar_ValidArgs_NoRegistraNadaYElMenuSigueSinDictamen()
+    public void Rechazar_ValidArgs_RegistraElRechazoYElMenuQuedaRechazado()
+    {
+        // El rechazo se registra (decisión del 24/10, #155): el menú no se borra.
+        var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        var revisorId = Guid.NewGuid();
+
+        var validacion = menu.Rechazar(revisorId, _ahora, "Falta un grupo requerido.");
+
+        Assert.Same(validacion, menu.Validacion);
+        Assert.False(validacion.Aprobado);
+        Assert.Equal(revisorId, validacion.NutricionistaId);
+        Assert.Equal("Falta un grupo requerido.", validacion.Observaciones);
+        Assert.True(menu.EsRechazado);
+        Assert.False(menu.EsPendiente);
+        Assert.False(menu.EsFinal);
+    }
+
+    [Fact]
+    public void MenuRechazado_NoSeVuelveARevisarNiSeModificaNiSeAsigna()
     {
         var menu = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
-
+        menu.AgregarItem(_alimentoId);
         menu.Rechazar(Guid.NewGuid(), _ahora);
 
-        Assert.Null(menu.Validacion);
-        Assert.False(menu.EsFinal);
+        Assert.Throws<InvalidOperationException>(() => menu.Aprobar(Guid.NewGuid(), _ahora));
+        Assert.Throws<InvalidOperationException>(() => menu.Rechazar(Guid.NewGuid(), _ahora));
+        Assert.Throws<InvalidOperationException>(() => menu.AgregarItem(_platoId));
+        Assert.Throws<InvalidOperationException>(() => menu.QuitarItem(_alimentoId));
+        Assert.Throws<InvalidOperationException>(() => menu.AsignarPaciente(Guid.NewGuid()));
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarServicio(Guid.NewGuid(), Dia(0)));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DeUnMenuRechazadoDeLaMismaDieta_RegistraElOrigen()
+    {
+        var rechazado = CrearMenuRechazado();
+        var reemplazo = CrearMenu();
+
+        reemplazo.RegistrarComoReemplazo(rechazado);
+
+        Assert.Equal(rechazado.Id, reemplazo.ValidacionOrigenId);
+        Assert.True(reemplazo.EsPendiente);
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_ElMenuDeReemplazoSePuedeAprobar()
+    {
+        var rechazado = CrearMenuRechazado();
+        var reemplazo = CrearMenu(fechaCreacion: _ahora.AddDays(-1));
+        reemplazo.RegistrarComoReemplazo(rechazado);
+
+        reemplazo.Aprobar(Guid.NewGuid(), _ahora);
+
+        Assert.True(reemplazo.EsFinal);
+        Assert.Equal(rechazado.Id, reemplazo.ValidacionOrigenId);
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DeUnMenuAprobado_LanzaInvalidOperationException()
+    {
+        // R7-35: solo un rechazo origina un menú de reemplazo.
+        var reemplazo = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => reemplazo.RegistrarComoReemplazo(CrearMenuFinal()));
+        Assert.Null(reemplazo.ValidacionOrigenId);
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DeUnMenuPendiente_LanzaInvalidOperationException()
+    {
+        var reemplazo = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => reemplazo.RegistrarComoReemplazo(CrearMenu()));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DeOtraDieta_LanzaInvalidOperationException()
+    {
+        // R7-36: el menú de reemplazo es de la misma dieta que el rechazado.
+        var rechazado = new Menu(Guid.NewGuid(), Guid.NewGuid(), _nutricionistaId, _ahora.AddDays(-1), 6, true,
+            DistribucionValida, [_grupoId1]);
+        rechazado.Rechazar(Guid.NewGuid(), _ahora);
+
+        Assert.Throws<InvalidOperationException>(() => CrearMenu().RegistrarComoReemplazo(rechazado));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DeSiMismo_LanzaInvalidOperationException()
+    {
+        // R7-37: un menú no es reemplazo de sí mismo.
+        var menu = CrearMenu();
+
+        Assert.Throws<InvalidOperationException>(() => menu.RegistrarComoReemplazo(menu));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_DosVeces_LanzaInvalidOperationException()
+    {
+        var reemplazo = CrearMenu();
+        reemplazo.RegistrarComoReemplazo(CrearMenuRechazado());
+
+        Assert.Throws<InvalidOperationException>(() => reemplazo.RegistrarComoReemplazo(CrearMenuRechazado()));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_MenuConDictamen_LanzaInvalidOperationException()
+    {
+        // El vínculo se registra mientras el menú de reemplazo espera revisión.
+        var reemplazo = CrearMenuFinal();
+
+        Assert.Throws<InvalidOperationException>(() => reemplazo.RegistrarComoReemplazo(CrearMenuRechazado()));
+    }
+
+    [Fact]
+    public void RegistrarComoReemplazo_Nulo_LanzaArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => CrearMenu().RegistrarComoReemplazo(null!));
     }
 
     [Fact]

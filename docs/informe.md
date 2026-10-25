@@ -20,7 +20,7 @@ menús nutricionales**
 
 El presente informe describe el diseño de la base de datos para el sistema de gestión de menús nutricionales en un entorno hospitalario. El sistema atiende a cuatro tipos de actores: pacientes que reciben y consumen menús, nutricionistas que los crean y administran alimentos, un jefe de nutrición que supervisa y valida los contenidos, y administradores que gestionan las cuentas del sistema. Su función central es automatizar la generación de menús a partir de dietas definidas institucionalmente, garantizar su validación clínica y registrar el consumo y los resultados nutricionales de cada paciente.
 
-El trabajo sigue una metodología progresiva de cuatro etapas. En primer lugar, se analizan y reformulan los requerimientos funcionales e informacionales para precisar las operaciones que el sistema debe soportar y las consultas que debe responder. A partir de ese análisis se construye el Modelo Entidad-Relación Extendido (MERX) consolidado, que integra las entidades, atributos, relaciones y agregaciones del dominio en un único diagrama coherente. Sobre ese modelo se especifican las restricciones de integridad del esquema, clasificadas por su origen y declaradas mediante los mecanismos estándar del motor de base de datos. Finalmente, se verifica la corrección formal del diseño comprobando que el esquema satisface la Forma Normal de Boyce-Codd (BCNF), la Propiedad de Preservación de Dependencias Funcionales (PPDF) y la Propiedad del Join sin Pérdida de Información (PLJ).
+El trabajo sigue una metodología progresiva de cuatro etapas. En primer lugar, se analizan y reformulan los requerimientos funcionales e informacionales para precisar las operaciones que el sistema debe soportar y las consultas que debe responder. A partir de ese análisis se construye el Modelo Entidad-Relación Extendido (MERX) consolidado, que integra las entidades, atributos, relaciones y agregaciones del dominio en un único diagrama coherente. Sobre ese modelo se especifican las restricciones de integridad del esquema, clasificadas por su origen y declaradas mediante los mecanismos estándar del motor de base de datos. Finalmente, se verifica la corrección formal del diseño comprobando que cada esquema de la descomposición alcanza al menos la Tercera Forma Normal (3FN) y que la descomposición satisface la Propiedad de Preservación de Dependencias Funcionales (PPDF) y la Propiedad del Join sin Pérdida de Información (PLJ). La Forma Normal de Boyce-Codd (BCNF) se comprueba después, como verificación adicional.
 
 ## 2. Análisis y reformulación enriquecedora de los requerimientos funcionales e informacionales del sistema
 
@@ -382,7 +382,9 @@ Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas d
 
 ## 5. Valoración de la corrección del diseño de la base de datos
 
-Un diseño relacional se considera teóricamente correcto si y solo si cumple tres condiciones: cada esquema de la descomposición alcanza la Forma Normal de Boyce-Codd (BCNF), se preserva el conjunto completo de dependencias funcionales del dominio (PPDF) y la reconstrucción por join natural no introduce tuplas espurias (PLJ).
+Un diseño relacional se considera teóricamente correcto cuando cumple tres condiciones: cada esquema de la descomposición alcanza **al menos** la Tercera Forma Normal (3FN), se preserva el conjunto completo de dependencias funcionales del dominio (PPDF) y la reconstrucción por join natural no introduce tuplas espurias (PLJ).
+
+La Forma Normal de Boyce-Codd no forma parte del criterio: es una condición más fuerte que la 3FN y no siempre es alcanzable junto con la PPDF, de modo que exigirla descartaría diseños correctos. Aquí se verifica al final, esquema por esquema, como propiedad adicional que este diseño sí alcanza.
 
 ### 5.1 Demostración formal de normalización (BCNF), PPDF y PLJ
 
@@ -576,4 +578,4 @@ Quedan abiertas cuatro decisiones de modelado: la unidad de `Cantidad` en `Compo
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de 86 restricciones de integridad y valoración formal. El esquema relacional obtenido alcanza BCNF en sus 29 tablas, preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida, confirmando que la base de datos propuesta es estructuralmente correcta y está preparada para su implementación.
+El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de las restricciones de integridad y valoración formal. Cada esquema de la descomposición obtenida alcanza al menos la 3FN, la descomposición preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida, y la verificación adicional muestra que todos los esquemas llegan además a BCNF. La base de datos propuesta es, por tanto, estructuralmente correcta y está preparada para su implementación.

@@ -143,7 +143,9 @@ El sistema debe dar respuesta a seis consultas informacionales. A continuación 
 
 > *«Comparar los menús generados para diferentes dietas, verificando la distribución de alimentos por grupo nutricional y nivel calórico y si los criterios de equilibrio fueron cumplidos.»*
 
-**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos requeridos (`CubreDieta`) están presentes en el menú y los grupos excluidos por sus restricciones (`Restringe + Excluye`) están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribución` y `CantidadTotalAlimentos`. Ningún resultado se almacena: proporciones, tasas y dictámenes de cumplimiento son todos derivados.
+**Reformulación:** Dadas dos o más dietas, el sistema contrasta sus menús en tres dimensiones: (1) distribución porcentual de alimentos por grupo nutricional; (2) distribución por nivel calórico; (3) verificación de criterios de equilibrio en dos niveles: a nivel de dieta, si los grupos que exige cubrir (`CubreDieta` con `Tipo` *Requerido*) están presentes en el menú y si los que tiene prohibidos están ausentes; a nivel de parámetros de generación, si las proporciones por tipo de preparación y la cantidad total de alimentos respetan lo declarado en `Distribución` y `CantidadTotalAlimentos`. Los grupos prohibidos de una dieta son la unión de dos vías: los excluidos por sus restricciones (`Restringe + Excluye`) y los que su propia cobertura marca como *Restringido*.
+
+Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base imponga (§4.5), y de ahí que el enunciado pida verificar «si fueron cumplidos». Ningún resultado se almacena: proporciones, tasas y dictámenes de cumplimiento son todos derivados.
 
 ---
 
@@ -287,7 +289,9 @@ Las restricciones semánticas no acotan los valores que se pueden almacenar, sin
 | RS-08 | La suma de las proporciones de un menú es 1. |
 | RS-09 | El paciente que solicita una revalorización es el mismo de la valoración que revisa. |
 | RS-10 | La valoración generada por una revalorización evalúa la misma asignación que la valoración revisada y la emite el nutricionista que ejecutó la revalorización. |
-| RS-11 | Un grupo que una dieta exige cubrir (`CubreDieta`) no puede estar excluido por una de sus restricciones (`Restringe` seguido de `Excluye`). |
+| RS-11 | Un grupo que una dieta exige cubrir (`CubreDieta` con `Tipo` *Requerido*) no puede estar excluido por una de sus restricciones (`Restringe` seguido de `Excluye`). |
+
+> **RS-11 restringe la definición de la dieta, no el contenido de sus menús.** Una dieta que exige un grupo y a la vez lo prohíbe es incoherente: ningún menú podría cumplirla. Por eso solo cuenta `Tipo` *Requerido*; un grupo marcado *Restringido* que además esté excluido por una restricción repite la prohibición sin contradecirla. Que un **menú** incluya ítems de un grupo prohibido por su dieta es una cuestión distinta, y no es una restricción: se trata en §4.5.
 
 ---
 
@@ -340,7 +344,7 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 | No hay fechas en la asignación, el consumo ni la valoración: el ancla temporal es `Menú.FechaCreación`. |
 | Una asignación puede no tener consumos ni valoraciones. |
 | El consumo no registra cantidades, solo la aceptación por alimento. |
-| Un menú puede contener alimentos de grupos excluidos por su dieta. |
+| Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La razón es que la prohibición por grupo es una aproximación gruesa: la restricción *sin gluten* excluye el grupo *cereales*, pero el arroz es un cereal sin gluten, de modo que impedirlo en la base dejaría fuera menús clínicamente correctos. El detalle fino son los alérgenos de cada ítem, que residen en la ficha nutricional y no en el modelo relacional (§4.3). El control queda en tres filtros previos al paciente: la generación automática no los incluye, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
 
 ---
 

@@ -191,7 +191,7 @@ A diferencia de las seis anteriores, estas dos no son reportes que se piden de v
 |---|---|---|
 | Clave | `dieta:{DietaId}:disponibilidad-calorica` | `paciente:{PacienteId}:valoraciones-recientes` |
 | Valor | Conteo de ítems por nivel calórico | Las N valoraciones más recientes, ya ordenadas |
-| Se invalida al | Alta o baja de un ítem del banco, cambio de su nivel calórico o de su grupo; cambio en la cobertura o en las restricciones de la dieta; aprobación de un menú suyo | Registrar una valoración o una revalorización de ese paciente |
+| Se invalida al | Alta o baja de un ítem del banco, o cambio de su nivel calórico o de su grupo; cambio en la cobertura o en las restricciones de la dieta; cambio en los grupos que excluye una restricción, que alcanza a todas las dietas que la declaran; aprobación de un menú suyo | Registrar una valoración de ese paciente, sea la original o la que genera una revalorización |
 
 El patrón es *cache-aside*: la consulta busca primero en el caché y, si no encuentra la clave, la calcula contra PostgreSQL y la guarda. Las claves llevan además un tiempo de vida como respaldo, de modo que un fallo en la invalidación se corrige solo. Si Redis no está disponible, la consulta se resuelve contra PostgreSQL: se pierde la latencia, no la corrección. La elección de Redis y el reparto de responsabilidades entre los tres motores se justifican en el ADR correspondiente del repositorio.
 
@@ -261,6 +261,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-19 | No se elimina un menú mientras tenga validaciones o asignaciones, ni una asignación mientras tenga consumos o valoraciones, ni una valoración mientras una revalorización la revise o la haya generado. |
 | RR-20 | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. |
 | RR-21 | No se elimina una restricción alimentaria ni un grupo nutricional mientras figuren en `Excluye`. |
+| RR-22 | No se elimina un nutricionista ni un paciente mientras tengan hechos asociados: ítems descritos, menús creados, validaciones, valoraciones emitidas, revalorizaciones ejecutadas, autorizaciones o inscripciones. Tampoco se elimina un ítem alimentario que figure en algún menú, ni un valor de nomenclador que use algún menú. |
 
 > RR-04, RR-12, RR-19 y RR-21 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
 
@@ -376,11 +377,12 @@ El criterio distingue dos situaciones. Una fila **existe por su dueño y carece 
 
 | Grupo | Claves foráneas | Por qué |
 |---|---|---|
-| Clasificación de los ítems | `ItemAlimentario` → `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `Nutricionista` descriptor | No se borra un valor de nomenclador en uso, ni el nutricionista que describió un ítem (RR-04). |
+| Clasificación de los ítems | `ItemAlimentario` → `GrupoNutricional`, `TipoPreparación`, `NivelCalórico`, `Nutricionista` descriptor | No se borra un valor de nomenclador en uso (RR-04) ni el nutricionista que describió un ítem (RR-22). |
 | Composición | `Composición` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
-| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribución` → `TipoPreparación`; `CubreMenú` y `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | El borrado en cascada del dueño no debe arrastrar lo que la fila referencia (RR-12). |
+| Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribución` → `TipoPreparación`; `CubreMenú` → `GrupoNutricional` | El borrado en cascada del menú no debe arrastrar el ítem ni el nomenclador que la fila referencia (RR-22). |
+| Cobertura y restricciones de una dieta | `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | Lo mismo del lado de la dieta: su borrado en cascada no arrastra los nomencladores (RR-12). |
 | Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12). |
-| Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta, un nutricionista ni un paciente con vínculos vigentes (RR-12). |
+| Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta que figure en alguna autorización o inscripción (RR-12), ni el nutricionista o el paciente del vínculo (RR-22). |
 | Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
 | Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
 | Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consumo`; `Consumo` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
@@ -410,7 +412,7 @@ Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas d
 | Una asignación puede no tener consumos ni valoraciones. |
 | El consumo no registra cantidades, solo la aceptación por alimento. |
 | La correspondencia entre las restricciones alimentarias de una dieta y los alérgenos de sus ítems no se modela. La compatibilidad por grupo nutricional sí está en el esquema (`Restringe` y `Excluye`); la compatibilidad por alérgeno la comprueba la capa de aplicación contra la ficha nutricional, y no es una restricción de integridad: la base no impide el menú, lo advierte el sistema. Saber qué alérgeno excluye cada restricción es configuración de la aplicación (§5.5). |
-| Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La compatibilidad alimentaria se comprueba en dos niveles, y ninguno de los dos es una restricción de integridad: por **grupo nutricional**, que el modelo relacional resuelve con `Restringe` y `Excluye` sin consultar la ficha; y por **alérgeno**, que la capa de aplicación contrasta contra la ficha nutricional al generar o validar un menú, para advertir al nutricionista (§4.3). Imponer el primero en la base tampoco sería prudente: `GrupoNutricional` es un catálogo institucional abierto, de modo que el criterio clínico sobre qué grupo es admisible en qué menú no le corresponde al esquema. El control queda en tres filtros previos al paciente: la generación automática no incluye grupos prohibidos, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
+| Un menú puede incluir ítems de grupos prohibidos por su dieta. Que no los incluya es un **criterio de evaluación**, no una restricción, y la consulta 5 lo verifica. La compatibilidad alimentaria se comprueba en dos niveles, y ninguno de los dos es una restricción de integridad: por **grupo nutricional**, que el modelo relacional resuelve con `Restringe` y `Excluye` sin consultar la ficha; y por **alérgeno**, que la capa de aplicación contrasta contra la ficha nutricional al generar o validar un menú, para advertir al nutricionista (fila anterior). Imponer el primero en la base, además, vaciaría la consulta 5: su propósito es verificar si los criterios de equilibrio fueron cumplidos, y una de sus comprobaciones es precisamente que ningún ítem del menú pertenezca a un grupo prohibido por su dieta. Si la base impidiera esos menús, la comprobación daría siempre el mismo resultado y la consulta no tendría nada que detectar. El control queda en tres filtros previos al paciente: la generación automática no incluye grupos prohibidos, el revisor lo comprueba antes de aprobar y la consulta 5 lo reporta. |
 
 ---
 
@@ -419,7 +421,7 @@ Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas d
 
 Un diseño relacional se considera teóricamente correcto cuando cumple tres condiciones: cada esquema de la descomposición alcanza **al menos** la Tercera Forma Normal (3FN), se preserva el conjunto completo de dependencias funcionales del dominio (PPDF) y la reconstrucción por join natural no introduce tuplas espurias (PLJ).
 
-La Forma Normal de Boyce-Codd no forma parte del criterio: es una condición más fuerte que la 3FN y no siempre es alcanzable junto con la PPDF, de modo que exigirla descartaría diseños correctos. Aquí se verifica al final, esquema por esquema, como propiedad adicional que este diseño sí alcanza.
+La Forma Normal de Boyce-Codd no forma parte del criterio: es una condición más fuerte que la 3FN y no siempre es alcanzable junto con la PPDF, de modo que exigirla descartaría diseños correctos. Aquí se verifica al final, esquema por esquema, como propiedad adicional.
 
 ### 5.1 Demostración formal de normalización (BCNF), PPDF y PLJ
 
@@ -615,4 +617,4 @@ Esa última merece una palabra, porque es el punto de extensión más claro del 
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de las restricciones de integridad y valoración formal. Cada esquema de la descomposición obtenida alcanza al menos la 3FN, la descomposición preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida, y la verificación adicional muestra que todos los esquemas llegan además a BCNF. La base de datos propuesta es, por tanto, estructuralmente correcta y está preparada para su implementación.
+El informe recorre las cuatro etapas del diseño: análisis de requerimientos, modelo conceptual (MERX consolidado), especificación de las restricciones de integridad y valoración formal. Cada esquema de la descomposición obtenida alcanza al menos la 3FN, y la descomposición preserva todas las dependencias funcionales del dominio y garantiza el join sin pérdida. La §5 verifica además, esquema por esquema, hasta dónde llega cada uno respecto de la BCNF. La base de datos propuesta es, por tanto, estructuralmente correcta y está preparada para su implementación.

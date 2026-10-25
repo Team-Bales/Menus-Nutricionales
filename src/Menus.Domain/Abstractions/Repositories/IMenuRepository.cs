@@ -8,13 +8,15 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// y a su consumo (issues #80, #84, #85, #99 y #100).
 /// </summary>
 /// <remarks>
-/// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el agregado completo, con alimentos,
-/// platos, distribución, grupos, validaciones y asignaciones con sus consumos, porque las reglas del
-/// agregado (R7-04, R7-05, R7-06, R7-07, R7-25) se comprueban sobre esas colecciones.
-/// <see cref="Validacion"/> y <see cref="Consumo"/> no tienen repositorio propio: son agregaciones sin
-/// identidad propia (MERX, §0.2) y se guardan junto con el menú.
-/// El estado de un menú no se almacena, se deriva de sus validaciones (submodelo #7, §4): está pendiente
-/// mientras no tiene ninguna y es final cuando tiene su aprobación. El primer dictamen cierra el menú, y el
+/// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el agregado completo, con sus ítems,
+/// distribución, grupos, validación y asignaciones con sus servicios y consumos, porque las reglas del
+/// agregado (R7-05, R7-06, R7-07, R7-25, R7-31, R7-32, R7-34, R11-01) se comprueban sobre esas colecciones.
+/// <see cref="Validacion"/>, <see cref="Servicio"/> y <see cref="Consumo"/> no tienen repositorio propio:
+/// dependen del menú (la validación lo tiene como clave; el servicio y el consumo, a través de la asignación)
+/// y se guardan junto con él.
+/// El estado de un menú no se almacena, se deriva de su validación (submodelo #7, §4): está pendiente
+/// mientras no la tiene y es final cuando fue aprobado. Por eso toda consulta que devuelva menús los trae con
+/// su validación (la configuración de EF la incluye siempre). El primer dictamen cierra el menú, y el
 /// rechazo no se registra: elimina el menú (decisión del equipo, 16/10; ver <see cref="Menu.Rechazar"/>).
 /// Por eso no hay menús rechazados que consultar.
 /// </remarks>
@@ -32,7 +34,8 @@ public interface IMenuRepository : IRepository<Menu, Guid>
 
     /// <summary>
     /// Devuelve los menús asignados a un paciente, a través de sus asignaciones (agregación <c>Asignación</c>),
-    /// con los consumos de cada asignación: de ahí sale el historial de consumo del paciente (issue #85).
+    /// con los servicios y los consumos de cada asignación: de ahí sale el historial de consumo del paciente
+    /// (issue #85).
     /// </summary>
     /// <param name="pacienteId">Identificador del paciente.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

@@ -7,11 +7,19 @@ namespace Menus.Domain.Entidades;
 /// Valoración nutricional de un paciente sobre un menú que le fue asignado.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <see cref="FechaValoracion"/> no está en el MERX, que ordena las valoraciones de forma indirecta: por la
 /// fecha de creación del menú evaluado y por la cadena revisada → generada de las revalorizaciones
 /// (submodelo #7, §4). Se mantiene para cumplir de forma directa con la orientación del proyecto, que pide
 /// responder casi al instante a «las valoraciones más recientes» de nutricionistas y pacientes (issue #101),
 /// y eso exige ordenarlas por el momento en que se emitieron (decisión del equipo, 16/10).
+/// </para>
+/// <para>
+/// <b>Lo que deliberadamente no se restringe.</b> <see cref="FechaValoracion"/> no se compara con la aprobación
+/// del menú ni con sus servicios. La valoración evalúa una asignación, que ya exige un menú aprobado (R7-34); su
+/// fecha la fija quien la emite, puede registrarse después del hecho, y solo se usa para ordenar las valoraciones
+/// (decisión del 19/10).
+/// </para>
 /// </remarks>
 public sealed class ValoracionNutricional : Entity<Guid>
 {

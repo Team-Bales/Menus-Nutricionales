@@ -5,7 +5,7 @@ namespace Menus.Domain.Entidades;
 
 /// <summary>
 /// Proporción de alimentos de un tipo de preparación dentro de un menú
-/// (agregación <c>Distribución</c> / relación <c>Distribuye</c>). Es un parámetro de generación
+/// (relación <c>Distribuye</c>, con su atributo <c>Proporción</c>). Es un parámetro de generación
 /// del menú y solo la crea <see cref="Menu"/>.
 /// </summary>
 public sealed class MenuDistribucion : Entity<(Guid MenuId, Guid TipoPreparacionId)>

@@ -7,40 +7,45 @@ public sealed class ConsumoTests
 {
     private readonly Guid _menuId = Guid.NewGuid();
     private readonly Guid _pacienteId = Guid.NewGuid();
-    private readonly Guid _alimentoId = Guid.NewGuid();
+    private readonly Guid _itemId = Guid.NewGuid();
+    private readonly DateOnly _hoy = DateOnly.FromDateTime(DateTime.UtcNow);
 
-    // Consumo solo se crea a través de Asignacion.RegistrarConsumo; dos instancias de Menu con el
-    // mismo Id representan el mismo menú leído dos veces. Solo se asigna un menú final (aprobado).
-    private Asignacion CrearAsignacion()
+    // Consumo solo se crea a través de Menu.RegistrarConsumo, en un servicio de un menú final asignado al
+    // paciente. Dos instancias de Menu con el mismo Id representan el mismo menú leído dos veces.
+    private Menu CrearMenuServido(DateOnly dia)
     {
         var menu = new Menu(
             _menuId,
             Guid.NewGuid(),
             Guid.NewGuid(),
-            DateTime.UtcNow.AddDays(-1),
+            DateTime.UtcNow.AddDays(-3),
             4,
             false,
             [(TipoPreparacion.PlatoFuerte.Id, 1m)],
             [Guid.NewGuid()]);
-        menu.Aprobar(Guid.NewGuid(), DateTime.UtcNow);
-        return menu.AsignarPaciente(_pacienteId);
+        menu.AgregarItem(_itemId);
+        menu.Aprobar(Guid.NewGuid(), DateTime.UtcNow.AddDays(-2));
+        menu.AsignarPaciente(_pacienteId);
+        menu.RegistrarServicio(_pacienteId, dia);
+        return menu;
     }
 
     [Fact]
-    public void RegistrarConsumo_ValidArgs_TomaLaClaveDeLaAsignacion()
+    public void RegistrarConsumo_ValidArgs_TomaLaClaveDelServicio()
     {
-        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
+        var consumo = CrearMenuServido(_hoy).RegistrarConsumo(_pacienteId, _hoy, _itemId, true);
 
         Assert.Equal(_menuId, consumo.MenuId);
         Assert.Equal(_pacienteId, consumo.PacienteId);
-        Assert.Equal(_alimentoId, consumo.AlimentoId);
+        Assert.Equal(_hoy, consumo.FechaServicio);
+        Assert.Equal(_itemId, consumo.ItemId);
         Assert.True(consumo.Aceptacion);
     }
 
     [Fact]
     public void RegistrarConsumo_Rechazo_GuardaAceptacionFalsa()
     {
-        var consumo = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
+        var consumo = CrearMenuServido(_hoy).RegistrarConsumo(_pacienteId, _hoy, _itemId, false);
 
         Assert.False(consumo.Aceptacion);
     }
@@ -48,19 +53,19 @@ public sealed class ConsumoTests
     [Fact]
     public void Equality_MismaClaveCompuesta_SonIguales()
     {
-        var aceptado = CrearAsignacion().RegistrarConsumo(_alimentoId, true);
-        var rechazado = CrearAsignacion().RegistrarConsumo(_alimentoId, false);
+        var aceptado = CrearMenuServido(_hoy).RegistrarConsumo(_pacienteId, _hoy, _itemId, true);
+        var rechazado = CrearMenuServido(_hoy).RegistrarConsumo(_pacienteId, _hoy, _itemId, false);
 
         Assert.Equal(aceptado, rechazado);
     }
 
     [Fact]
-    public void Equality_DistintoAlimento_NoSonIguales()
+    public void Equality_DistintoServicio_NoSonIguales()
     {
-        var asignacion = CrearAsignacion();
+        var ayer = _hoy.AddDays(-1);
 
-        var primero = asignacion.RegistrarConsumo(Guid.NewGuid(), true);
-        var segundo = asignacion.RegistrarConsumo(Guid.NewGuid(), true);
+        var primero = CrearMenuServido(_hoy).RegistrarConsumo(_pacienteId, _hoy, _itemId, true);
+        var segundo = CrearMenuServido(ayer).RegistrarConsumo(_pacienteId, ayer, _itemId, true);
 
         Assert.NotEqual(primero, segundo);
     }

@@ -794,11 +794,11 @@ El modelo cubre de forma integral los requerimientos funcionales, no funcionales
 | Consulta | Trayectoria en el esquema |
 |---|---|
 | F1 — Menús automáticos por dieta | `Dieta` ← `Menú` (filtrado por `EsAutomático`) → `Nutricionista` · `FechaCreación` · `CantidadTotalAlimentos` · `Distribución` · `CubreMenú` |
-| F2 — Ítems más usados en menús finales | `Dieta` ← `Menú` (con validación aprobada) → `Incluye` → `ItemAlimentario` → `NivelCalórico`, `GrupoNutricional`; los platos se descomponen por `Composición` |
-| F3 — Menús validados por un revisor | `Nutricionista` (revisor) ← `Validación` (`FechaValidación`, `Aprobado`, `Observaciones`) → `Menú` → `Dieta`; y `Validación` → `Origina` → `Menú` de reemplazo |
-| F4 — Desempeño ante un menú | `Menú` ← `Asignación` ← `Servicio` ← `Consumo` (`Aceptación`) → `ItemAlimentario` → `NivelCalórico` |
+| F2 — Ítems más usados en menús finales | `Dieta` ← `Menú` (con validación aprobada) → `Incluye` → `ItemAlimentario`; si es un `Plato`, → `Compone` → `Alimento` → `NivelCalórico`, `GrupoNutricional` |
+| F3 — Menús validados por un revisor | `Nutricionista` (revisor) ← `Validación` (`FechaValidación`, `Aprobado`, `Observaciones`) → `Menú` → `Dieta`; `Menú` → `Nutricionista` (creador); si el dictamen es un rechazo, `Validación` → `Origina` → `Menú` de reemplazo |
+| F4 — Desempeño ante un menú | `Menú` ← `Asignación` → `Servicio` → `Consume` (`Aceptación`) → `ItemAlimentario` → `NivelCalórico` |
 | F5 — Comparación entre dietas | `Dieta` ← `Menú` → `Incluye` → `ItemAlimentario` → `GrupoNutricional`, `NivelCalórico`; requeridos y restringidos: `CubreDieta.Tipo`; excluidos: `Restringe` → `Excluye`; parámetros: `Distribución`, `CantidadTotalAlimentos` |
-| F6 — Correlación nivel calórico / resultado | (A) `Menú` → `Incluye` → `NivelCalórico`; `Asignación` ← `Valoración` → `ResultadoNutricional.Valor` · (B) `Consumo` → `ItemAlimentario` → `Nutricionista` descriptor; `Consumo` → `Servicio` → `Menú` → `Dieta` · (C) `Revalorización` → `Valoración` revisada → `Asignación` → `Paciente` → `Sala` |
+| F6 — Correlación nivel calórico / resultado | (A) `Menú` → `Incluye` → `ItemAlimentario` → `NivelCalórico`; `Asignación` ← `Valoración` → `ResultadoNutricional.Valor` · (B) `Consume` → `ItemAlimentario` → `Nutricionista` descriptor; `Consume` → `Servicio` → `Asignación` → `Menú` → `Dieta` · (C) `Revalorización` → `Valoración` revisada → `Asignación` → `Paciente` → `Sala`; promedio por (sala, dieta) |
 | R1 — Disponibilidad calórica | `Dieta` → `Restringe` → `Excluye` y `Dieta` → `CubreDieta` (grupos prohibidos); `ItemAlimentario` → `NivelCalórico`; `Dieta` ← `Menú` final → `Incluye` → `ItemAlimentario` → `NivelCalórico` |
 | R2 — Valoraciones más recientes | `Paciente` ← `Asignación` ← `Valoración` → `ResultadoNutricional`, ordenado por `FechaValoración` |
 | RF-07 — Menús de la misma dieta | `Nutricionista` → `Autoriza` → `Dieta` ← `Menú` |

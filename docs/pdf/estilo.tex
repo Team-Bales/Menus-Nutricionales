@@ -1,0 +1,37 @@
+% Estilo del PDF del informe: el mismo aspecto que el entregado el 07/10 (serif, A4, índice con puntos).
+\usepackage{fontspec}
+% Times New Roman no tiene varios símbolos de la §5 (↠, ∌, ᵢ, ⁺, ⊆…): se toman de Cambria Math o Segoe UI Symbol.
+\directlua{luaotfload.add_fallback("simbolos", {"Cambria Math:mode=harf;", "Segoe UI Symbol:mode=harf;"})}
+\setmainfont{Times New Roman}[RawFeature={fallback=simbolos}]
+\setmonofont{Consolas}[Scale=0.9, RawFeature={fallback=simbolos}]
+\usepackage{xcolor}
+\definecolor{azul}{HTML}{1F3864}
+\definecolor{azulclaro}{HTML}{2E5597}
+\definecolor{oro}{HTML}{F2C200}
+\usepackage{setspace}
+\setstretch{1.15}
+% Margen extra para cortar líneas con nombres largos en monoespaciado, que no se pueden partir.
+\setlength{\emergencystretch}{3em}
+\setlength{\parskip}{4pt}
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\color{azul}}{}{0pt}{}
+\titleformat{\subsection}{\large\bfseries\color{azul}}{}{0pt}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{10pt}{2pt}
+% Índice: las secciones en negrita y con línea de puntos, como en el PDF anterior.
+\makeatletter
+\renewcommand*\l@section[2]{\addpenalty{-\@highpenalty}\vskip 6pt\@dottedtocline{1}{0em}{0em}{\bfseries #1}{\bfseries #2}}
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{0em}}
+\makeatother
+\usepackage{etoolbox}
+\usepackage{needspace}
+% Tablas y bloques de dependencias en un cuerpo menor, para que entren en el ancho de la página.
+\AtBeginEnvironment{longtable}{\small\setstretch{1.0}}
+\makeatletter
+\def\verbatim@font{\footnotesize\ttfamily}
+\makeatother
+\usepackage[font={small,it},labelformat=empty]{caption}
+\usepackage{fancyhdr}
+\pagestyle{plain}

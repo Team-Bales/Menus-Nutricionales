@@ -18,7 +18,7 @@ menús nutricionales**
 
 ## 1. Introducción
 
-El presente informe describe el diseño de la base de datos para el sistema de gestión de menús nutricionales en un entorno hospitalario. El sistema atiende a cuatro tipos de actores: pacientes que reciben y consumen menús, nutricionistas que los crean y administran alimentos, un jefe de nutrición que supervisa y valida los contenidos, y administradores que gestionan las cuentas del sistema. Su función central es automatizar la generación de menús a partir de dietas definidas institucionalmente, garantizar su validación clínica y registrar el consumo y los resultados nutricionales de cada paciente.
+El presente informe describe el diseño de la base de datos para el sistema de gestión de menús nutricionales en un entorno hospitalario. El sistema atiende a los actores de la §2.1: pacientes que reciben y consumen menús, nutricionistas que los crean y administran el banco de alimentos y platos, un jefe de nutrición que supervisa y valida los contenidos (el rol de revisor), y administradores que mantienen el sistema. Su función central es automatizar la generación de menús a partir de dietas definidas institucionalmente, garantizar su validación clínica y registrar el consumo y los resultados nutricionales de cada paciente.
 
 El trabajo sigue una metodología progresiva de cuatro etapas. En primer lugar, se analizan y reformulan los requerimientos funcionales e informacionales para precisar las operaciones que el sistema debe soportar y las consultas que debe responder. A partir de ese análisis se construye el Modelo Entidad-Relación Extendido (MERX) consolidado, que integra las entidades, atributos, relaciones y agregaciones del dominio en un único diagrama coherente. Sobre ese modelo se especifican las restricciones de integridad del esquema, clasificadas por su origen y declaradas mediante los mecanismos estándar del motor de base de datos. Finalmente, se verifica la corrección formal del diseño comprobando que cada esquema de la descomposición alcanza al menos la Tercera Forma Normal (3FN) y que la descomposición satisface la Propiedad de Preservación de Dependencias Funcionales (PPDF) y la Propiedad del Join sin Pérdida de Información (PLJ). La Forma Normal de Boyce-Codd (BCNF) se comprueba después, como verificación adicional.
 
@@ -44,10 +44,10 @@ El sistema gestiona la **generación automática de menús nutricionales** dentr
 
 | Tipo | Elementos |
 |---|---|
-| **Entidades (11)** | Ítem alimentario, con sus dos subclases, Alimento y Plato; Dieta; Menú; Nutricionista; Paciente; Sala; Valoración Nutricional; Revalorización; Servicio (entidad débil de la asignación) |
+| **Entidades (11)** | Ítem alimentario, con sus dos subclases, Alimento y Plato; Dieta; Menú; Nutricionista; Paciente; Sala; Valoración (nutricional); Revalorización; Servicio (entidad débil de la asignación) |
 | **Nomencladores (7)** | Grupo nutricional, Tipo de preparación *(entrante, plato fuerte, postre, bebida)*, Nivel calórico *(bajo, medio, alto)*, Restricción alimentaria, Programa de atención, Especialidad, Resultado nutricional |
 
-El enunciado llama «alimento» tanto al alimento simple como al plato. En este informe, **ítem alimentario** (o simplemente *ítem*) designa lo genérico, y «alimento» queda solo para el simple. Cada ítem —un **alimento** o un **plato**— se clasifica por grupo nutricional, tipo de preparación y nivel calórico, y puede contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento, y se justifica en la §4.3: la ficha reside en MongoDB, referenciada desde el modelo relacional por la clave del ítem.
+El enunciado llama «alimento» tanto al alimento simple como al plato. En este informe, **ítem alimentario** (o simplemente *ítem*) designa lo genérico, y «alimento» queda solo para el simple. Cada ítem —un **alimento** o un **plato**— se clasifica por grupo nutricional, tipo de preparación y nivel calórico, y puede contar con una **ficha nutricional ampliada** (macronutrientes, micronutrientes, alérgenos, modo de preparación). El número y el tipo de campos de esa ficha varían de un elemento a otro y no se ajustan a una estructura fija, de modo que cada uno almacena únicamente los atributos que le corresponden: por eso la ficha se gestiona de forma independiente del resto de sus datos. Cómo se implementa esa independencia es una decisión de diseño, no un requerimiento: la ficha reside en MongoDB y guarda la clave del ítem al que pertenece, sin que el modelo relacional la referencie. La justificación está en el ADR correspondiente del repositorio, y sus restricciones, en la §4.3.
 
 Una **dieta** define los grupos nutricionales a cubrir durante el tratamiento (`CubreDieta`), las restricciones alimentarias a respetar (`Restringe`) y el programa de atención institucional al que corresponde. Los **menús** generados para una dieta almacenan los parámetros de generación como datos inmutables: cantidad total de ítems (`CantidadTotalAlimentos`) y origen automático (`EsAutomático`) como atributos escalares, y la proporción por tipo de preparación y cobertura de grupos nutricionales como relaciones propias (`Distribuye`, `CubreMenú`).
 
@@ -77,8 +77,8 @@ Cada día en que un menú asignado se sirve a un paciente queda registrado como 
 
 | # | Requerimiento |
 |---|---|
-| RF-01 | El sistema permite registrar alimentos con nombre único, grupo nutricional, tipo de preparación, nivel calórico y nutricionista descritor. |
-| RF-02 | El sistema impide el registro de alimentos con nombre duplicado (normalizado). |
+| RF-01 | El sistema permite registrar alimentos con nombre único, grupo nutricional, tipo de preparación, nivel calórico y nutricionista descriptor. |
+| RF-02 | El sistema impide el registro de ítems con nombre duplicado (normalizado), sean alimentos o platos. |
 | RF-03 | El sistema permite registrar platos como composiciones de alimentos con cantidades, clasificados con los mismos atributos que los alimentos. |
 | RF-04 | El sistema permite asociar a cada alimento y a cada plato una ficha nutricional ampliada (macronutrientes, micronutrientes, alérgenos, modo de preparación), cuyos campos varían de un elemento a otro, y consultarla o modificarla de forma independiente del resto de sus datos. |
 
@@ -89,7 +89,7 @@ Cada día en que un menú asignado se sirve a un paciente queda registrado como 
 | RF-05 | El sistema gestiona nutricionistas con especialidad, y pacientes con sala de hospitalización asignada. |
 | RF-06 | El sistema controla qué nutricionistas están autorizados para crear y validar menús de cada dieta. |
 | RF-07 | El sistema permite a cada nutricionista consultar los menús de las dietas en las que está autorizado, cualquiera sea el nutricionista que los creó. |
-| RF-08 | El sistema registra la inscripción de pacientes en dietas activas. |
+| RF-08 | El sistema registra la inscripción de pacientes en dietas. |
 
 > **RF-07 no requiere estructura nueva.** «Atender la misma dieta» es estar autorizado en ella, de modo que los menús visibles para un nutricionista se obtienen recorriendo `Nutricionista` → `Autoriza` → `Dieta` ← `PerteneceDieta` ← `Menú`. La autorización, que RF-06 ya exige para crear y validar, delimita también lo que se puede consultar.
 
@@ -98,10 +98,10 @@ Cada día en que un menú asignado se sirve a un paciente queda registrado como 
 | # | Requerimiento |
 |---|---|
 | RF-09 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
-| RF-10 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
+| RF-10 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de ítems. |
 | RF-11 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. Cuando el jefe rechaza un menú e indica confeccionar otro, el menú nuevo queda vinculado al dictamen rechazado que lo originó. |
 | RF-12 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
-| RF-13 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
+| RF-13 | El sistema asigna menús aprobados (finales) a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
 
 **Registro clínico y valoraciones**
 
@@ -121,7 +121,7 @@ RNF-01 recoge una exigencia explícita del enunciado: esas dos consultas las rep
 
 ### 2.2 Requerimientos informacionales
 
-El sistema debe dar respuesta a seis consultas informacionales y a dos consultas recurrentes. Las primeras son los reportes que el enunciado enumera como funcionalidades; las segundas son las peticiones que se repiten durante la jornada y están sujetas a RNF-01. Las seis reformulaciones aplican dos decisiones: **D3**, `CantidadTotalAlimentos` y `Distribuye` cuentan los ítems incluidos del menú —un plato cuenta una vez—; y **D13**, salvo cuando la consulta exige la composición de un plato, se conserva el significado del reporte entregado expresándolo con el modelo actual. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
+El sistema debe dar respuesta a seis consultas informacionales y a dos consultas recurrentes. Las primeras son los reportes que el enunciado enumera como funcionalidades; las segundas son las peticiones que se repiten durante la jornada y están sujetas a RNF-01. Las seis reformulaciones aplican dos criterios. El primero: `CantidadTotalAlimentos` y `Distribuye` cuentan los ítems incluidos del menú, y un plato cuenta una vez. El segundo: se conserva el significado de cada reporte de la versión anterior del informe, expresado con el modelo actual, salvo donde el modelo nuevo obliga a cambiarlo, y en ese caso se explica por qué. A continuación se presenta el enunciado original de cada una y su reformulación enriquecida.
 
 ---
 
@@ -153,7 +153,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Generar un reporte sobre el desempeño nutricional de los pacientes ante un menú, clasificando los alimentos por nivel calórico y comparando las tasas de aceptación.»*
 
-**Reformulación:** Dado un menú, el sistema recupera sus servicios y los consumos de cada ítem incluido —alimento simple o plato— registrados en ellos. Por cada ítem calcula: número de servicios con consumo registrado, número de aceptaciones, número de rechazos y **tasa de aceptación** (aceptaciones ÷ servicios con consumo registrado). La tasa se pondera por servicio, no por paciente: cada registro de `Consume` corresponde a un ítem en un servicio determinado. Los resultados se clasifican por el nivel calórico del ítem y se presentan en tabla y gráfico comparativo. Las asignaciones o servicios sin consumo registrado quedan fuera del denominador; las tasas son derivadas y `Aceptación` en `Consume` es el único dato almacenado.
+**Reformulación:** Dado un menú, el sistema recupera sus servicios y los consumos de cada ítem incluido —alimento simple o plato— registrados en ellos. Por cada ítem calcula: número de servicios con consumo registrado, número de aceptaciones, número de rechazos y **tasa de aceptación** (aceptaciones ÷ servicios con consumo registrado). La tasa se pondera por servicio, no por paciente: cada registro de `Consume` corresponde a un ítem en un servicio determinado. A diferencia de la versión anterior, que descomponía los platos en sus alimentos, la tasa se calcula por ítem: el consumo se registra por ítem, de modo que el rechazo de un plato completo no se puede atribuir a sus ingredientes. Los resultados se clasifican por el nivel calórico del ítem y se presentan en tabla y gráfico comparativo. Las asignaciones o servicios sin consumo registrado quedan fuera del denominador; las tasas son derivadas y `Aceptación` en `Consume` es el único dato almacenado.
 
 ---
 
@@ -177,7 +177,7 @@ Los cuatro criterios pueden incumplirse: ninguno es una restricción que la base
 
 - **Parte B — Top-10 ítems rechazados:** sobre todos los registros de `Consume` del sistema, calcula la tasa de rechazo por ítem y selecciona los 10 con mayor tasa. Incluye alimentos simples y platos, porque el consumo registra ambos como ítems y puede reflejar el rechazo de un plato completo. Por cada uno reporta el nutricionista que lo **describió** en el banco (no el creador del menú) y la dieta a la que pertenece de forma indirecta, vía los menús en que aparece el consumo rechazado.
 
-- **Parte C — Revalorizados frente al promedio de su sala:** para cada paciente derivado de la asignación evaluada por una revalorización, compara el valor numérico de la nueva valoración generada con el promedio de las valoraciones de los demás pacientes de la misma sala inscritos en la misma dieta. El paciente y la dieta de referencia se obtienen de forma transitiva: `Revalorización → Valoración revisada → Asignación → Paciente` y `Revalorización → Valoración revisada → Asignación → Menú → Dieta`.
+- **Parte C — Revalorizados frente al promedio de su sala:** para cada paciente que solicitó una revalorización ya atendida, compara el valor numérico de la valoración que esa revalorización generó con el promedio de las valoraciones de los demás pacientes de la misma sala sobre menús de la misma dieta. El paciente es el de la asignación que evalúa la valoración revisada, y la dieta, la del menú de esa asignación: `Revalorización → Valoración revisada → Asignación → Paciente` y `Revalorización → Valoración revisada → Asignación → Menú → Dieta`. Las revalorizaciones que todavía no generaron su valoración no entran en la comparación.
 
 ---
 
@@ -193,7 +193,7 @@ A diferencia de las seis anteriores, estas dos no son reportes que se piden de v
 
 **R2 — Valoraciones más recientes de un paciente.** Las N valoraciones del paciente con mayor `FechaValoración`, con su resultado nutricional y el menú evaluado. Ordenarlas es posible porque la valoración tiene fecha propia; el modelo no depende para ello de la fecha de creación del menú.
 
-**Trayectoria.** R1 recorre `Dieta → Restringe → Excluye → GrupoNutricional` y `Dieta → CubreDieta` para obtener los grupos prohibidos, `ItemAlimentario → NivelCalórico` para clasificar el banco, y `Dieta ← Menú` (final) `→ Incluye → ItemAlimentario → NivelCalórico` para la parte de los menús. R2 recorre `Paciente ← Asignación ← Valoración → ResultadoNutricional`, ordenando por `FechaValoración`. Ninguna de las dos almacena su resultado: ambas son derivadas.
+**Trayectoria.** R1 recorre `Dieta → Restringe → Excluye → GrupoNutricional` y `Dieta → CubreDieta` para obtener los grupos prohibidos, `ItemAlimentario → PerteneceGrupo → GrupoNutricional` para descartar los ítems de grupos prohibidos, `ItemAlimentario → NivelCalórico` para clasificar el banco, y `Dieta ← Menú` (final) `→ Incluye → ItemAlimentario → NivelCalórico` para la parte de los menús. R2 recorre `Paciente ← Asignación ← Valoración → ResultadoNutricional`, ordenando por `FechaValoración`. Ninguna de las dos almacena su resultado: ambas son derivadas.
 
 **Cómo se garantiza la respuesta inmediata (RNF-01).** Las dos consultas son costosas en relación con su frecuencia —R1 recorre el banco completo y R2 ordena el historial del paciente— y sus resultados cambian poco entre una petición y la siguiente. Por eso se resuelven con un **caché de tipo clave-valor en memoria, en Redis, por delante de PostgreSQL**, que sigue siendo la única fuente de verdad:
 
@@ -215,21 +215,33 @@ El Modelo Entidad-Relación Extendido (MERX) consolidado del sistema se presenta
   - `Asignación`, que participa en `Evalúa` y en `Sirve`.
 - **Especialización.** La de `ItemAlimentario` es total y disjunta. Que es total lo indica la línea doble entre la superclase y el discriminador; que es disjunta, el discriminador `Clase`. La notación del curso no fija cómo marcar la totalidad, así que la lámina de entidades lleva una leyenda.
 - **Entidad débil.** `Servicio` (rectángulo de borde doble) depende de la agregación `Asignación` por la relación identificadora `Sirve` (rombo de borde doble). Su llave es la heredada de la asignación más `FechaServicio`.
-- **Atributos heredados.** Los óvalos punteados son atributos heredados de una agregación, de una entidad débil o de una superclase; los subrayados forman parte de la llave.
+- **Atributos heredados.** Los óvalos punteados son atributos heredados: los que una agregación toma de las entidades que envuelve, los que una entidad débil toma de su dueña y los que una subclase toma de su superclase. Los subrayados forman parte de la llave.
 
 Cada relación tiene un nombre único: cuando dos comparten verbo, se distinguen por el participante (`PerteneceGrupo`, `PerteneceDieta`, `PerteneceSala`, `CubreDieta`, `CubreMenú`, …).
 
 ![MERX — Entidades y nomencladores](MERX%20consolidado/MERXInforme-Entidades.png)
 
-![MERX — Relaciones 1: clasificación](MERX%20consolidado/MERXInforme-Relaciones-1.png)
+![MERX — Relaciones 1: clasificación de los ítems y contenido del menú](MERX%20consolidado/MERXInforme-Relaciones-1.png)
 
-![MERX — Relaciones 2: dieta y menú](MERX%20consolidado/MERXInforme-Relaciones-2.png)
+![MERX — Relaciones 2: dieta, autorizaciones y personas](MERX%20consolidado/MERXInforme-Relaciones-2.png)
 
-![MERX — Relaciones 3: valoración y consumo](MERX%20consolidado/MERXInforme-Relaciones-3.png)
+![MERX — Relaciones 3: validación, distribución, asignación, servicio y valoración](MERX%20consolidado/MERXInforme-Relaciones-3.png)
 
 ## 4. Especificación de las restricciones de integridad establecidas y/o detectadas
 
-Las restricciones se agrupan por su origen: **clave**, **referenciales**, **dominio**, **cardinalidad** y **semánticas**.
+Las restricciones se agrupan por su origen: **clave**, **referenciales**, **dominio**, **cardinalidad** y **semánticas**. Cada grupo se implementa con un mecanismo propio, y las excepciones se señalan aquí:
+
+- **Clave (RC):** clave primaria o índice único. RC-01 usa un índice único sobre el nombre normalizado.
+- **Referenciales (RR):** claves foráneas, con la acción de borrado que fija RX-02.
+- **Dominio (RD):** tipo de la columna, `NOT NULL` y `CHECK`.
+- **Cardinalidad (RK):** claves foráneas obligatorias, claves primarias e índices únicos. Las cardinalidades mínimas mayores que cero (RK-03, RK-07 y RK-09) se comprueban con triggers diferidos.
+- **Semánticas (RS):** triggers de PostgreSQL, con estas excepciones:
+  - RS-01 es el índice único de RC-01;
+  - RS-09 se cumple por estructura;
+  - RS-19 es un `CHECK`;
+  - RS-02 y RS-08 quedan en la capa de aplicación: RS-08 la comprueba el dominio al crear el menú, y RS-02 corresponde a los casos de uso.
+- **Ficha nutricional (RM):** en MongoDB, el validador `$jsonSchema` de la colección y un índice único (RM-08). En la capa de aplicación, las comprobaciones al guardar y al borrar una ficha, y una tarea programada de conciliación (RM-10).
+- **Consolidación (RX):** RX-01 es una clave foránea compuesta, y RX-02 es la acción `ON DELETE` de cada clave foránea.
 
 ### 4.1 Restricciones estructurales
 
@@ -285,7 +297,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-22 | No se elimina un nutricionista ni un paciente mientras tengan hechos asociados: ítems descritos, menús creados, validaciones, valoraciones emitidas, revalorizaciones ejecutadas, autorizaciones o inscripciones. Tampoco se elimina un ítem alimentario que figure en algún menú, ni un valor de nomenclador que use algún menú. |
 | RR-23 | Todo menú de reemplazo referencia la validación que lo originó, que tiene que existir (`Origina`). Esa validación no se elimina mientras origine un menú. |
 
-> RR-04, RR-12, RR-19 y RR-21 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
+> RR-04, RR-12, RR-19, RR-21, RR-22 y RR-23 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
 
 #### 4.1.3 Dominio
 
@@ -321,7 +333,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RK-04 | Cada dieta corresponde a exactamente un programa de atención. |
 | RK-05 | Cada paciente pertenece a exactamente una sala. |
 | RK-06 | Cada nutricionista ejerce exactamente una especialidad. |
-| RK-07 | Toda dieta cubre al menos un grupo nutricional: `(1,*)` del lado de `GrupoNutricional` en `CubreDieta`. |
+| RK-07 | Toda dieta exige cubrir al menos un grupo nutricional: tiene al menos una ocurrencia de `CubreDieta` con `Tipo` *Requerido*. De ahí el `(1,*)` del lado de `GrupoNutricional` en `CubreDieta`. |
 | RK-08 | Cada menú tiene exactamente un creador y una dieta. |
 | RK-09 | Todo menú tiene al menos una proporción por tipo de preparación y al menos un grupo nutricional cubierto. |
 | RK-10 | Cada valoración evalúa exactamente una asignación, la emite exactamente un nutricionista y tiene exactamente un resultado. |
@@ -367,20 +379,22 @@ Las restricciones semánticas no acotan los valores que se pueden almacenar, sin
 
 ### 4.3 Restricciones de la ficha nutricional (MongoDB)
 
-Las restricciones siguientes pertenecen a la ficha nutricional, almacenada en MongoDB. Se listan por referencia, sin duplicar la especificación del documento correspondiente: se conserva el identificador, se resume en una línea y se indica su mecanismo.
+Las restricciones siguientes pertenecen a la ficha nutricional, almacenada en MongoDB. Se listan por referencia, sin duplicar la especificación del documento correspondiente: se conserva el identificador y se resume en una línea. El mecanismo de cada una está en ese documento, y por grupo, al principio de esta sección.
 
 | # | Restricción |
 |---|---|
-| RM-01 | Toda ficha identifica la fila de PostgreSQL a la que pertenece (`origen.tabla`, `origen.id`). |
-| RM-02 | `origen.tabla` solo puede ser `Alimento` o `Plato`. |
-| RM-03 | `tipo` es `simple` o `compuesto`, coherente con la tabla: `Alimento` → `simple`, `Plato` → `compuesto`; solo las fichas de plato llevan `ingredientes`. |
+| RM-01 | Toda ficha identifica el ítem de PostgreSQL al que pertenece (`origen.id`) y su clase (`origen.tabla`). |
+| RM-02 | `origen.tabla` solo puede ser `Alimento` o `Plato`: es la clase del ítem (RD-17). |
+| RM-03 | `tipo` es `simple` o `compuesto`, coherente con la clase: `Alimento` → `simple`, `Plato` → `compuesto`; solo las fichas de plato llevan `ingredientes`. |
 | RM-04 | Los valores numéricos de la porción son positivos y los alérgenos no se repiten. |
 | RM-05 | Los bloques `macronutrientes`, `micronutrientes` y `modoPreparacion` no tienen campos obligatorios. |
 | RM-06 | En la ficha de un plato, el conjunto de `ingredientes.alimentoId` coincide con los alimentos del plato en `Compone`. |
-| RM-07 | Solo existe ficha para filas existentes de `Alimento` o `Plato`. |
+| RM-07 | Solo existe ficha para ítems existentes. |
 | RM-08 | Cada fila tiene a lo sumo una ficha. |
 | RM-09 | Al eliminar un alimento o un plato se elimina su ficha. |
 | RM-10 | Periódicamente se eliminan las fichas huérfanas y se reconstruyen las copias de `nombre` desactualizadas. |
+
+> Con la generalización (§2.1), alimentos y platos están en una sola tabla, `ItemAlimentario`. El campo `origen.tabla` conserva el nombre que tiene en el diseño de la ficha, y guarda la clase del ítem.
 
 ---
 
@@ -391,22 +405,24 @@ Dos restricciones quedaron sin especificar en los submodelos individuales y se d
 | # | Restricción |
 |---|---|
 | RX-01 | Solo se registra consumo de los ítems incluidos en el menú servido (`Incluye`). Un plato se acepta o se rechaza completo, no por ingrediente. Se impone de forma declarativa: `Consume` referencia la inclusión (`MenúId`, `ItemId`), no el ítem suelto (RR-16), y por eso no se dibuja en el MERX. |
-| RX-02 | Política de borrado entre submodelos: `CASCADE` únicamente en las seis claves foráneas que van de un dueño a sus propias filas de composición o parametrización; `RESTRICT` en todas las demás. El detalle está en la tabla siguiente. |
+| RX-02 | Política de borrado entre submodelos: `CASCADE` únicamente en las seis claves foráneas con que las filas de composición o de parametrización referencian a su dueño; `RESTRICT` en todas las demás. El detalle está en las tablas siguientes. |
 
-**Restricción 1 — por qué así:** un hecho del que dependen otros no se puede borrar. Las filas que solo describen a su dueño, en cambio, desaparecen con él: así un menú que todavía no tiene dictamen se borra por completo, con su parametrización y sus ítems. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
+**RX-02, por qué así:** un hecho del que dependen otros no se puede borrar. Las filas que solo describen a su dueño, en cambio, desaparecen con él: así un menú que todavía no tiene dictamen se borra por completo, con su parametrización y sus ítems. Con esta política, la inmutabilidad de la parametrización (RS-07) bloquea los cambios sueltos y deja pasar solo el borrado en cascada.
 
 El criterio distingue dos situaciones. Una fila **existe por su dueño y carece de sentido sin él** —la composición de un plato, la parametrización de un menú—: se borra con él, en `CASCADE`. Una fila **registra un hecho propio** —una validación, una asignación, un consumo— o **referencia un catálogo compartido**: el borrado se impide, en `RESTRICT`, porque perderla falsearía el historial o dejaría huérfanas a otras filas.
+
+En las dos tablas que siguen, `A → B` es la clave foránea de A que referencia a B.
 
 **Las seis claves foráneas en `CASCADE`:**
 
 | Clave foránea | Por qué |
 |---|---|
-| `Plato → Compone` | Los ingredientes describen al plato; sin él no existen. |
-| `Menú → Incluye` | Los ítems incluidos son el contenido del menú. |
-| `Menú → Distribuye` | Parámetro de generación del menú. |
-| `Menú → CubreMenú` | Parámetro de generación del menú. |
-| `Dieta → CubreDieta` | La cobertura define a la dieta. |
-| `Dieta → Restringe` | Las restricciones definen a la dieta. |
+| `Compone → Plato` | Los ingredientes describen al plato; sin él no existen. |
+| `Incluye → Menú` | Los ítems incluidos son el contenido del menú. |
+| `Distribuye → Menú` | Parámetro de generación del menú. |
+| `CubreMenú → Menú` | Parámetro de generación del menú. |
+| `CubreDieta → Dieta` | La cobertura define a la dieta. |
+| `Restringe → Dieta` | Las restricciones definen a la dieta. |
 
 **Las claves foráneas en `RESTRICT`,** agrupadas por lo que protegen:
 
@@ -416,16 +432,16 @@ El criterio distingue dos situaciones. Una fila **existe por su dueño y carece 
 | Composición | `Compone` → `Alimento` | No se borra un alimento que es ingrediente de un plato (RR-04). |
 | Uso de un ítem o un nomenclador | `Incluye` → `ItemAlimentario`; `Distribuye` → `TipoPreparación`; `CubreMenú` → `GrupoNutricional` | El borrado en cascada del menú no debe arrastrar el ítem ni el nomenclador que la fila referencia (RR-22). |
 | Cobertura y restricciones de una dieta | `CubreDieta` → `GrupoNutricional`; `Restringe` → `RestricciónAlimentaria` | Lo mismo del lado de la dieta: su borrado en cascada no arrastra los nomencladores (RR-12). |
-| Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12). |
+| Entidades base y sus nomencladores | `Dieta` → `ProgramaDeAtención`; `Nutricionista` → `Especialidad`; `Paciente` → `Sala` | No se borra un valor de nomenclador en uso (RR-12), ni una sala con pacientes (RR-10). |
 | Autorizaciones e inscripciones | `Autoriza` → `Nutricionista`, `Dieta`; `Inscribe` → `Paciente`, `Dieta` | No se borra una dieta que figure en alguna autorización o inscripción (RR-12), ni el nutricionista o el paciente del vínculo (RR-22). |
 | Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
-| Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
-| Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consume`; `Consume` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
+| Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta (RR-13, RR-22). |
+| Ciclo de revisión y servicio | `Validación` → `Menú`; `Validación` → `Nutricionista` revisor; `Asignación` → `Menú`; `Asignación` → `Paciente`; `Servicio` → `Asignación`; `Consume` → `Servicio`; `Consume` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19), y tampoco el revisor ni el paciente (RR-22). La última impide además quitar del menú un ítem que ya tiene consumos. |
 | Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo (RR-23). |
-| Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta (RR-19). |
+| Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta, con su emisor y su resultado (RR-17, RR-19, RR-22). |
 | Revalorización | `Revalorización` → `Nutricionista` ejecutor, `Valoración` revisada, `Valoración` generada | No se borra una valoración que una revalorización revisa o generó (RR-19). |
 
-Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas distintas. En particular, que `Menú → Incluye` sea `CASCADE` no choca con que `Menú → Asignación` sea `RESTRICT`, porque un menú asignado no llega a borrarse.
+Ninguna fila de las dos tablas contradice a la otra: protegen claves foráneas distintas. En particular, que `Incluye → Menú` sea `CASCADE` no choca con que `Asignación → Menú` sea `RESTRICT`, porque un menú asignado no llega a borrarse.
 
 ---
 
@@ -464,11 +480,11 @@ El punto de partida no es el cubrimiento minimal, sino el conjunto **F** de depe
 #### 5.1.1 Reglas de extracción
 
 1. **Conjuntos de entidades.** Por cada entidad con clave K y atributos U, se añade `K → U`.
-2. **Entidades débiles.** Su clave es la de la entidad de la que dependen más su llave parcial. `Servicio` no tiene atributos fuera de esa clave, de modo que no aporta ninguna dependencia no trivial.
+2. **Entidades débiles.** Su clave es la de su dueña (una entidad, o una agregación como en el caso de `Servicio`, que depende de `Asignación`) más su llave parcial. `Servicio` no tiene atributos fuera de esa clave, de modo que no aporta ninguna dependencia no trivial.
 3. **Especialización.** El discriminador de una especialización es un atributo de la superclase, y en el diagrama se rotula además sobre la propia especialización. El de `ItemAlimentario` se llama `Clase`, distingue las dos subclases y aparece en F como el atributo `clase`, determinado por `id_item`. Las subclases no aportan dependencias propias, porque no tienen atributos que la superclase no tenga: lo que las distingue es la relación `Compone`, en la que un plato se compone de alimentos simples.
-4. **Interrelaciones con atributos propios.** Por cada una con clave compuesta K, se añade `K → atributos`.
-5. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando el extremo 1 es obligatorio en ambos lados, la dependencia vale en los dos sentidos.
-6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, y las dos relaciones 1:1 opcionales. En los ítems, lo único es el nombre **normalizado** (RC-01, RS-01). Eso implica que tampoco se repite el nombre tal como se escribe, y de ahí sale la dependencia `nombre_item → id_item`. La unicidad normalizada es más fuerte (compara sin distinguir mayúsculas ni tildes), pero no es una dependencia entre atributos almacenados, así que queda como restricción.
+4. **Interrelaciones con atributos propios.** Por cada una con clave K, se añade `K → atributos`. La clave es compuesta salvo en `Valida`, cuya clave es el menú validado, porque un menú recibe a lo sumo un dictamen.
+5. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando la cardinalidad máxima es 1 en los dos extremos, como en `Genera` y `Origina` (RK-11, RK-15), la dependencia vale en los dos sentidos; el `UNIQUE` sobre la columna es su implementación (regla 6).
+6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, y las dos relaciones 1:1 opcionales. En los ítems, lo único es el nombre **normalizado** (RC-01, RS-01). Eso implica que tampoco se repite el nombre tal como se escribe, y de ahí sale la dependencia `nombre_item → id_item`. La unicidad normalizada es más fuerte (compara sin distinguir mayúsculas ni espacios sobrantes), pero no es una dependencia entre atributos almacenados, así que queda como restricción.
 
 #### 5.1.2 Nombres de rol
 
@@ -481,7 +497,7 @@ Por eso, en U cada aparición con un papel distinto es un **atributo distinto**,
 | `id_nutricionista` | `_descriptor` (ítem), `_creador` (menú), `_revisor` (validación), `_emisor` (valoración), `_ejecutor` (revalorización), `_autorizado` (`Autoriza`) |
 | `id_grupo` | `_item` (clasificación), `_cubierto` (`CubreDieta`), `_cubierto_menu` (`CubreMenú`), `_excluido` (`Excluye`) |
 | `id_dieta` | `_menu` (menú), `_cubierta`, `_restringida`, `_autorizada`, `_inscrita` |
-| `id_menu` | `_origen` (`Origina`), `_validado`, `_distribuido`, `_incluyente`, `_cubierto`, `_asignado`, `_servido`, `_consumo` |
+| `id_menu` | `_origen` (`Origina`), `_validado`, `_distribuido`, `_incluyente`, `_cubierto`, `_asignado`, `_servido`, `_consumo`, `_valorado` |
 | `id_paciente` | `_inscrito`, `_asignado`, `_servido`, `_consumo`, `_valorado` |
 | `id_item` | `_incluido` (`Incluye`), `_consumido` (`Consume`); en `Compone`, `id_plato_compuesto` e `id_alimento_componente` |
 | `id_tipo` | `_item` (clasificación), `_distribuido` (`Distribuye`) |
@@ -533,7 +549,7 @@ id_menu_validado → id_nutricionista_revisor, fecha_validacion, aprobado,
                    observaciones
 ```
 
-La última merece atención: la clave de `Validación` **es el menú validado**, porque un menú recibe a lo sumo un dictamen (RC-12). Que un menú validado sea un menú, y que el servicio en que se registra un consumo exista, son **dependencias de inclusión** —claves foráneas, RR-15 y RR-16—, no dependencias funcionales: es lo mismo que ocurre con todos los demás atributos que los nombres de rol separan.
+La última merece atención: la clave de `Validación` **es el menú validado**, porque un menú recibe a lo sumo un dictamen (RC-12). Que un menú validado sea un menú, que el servicio en que se registra un consumo exista, que el ítem consumido esté incluido en el menú servido (RX-01) y que el origen de un menú de reemplazo sea una validación existente (RR-23) son **dependencias de inclusión** —claves foráneas, RR-15, RR-16 y RR-23—, no dependencias funcionales: es lo mismo que ocurre con todos los demás atributos que los nombres de rol separan.
 
 **De las unicidades del dominio:**
 
@@ -553,7 +569,7 @@ id_menu_origen         → id_menu
 
 > Las dos últimas provienen de relaciones 1:1 **opcionales**: una revalorización puede no haber generado todavía su valoración, y un menú puede no ser reemplazo de ninguno. La dependencia se cumple sobre las filas donde el atributo está definido, que es lo que garantiza el `UNIQUE` sobre una columna que admite nulos. No afecta al resultado de la síntesis, porque en ambos casos la parte izquierda es equivalente a una clave que ya existe.
 
-**Lo que no aporta dependencias no triviales.** Ocho interrelaciones no tienen atributos propios, y su única dependencia es la trivial K → K: `Autoriza`, `Inscribe`, `Restringe`, `Excluye`, `Incluye`, `CubreMenú`, `Asignación` y, con ella, la entidad débil `Servicio`. En §5.3.2 se explica cómo entran sus atributos en la descomposición, porque **no pueden salir del algoritmo**: una dependencia trivial no forma parte de un cubrimiento minimal.
+**Lo que no aporta dependencias no triviales.** Las siete interrelaciones M:N sin atributos propios (`Autoriza`, `Inscribe`, `Restringe`, `Excluye`, `Incluye`, `CubreMenú` y `Asignación`) y la entidad débil `Servicio` solo tienen la dependencia trivial K → K. Las interrelaciones 1:N sin atributos propios, como `Describe` o `PerteneceSala`, sí aportan dependencias: son las de la regla 5. En §5.3.2 se explica cómo entran sus atributos en la descomposición, porque **no pueden salir del algoritmo**: una dependencia trivial no forma parte de un cubrimiento minimal.
 
 ---
 
@@ -609,7 +625,7 @@ Ninguno de los dos basta: un plato tiene varios ingredientes con cantidades dist
 
 **`(id_menu_consumo, id_paciente_consumo, fecha_servicio_consumo, id_item_consumido) → aceptacion`**
 
-Hay que descartar los cuatro subconjuntos de tres atributos. Ninguno de ellos aparece como parte izquierda de ninguna dependencia de F, de modo que su cierre es él mismo y no alcanza a `aceptacion`. Lo que sigue es la razón de dominio por la que F no contiene esas dependencias:
+Hay que descartar los cuatro subconjuntos de tres atributos. Ninguna parte izquierda de F está contenida en ninguno de ellos, de modo que su cierre es él mismo y no alcanza a `aceptacion`. Lo que sigue es la razón de dominio por la que F no contiene esas dependencias:
 
 ```
 {id_menu_consumo, id_paciente_consumo, fecha_servicio_consumo}⁺  ∌ aceptacion
@@ -626,7 +642,7 @@ Hay que descartar los cuatro subconjuntos de tres atributos. Ninguno de ellos ap
 
 #### 5.2.3 Paso 3 — dependencias redundantes
 
-Una dependencia `X → A` es redundante si `A ∈ X⁺` calculado respecto de `G − {X → A}`. Las dependencias de entidad no lo son: su parte izquierda es la única clave que determina esos atributos, y quitarlas dejaría el atributo sin determinante.
+Una dependencia `X → A` es redundante si `A ∈ X⁺` calculado respecto de `G − {X → A}`. Las dependencias de entidad no lo son: cada atributo de sus partes derechas aparece como parte derecha en una sola dependencia de G (la excepción, `id_resultado`, se trata abajo con las de unicidad), de modo que, sin esa dependencia, ningún cierre lo alcanza.
 
 Los casos que sí exigen comprobación son los de unicidad, porque conviven con la dependencia inversa:
 
@@ -636,53 +652,79 @@ G − {nombre_grupo → id_grupo}:   {nombre_grupo}⁺ = {nombre_grupo}  ∌ id_
 
 El nombre no determina nada más por otra vía, así que **no es redundante**. El mismo cálculo vale para los demás nomencladores, para `nombre_item` y para `valor_resultado`. En `ResultadoNutricional` conviven `nombre_resultado → id_resultado` y `valor_resultado → id_resultado`: ninguna deriva de la otra, porque de `nombre_resultado` no se alcanza `valor_resultado` sin pasar por `id_resultado`, y viceversa. Las dos se conservan, y la relación queda con tres claves candidatas.
 
-El caso de la **revalorización** merece mención aparte, porque en el diseño anterior sí había una redundancia aquí. La restricción RS-09 obligaba a que el paciente solicitante fuera el de la valoración revisada, lo que introducía `id_valoracion_revisada → id_paciente_solicitante`: una dependencia transitiva sobre un determinante que no es clave, que dejaba la relación en 2FN. Al dejar de almacenarse el solicitante, esa dependencia desaparece de F y la restricción se cumple por construcción.
+El caso de la **revalorización** merece mención aparte, porque en el diseño anterior sí había una redundancia aquí. La tabla guardaba también el paciente solicitante, y RS-09 obligaba a que fuera el de la valoración revisada; eso equivale a `id_valoracion_revisada → id_paciente_solicitante`. Con ella, `id_revalorizacion → id_paciente_solicitante` es **transitiva**: redundante en el cubrimiento, y en la tabla implementada, una dependencia de un atributo no primo respecto de un determinante que no es clave, que la dejaba en 2FN. Al dejar de almacenarse el solicitante, esa dependencia desaparece de F y la restricción se cumple por construcción.
 
 Ninguna otra dependencia resulta redundante. **G tiene las mismas 56 dependencias que salieron del paso 1.**
 
 #### 5.2.4 El cubrimiento minimal G
 
-Se presenta agrupado por parte izquierda, solo para abreviar: cada línea representa tantas dependencias de parte derecha unitaria como atributos tenga a la derecha.
+G tiene **56 dependencias, todas de parte derecha unitaria**. Se escriben una por una y numeradas, agrupadas por la entidad o la relación de la que salen:
 
 ```
-id_item            → clase | nombre_item | id_grupo_item | id_tipo_item
-                   | id_nivel_item | id_nutricionista_descriptor
-nombre_item        → id_item
-id_grupo           → nombre_grupo          nombre_grupo        → id_grupo
-id_tipo            → nombre_tipo           nombre_tipo         → id_tipo
-id_nivel           → nombre_nivel          nombre_nivel        → id_nivel
-id_programa        → nombre_programa       nombre_programa     → id_programa
-id_restriccion     → nombre_restriccion    nombre_restriccion  → id_restriccion
-id_especialidad    → nombre_especialidad   nombre_especialidad → id_especialidad
-id_resultado       → nombre_resultado | valor_resultado
-nombre_resultado   → id_resultado          valor_resultado     → id_resultado
-id_sala            → nombre_sala
-id_dieta           → nombre_dieta | id_programa_dieta
-id_nutricionista   → nombre_nutricionista | id_especialidad_nutricionista
-id_paciente        → nombre_paciente | edad | id_sala_paciente
-id_menu            → fecha_creacion | cantidad_total_alimentos | es_automatico
-                   | id_dieta_menu | id_nutricionista_creador | id_menu_origen
-id_menu_origen     → id_menu
-id_menu_validado   → id_nutricionista_revisor | fecha_validacion | aprobado
-                   | observaciones
-id_valoracion      → id_menu_valorado | id_paciente_valorado
-                   | id_nutricionista_emisor | id_resultado_valoracion
-                   | fecha_valoracion
-id_revalorizacion  → fecha_solicitud | id_nutricionista_ejecutor
-                   | id_valoracion_revisada | id_valoracion_generada
-id_valoracion_generada → id_revalorizacion
-(id_plato_compuesto, id_alimento_componente) → cantidad
-(id_menu_distribuido, id_tipo_distribuido)   → proporcion
-(id_dieta_cubierta, id_grupo_cubierto)       → tipo
-(id_menu_consumo, id_paciente_consumo, fecha_servicio_consumo,
- id_item_consumido)                          → aceptacion
+g1   id_item                → clase
+g2   id_item                → nombre_item
+g3   id_item                → id_grupo_item
+g4   id_item                → id_tipo_item
+g5   id_item                → id_nivel_item
+g6   id_item                → id_nutricionista_descriptor
+g7   nombre_item            → id_item
+g8   id_grupo               → nombre_grupo
+g9   nombre_grupo           → id_grupo
+g10  id_tipo                → nombre_tipo
+g11  nombre_tipo            → id_tipo
+g12  id_nivel               → nombre_nivel
+g13  nombre_nivel           → id_nivel
+g14  id_programa            → nombre_programa
+g15  nombre_programa        → id_programa
+g16  id_restriccion         → nombre_restriccion
+g17  nombre_restriccion     → id_restriccion
+g18  id_especialidad        → nombre_especialidad
+g19  nombre_especialidad    → id_especialidad
+g20  id_resultado           → nombre_resultado
+g21  id_resultado           → valor_resultado
+g22  nombre_resultado       → id_resultado
+g23  valor_resultado        → id_resultado
+g24  id_sala                → nombre_sala
+g25  id_dieta               → nombre_dieta
+g26  id_dieta               → id_programa_dieta
+g27  id_nutricionista       → nombre_nutricionista
+g28  id_nutricionista       → id_especialidad_nutricionista
+g29  id_paciente            → nombre_paciente
+g30  id_paciente            → edad
+g31  id_paciente            → id_sala_paciente
+g32  id_menu                → fecha_creacion
+g33  id_menu                → cantidad_total_alimentos
+g34  id_menu                → es_automatico
+g35  id_menu                → id_dieta_menu
+g36  id_menu                → id_nutricionista_creador
+g37  id_menu                → id_menu_origen
+g38  id_menu_origen         → id_menu
+g39  id_menu_validado       → id_nutricionista_revisor
+g40  id_menu_validado       → fecha_validacion
+g41  id_menu_validado       → aprobado
+g42  id_menu_validado       → observaciones
+g43  id_valoracion          → id_menu_valorado
+g44  id_valoracion          → id_paciente_valorado
+g45  id_valoracion          → id_nutricionista_emisor
+g46  id_valoracion          → id_resultado_valoracion
+g47  id_valoracion          → fecha_valoracion
+g48  id_revalorizacion      → fecha_solicitud
+g49  id_revalorizacion      → id_nutricionista_ejecutor
+g50  id_revalorizacion      → id_valoracion_revisada
+g51  id_revalorizacion      → id_valoracion_generada
+g52  id_valoracion_generada → id_revalorizacion
+g53  (id_plato_compuesto, id_alimento_componente) → cantidad
+g54  (id_menu_distribuido, id_tipo_distribuido) → proporcion
+g55  (id_dieta_cubierta, id_grupo_cubierto) → tipo
+g56  (id_menu_consumo, id_paciente_consumo, fecha_servicio_consumo, id_item_consumido)
+       → aceptacion
 ```
 
 ---
 
 ### 5.3 Descomposición por el algoritmo de síntesis
 
-El algoritmo de síntesis construye la descomposición a partir de **G**, no del cierre F\*: agrupa las dependencias de G que comparten parte izquierda, o cuyas partes izquierdas son equivalentes, y crea un esquema por grupo. Formalmente, para cada grupo `X → A₁, …, X → Aₖ` se crea `Rᵢ(Uᵢ, Fᵢ)` con `Uᵢ = X ∪ {A₁, …, Aₖ}` y `Fᵢ = Π_{Uᵢ}(G)`. Por último se eliminan los esquemas contenidos en otro.
+El algoritmo de síntesis construye la descomposición a partir de **G**, no del cierre F\*: agrupa las dependencias de G que comparten parte izquierda, o cuyas partes izquierdas son equivalentes, y crea un esquema por grupo. Formalmente, para cada grupo `X → A₁, …, X → Aₖ` se crea `Rᵢ(Uᵢ, Fᵢ)` con `Uᵢ = X ∪ {A₁, …, Aₖ}` y `Fᵢ = Π_Uᵢ(G⁺)`, la proyección del cierre de G sobre Uᵢ. Por último se eliminan los esquemas contenidos en otro. Agrupar por partes izquierdas equivalentes o por partes izquierdas idénticas da, en este caso, los mismos 20 esquemas: las partes izquierdas equivalentes (`id` y `nombre` en los nomencladores, por ejemplo) caen igual en un esquema que ya las contiene a las dos, y ese otro se elimina por estar contenido.
 
 #### 5.3.1 Esquemas obtenidos de G
 
@@ -711,7 +753,7 @@ Dos partes izquierdas son **equivalentes** cuando cada una determina a la otra, 
 | `CubreDieta` | id_dieta_cubierta, id_grupo_cubierto, tipo | el par |
 | `Consume` | id_menu_consumo, id_paciente_consumo, fecha_servicio_consumo, id_item_consumido, aceptacion | la cuaterna |
 
-Son **20 esquemas**.
+Son **20 esquemas**: forman la descomposición ρ.
 
 > **Por qué `Validación` sale como esquema propio.** Si `Valida` usara `id_menu` en lugar del rol `id_menu_validado`, su dependencia compartiría parte izquierda con la de la entidad `Menú` y el algoritmo las uniría en un solo esquema. Esa unión sería correcta, pero obligaría a dejar nulos `id_nutricionista_revisor`, `fecha_validacion`, `aprobado` y `observaciones` en todos los menús sin dictamen. Con el nombre de rol, que es la misma regla que se aplica al resto del modelo, los dos esquemas salen directamente del algoritmo y la ausencia de dictamen se representa por **ausencia de fila**. El estado del menú se deriva sin ambigüedad: pendiente si no hay fila en `Validación`, final si la hay con `aprobado`, rechazado si la hay sin él.
 
@@ -725,7 +767,9 @@ Entran por el esquema universal. **U contiene todos los atributos del MERX**, in
 
 El algoritmo de síntesis termina comprobando si algún `Rᵢ` contiene una clave candidata de U. Si ninguno la contiene, se añade un esquema formado por esa clave.
 
-**Cálculo de la clave.** Se parte de los atributos que no aparecen en ninguna parte derecha de G, que pertenecen a toda clave:
+**Cálculo de la clave.** Se parte del **núcleo** N: los atributos que no aparecen en ninguna parte derecha de G, que pertenecen a toda clave. Son 33: los de las relaciones sin dependencias no triviales (las siete M:N y `Servicio`), los de las claves compuestas de `Compone`, `Distribuye`, `CubreDieta` y `Consume`, `id_menu_validado`, e `id_valoracion`, `id_dieta`, `id_nutricionista`, `id_paciente` e `id_sala`.
+
+N no basta: N⁺ ≠ U. Quedan fuera diez clases de atributos que se determinan entre sí y que ningún atributo de N alcanza: `id_item` y `nombre_item`; `id_menu` e `id_menu_origen`; `id_revalorizacion` e `id_valoracion_generada`; el `id` y el `nombre` de cada uno de los seis nomencladores con nombre único; e `id_resultado`, `nombre_resultado` y `valor_resultado`. Una clave necesita un representante de cada clase, y basta con uno: aquí se elige el identificador. Resulta:
 
 ```
 K = { id_nutricionista_autorizado, id_dieta_autorizada,
@@ -748,15 +792,15 @@ K = { id_nutricionista_autorizado, id_dieta_autorizada,
       id_restriccion, id_especialidad, id_resultado }
 ```
 
-`K⁺ = U`: los identificadores de entidad arrastran todos sus atributos, y los de interrelación ya están en K. Y K es **mínima**, porque ninguno de sus atributos se deriva de los demás: quitar cualquiera lo deja fuera del cierre. Es, por tanto, una clave candidata de U.
+`K⁺ = U`: los identificadores de entidad arrastran todos sus atributos, y los de interrelación ya están en K. Y K es **mínima**, porque ninguno de sus atributos se deriva de los demás: quitar cualquiera lo deja fuera del cierre. Es, por tanto, una clave candidata de U. No es la única: elegir otro representante de alguna clase (por ejemplo, `nombre_item` en lugar de `id_item`) da otra, y para el lema de Ullman basta con una.
 
 Obsérvese que la clave es un **conjunto de atributos**, no un conjunto de pares: los pares son las claves de cada interrelación por separado, no la del esquema universal.
 
 **Ningún `Rᵢ` contiene K**, así que se añade `R_K(K)`. Ese esquema es *todo clave* y, al no proyectarse sobre él ninguna dependencia no trivial, está en BCNF. Pero reúne hechos independientes entre sí: qué nutricionista está autorizado en qué dieta nada tiene que ver con qué ítem compone qué plato.
 
-**Las dependencias del dominio no son solo funcionales.** Gracias a los nombres de rol, ninguna relación del modelo comparte atributos con otra: qué nutricionista está autorizado en qué dieta es un hecho independiente de qué ítem incluye qué menú, o de qué ingredientes tiene un plato. Esa independencia pertenece a la semántica del dominio y no se deja expresar con dependencias funcionales, así que se declara aparte, como un conjunto **M** de **dependencias multivaluadas**: por cada relación del modelo (entidad o interrelación, con atributos propios o sin ellos), con atributos X, se cumple `∅ ↠ X`. Dentro de `R_K`, cada una se proyecta sobre `K ∩ X`. Las dependencias del dominio son, entonces, **D = F ∪ M**. La síntesis trabaja solo con F; M interviene únicamente aquí, y como no aporta ninguna dependencia funcional, la PPDF no se ve afectada.
+**Las dependencias del dominio no son solo funcionales.** Gracias a los nombres de rol, U se parte en **28 bloques** de atributos que no se solapan: los 20 de los esquemas de §5.3.1 y los de las ocho relaciones sin dependencias no triviales (las siete M:N y `Servicio`). Los atributos de una interrelación 1:N, como `id_sala_paciente`, quedan en el bloque de su entidad. Cada bloque registra un hecho independiente de los demás: qué nutricionista está autorizado en qué dieta no tiene nada que ver con qué ítem incluye qué menú, ni con qué ingredientes tiene un plato. Esa independencia pertenece a la semántica del dominio y no se deja expresar con dependencias funcionales, así que se declara aparte, como un conjunto **M** de **dependencias multivaluadas**: por cada bloque X, se cumple `∅ ↠ X`. Toda dependencia de G cae dentro de un solo bloque, de modo que M es consistente con F y no implica dependencias funcionales nuevas. Dentro de `R_K`, cada una se proyecta sobre `K ∩ X`. Las dependencias del dominio son, entonces, **D = F ∪ M**. La síntesis trabaja solo con F; M interviene únicamente aquí y, como no aporta ninguna dependencia funcional, la PPDF no se ve afectada.
 
-**Descomposición de `R_K`.** `R_K` está en BCNF, pero no en 4FN respecto de M: dentro de él se cumple `∅ ↠ {id_nutricionista_autorizado, id_dieta_autorizada}`, y una análoga por cada interrelación. Por el teorema de Fagin, una dependencia multivaluada no trivial permite descomponer sin pérdida de información, y aplicándolo sucesivamente `R_K` se separa en un esquema por cada hecho independiente:
+**Descomposición de `R_K`.** `R_K` está en BCNF, pero no en 4FN respecto de M: dentro de él se cumple `∅ ↠ {id_nutricionista_autorizado, id_dieta_autorizada}`, y una análoga por cada bloque. Por el teorema de Fagin, una dependencia multivaluada no trivial permite descomponer sin pérdida de información, y aplicándolo sucesivamente `R_K` se separa en un esquema por cada hecho independiente:
 
 | Esquema | Atributos |
 |---|---|
@@ -772,9 +816,9 @@ Obsérvese que la clave es un **conjunto de atributos**, no un conjunto de pares
 
 Los nombres de rol son los que hacen que esta partición funcione: la terna de `Servicio` y la cuaterna de `Consume` son **conjuntos de atributos disjuntos**, de modo que ninguna contiene a la otra y las dos dependencias multivaluadas son independientes. Si el consumo reutilizara los atributos del servicio, la terna quedaría contenida en la cuaterna, el último paso del algoritmo eliminaría `Servicio` y el modelo perdería los servicios sin consumos registrados, que la §4.5 admite expresamente.
 
-Los demás fragmentos de `R_K` son las proyecciones `K ∩ X` del resto de las relaciones: los pares de `Compone`, `Distribuye` y `CubreDieta`, la cuaterna de `Consume`, el menú validado y los identificadores de entidad. Como M también los separa, cada uno queda como un esquema propio, **contenido** en uno de los ya obtenidos, y el último paso del algoritmo los elimina por redundantes. Los ocho esquemas que quedan son todo clave y están en BCNF, y con ellos `R_K` alcanza la 4FN.
+Los demás fragmentos de `R_K` son las proyecciones `K ∩ X` del resto de los bloques: los pares de `Compone`, `Distribuye` y `CubreDieta`, la cuaterna de `Consume`, el menú validado y los identificadores de entidad. Como M también los separa, cada uno queda como un esquema propio, **contenido** en uno de los ya obtenidos. Se eliminan, igual que en el último paso de la síntesis: si S ⊆ T, entonces `π_T(r) ⋈ π_S(r) = π_T(r)`, y quitar S no cambia el join. Los ocho esquemas que quedan son todo clave y están en BCNF, y con ellos `R_K` alcanza la 4FN.
 
-**La descomposición final** es ρ = {los 20 esquemas de §5.3.1} ∪ {los 8 de este apartado} = **28 esquemas**, que son exactamente las 28 tablas del esquema implementado.
+**La descomposición final** es τ = ρ ∪ {los 8 de este apartado} = **28 esquemas**, donde ρ son los 20 esquemas de §5.3.1. Son exactamente las 28 tablas del esquema implementado.
 
 ---
 
@@ -782,11 +826,11 @@ Los demás fragmentos de `R_K` son las proyecciones `K ∩ X` del resto de las r
 
 #### 5.4.1 Preservación de dependencias funcionales (PPDF)
 
-La síntesis **garantiza la PPDF por construcción**. Cada dependencia `X → A` de G dio origen a un esquema `Rᵢ` con `X ∪ {A} ⊆ Uᵢ`, de modo que `X → A ∈ Π_{Uᵢ}(G)`. Por tanto:
+La síntesis **garantiza la PPDF por construcción**. Cada dependencia `X → A` de G dio origen a un esquema `Rᵢ` con `X ∪ {A} ⊆ Uᵢ`, de modo que `X → A ∈ Π_Uᵢ(G⁺)`. Por tanto:
 
 ```
-G ⊆ ∪ᵢ Π_{Rᵢ}(G)   y, como G es un cubrimiento de F,
-F ≡ ∪ᵢ Π_{Rᵢ}(G)
+G ⊆ ∪ᵢ Π_Rᵢ(G⁺)   y, como G es un cubrimiento de F,
+F ≡ ∪ᵢ Π_Rᵢ(G⁺)
 ```
 
 Ninguna dependencia del dominio quedó repartida entre dos esquemas, así que toda comprobación de integridad asociada a una dependencia funcional se hace localmente, sin join. El paso posterior lo conserva: la descomposición de `R_K` solo afecta a atributos sobre los que no se proyecta ninguna dependencia no trivial.
@@ -799,11 +843,13 @@ La síntesis **no** garantiza por sí sola la PLJ: hay que añadir un esquema qu
 
 Las dos condiciones se cumplen: la PPDF quedó demostrada en §5.4.1, y la clave K calculada en §5.3.3 está contenida en `R_K`. La descomposición σ = ρ ∪ {R_K} tiene, por tanto, la PLJ.
 
-El último paso descompone `R_K` por las dependencias multivaluadas de M. No forma parte del algoritmo de síntesis, que trabaja solo con dependencias funcionales, sino que es un **paso posterior de descomposición a 4FN**, y por eso sus garantías se demuestran en lugar de invocarse: el teorema de Fagin establece que descomponer según una dependencia multivaluada no trivial es sin pérdida, y la composición de dos descomposiciones sin pérdida lo es también. La propiedad se conserva, por tanto, en la descomposición final de 28 esquemas. La PPDF no se ve afectada, porque sobre los atributos que ese paso separa no se proyecta ninguna dependencia funcional.
+El último paso descompone `R_K` por las dependencias multivaluadas de M. No forma parte del algoritmo de síntesis, que trabaja solo con dependencias funcionales, sino que es un **paso posterior de descomposición a 4FN**, y por eso sus garantías se demuestran en lugar de invocarse: el teorema de Fagin establece que descomponer según una dependencia multivaluada no trivial es sin pérdida, y la composición de dos descomposiciones sin pérdida lo es también; quitar después los fragmentos contenidos en otro esquema no cambia el join (§5.3.3). La propiedad se conserva, por tanto, en la descomposición final τ de 28 esquemas, **respecto de D = F ∪ M**: con F sola, partir `R_K` sí perdería información, y por eso M se declara como parte de las dependencias del dominio. La PPDF no se ve afectada, porque sobre los atributos que ese paso separa no se proyecta ninguna dependencia funcional.
+
+**Alcance del resultado.** Como los bloques no comparten atributos, el join natural de τ es, formalmente, su producto: la PLJ se demuestra en el marco de la relación universal con nombres de rol. Las combinaciones que hacen las consultas no son ese join, sino las que siguen las claves foráneas, que son dependencias de inclusión (§4.1.2) y quedan fuera de la teoría de dependencias funcionales y multivaluadas. Ese es el precio de los nombres de rol, y es también lo que evita que el algoritmo deduzca dependencias falsas (§5.1.2).
 
 #### 5.4.3 Verificación adicional: BCNF
 
-La BCNF no forma parte del criterio de corrección, pero se comprueba esquema por esquema porque este diseño la alcanza. Un esquema está en BCNF si en toda dependencia funcional no trivial de `Π_{Rᵢ}(G)` la parte izquierda es superclave.
+La BCNF no forma parte del criterio de corrección, pero se comprueba esquema por esquema porque este diseño la alcanza. Un esquema está en BCNF si en toda dependencia funcional no trivial de `Π_Rᵢ(G⁺)` la parte izquierda es superclave.
 
 | Grupo | Verificación |
 |---|---|
@@ -832,13 +878,13 @@ El modelo cubre de forma integral los requerimientos funcionales, no funcionales
 
 | Consulta | Trayectoria en el esquema |
 |---|---|
-| F1 — Menús automáticos por dieta | `Dieta` ← `Menú` (filtrado por `EsAutomático`) → `Nutricionista` · `FechaCreación` · `CantidadTotalAlimentos` · `Distribuye` · `CubreMenú` |
-| F2 — Ítems más usados en menús finales | `Dieta` ← `Menú` (con validación aprobada) → `Incluye` → `ItemAlimentario`; si es un `Plato`, → `Compone` → `Alimento` → `NivelCalórico`, `GrupoNutricional` |
-| F3 — Menús validados por un revisor | `Nutricionista` (revisor) ← `Validación` (`FechaValidación`, `Aprobado`, `Observaciones`) → `Menú` → `Dieta`; `Menú` → `Nutricionista` (creador); si el dictamen es un rechazo, `Validación` → `Origina` → `Menú` de reemplazo |
-| F4 — Desempeño ante un menú | `Menú` ← `Asignación` → `Servicio` → `Consume` (`Aceptación`) → `ItemAlimentario` → `NivelCalórico` |
-| F5 — Comparación entre dietas | `Dieta` ← `Menú` → `Incluye` → `ItemAlimentario` → `GrupoNutricional`, `NivelCalórico`; requeridos y restringidos: `CubreDieta.Tipo`; excluidos: `Restringe` → `Excluye`; parámetros: `Distribuye`, `CantidadTotalAlimentos` |
-| F6 — Correlación nivel calórico / resultado | (A) `Menú` → `Incluye` → `ItemAlimentario` → `NivelCalórico`; `Asignación` ← `Valoración` → `ResultadoNutricional.Valor` · (B) `Consume` → `ItemAlimentario` → `Nutricionista` descriptor; `Consume` → `Servicio` → `Asignación` → `Menú` → `Dieta` · (C) `Revalorización` → `Valoración` revisada → `Asignación` → `Paciente` → `Sala`; promedio por (sala, dieta) |
-| R1 — Disponibilidad calórica | `Dieta` → `Restringe` → `Excluye` y `Dieta` → `CubreDieta` (grupos prohibidos); `ItemAlimentario` → `NivelCalórico`; `Dieta` ← `Menú` final → `Incluye` → `ItemAlimentario` → `NivelCalórico` |
+| Consulta 1 — Menús automáticos por dieta | `Dieta` ← `Menú` (filtrado por `EsAutomático`) → `Crea` → `Nutricionista` (creador) · `FechaCreación` · `CantidadTotalAlimentos` · `Distribuye` · `CubreMenú` |
+| Consulta 2 — Alimentos más usados en menús finales | `Dieta` ← `Menú` (con validación aprobada) → `Incluye` → `ItemAlimentario`: un `Alimento` cuenta él mismo, y un `Plato` → `Compone` → sus `Alimento`; cada alimento → `NivelCalórico`, `GrupoNutricional` |
+| Consulta 3 — Menús validados por un revisor | `Nutricionista` (revisor) ← `Validación` (`FechaValidación`, `Aprobado`, `Observaciones`) → `Menú` → `Dieta`; `Menú` → `Nutricionista` (creador); si el dictamen es un rechazo, `Validación` → `Origina` → `Menú` de reemplazo |
+| Consulta 4 — Desempeño ante un menú | `Menú` ← `Asignación` → `Servicio` → `Consume` (`Aceptación`) → `ItemAlimentario` → `NivelCalórico` |
+| Consulta 5 — Comparación entre dietas | `Dieta` ← `Menú` → `Incluye` → `ItemAlimentario` → `GrupoNutricional`, `NivelCalórico`; requeridos y restringidos: `CubreDieta.Tipo`; excluidos: `Restringe` → `Excluye`; parámetros: `Distribuye`, `CantidadTotalAlimentos` |
+| Consulta 6 — Correlación nivel calórico / resultado | (A) `Dieta` ← `Menú` → `Incluye` → `ItemAlimentario` → `NivelCalórico`; `Menú` ← `Asignación` ← `Valoración` → `ResultadoNutricional.Valor` · (B) `Consume` → `ItemAlimentario` → `Nutricionista` descriptor; `Consume` → `Servicio` → `Asignación` → `Menú` → `Dieta` · (C) `Revalorización` → `Genera` → `Valoración` generada → `ResultadoNutricional.Valor`; `Revalorización` → `Revalora` → `Valoración` revisada → `Asignación` → `Paciente` → `Sala`, y `Asignación` → `Menú` → `Dieta`; promedio por (sala, dieta) de las demás valoraciones |
+| R1 — Disponibilidad calórica | `Dieta` → `Restringe` → `Excluye` y `Dieta` → `CubreDieta` (grupos prohibidos); `ItemAlimentario` → `PerteneceGrupo` → `GrupoNutricional` (compatibilidad) y `ItemAlimentario` → `NivelCalórico`; `Dieta` ← `Menú` final → `Incluye` → `ItemAlimentario` → `NivelCalórico` |
 | R2 — Valoraciones más recientes | `Paciente` ← `Asignación` ← `Valoración` → `ResultadoNutricional`, ordenado por `FechaValoración` |
 | RF-07 — Menús de la misma dieta | `Nutricionista` → `Autoriza` → `Dieta` ← `Menú` |
 
@@ -850,12 +896,12 @@ El diseño presenta una estructura modular que facilita su evolución ante cambi
 
 No quedan decisiones de modelado abiertas. Las cuatro que el diseño podía dejar en suspenso están fijadas: la `Cantidad` de la composición se expresa en gramos (RD-05); la `Proporción` de la distribución es una fracción en el intervalo (0, 1] y la suma de las de un menú es 1 (RD-11, RS-08); la `Edad` del paciente es un número entero de años mayor o igual que cero (RD-06, RD-09); y la correspondencia entre las restricciones de una dieta y los alérgenos de sus ítems queda deliberadamente fuera del modelo relacional (§4.5).
 
-Esa última merece una palabra, porque es el punto de extensión más claro del diseño. La compatibilidad alimentaria se resuelve hoy en dos niveles: por grupo nutricional dentro de PostgreSQL, y por alérgeno en la capa de aplicación, que contrasta la ficha de cada ítem contra las restricciones de la dieta. Lo que el modelo relacional no registra es **qué alérgeno excluye cada restricción** —que *sin gluten* excluye *gluten*—, una correspondencia que hoy vive en la configuración de la aplicación. Llevarla al esquema, con un nomenclador de alérgenos y una relación hacia `RestricciónAlimentaria`, permitiría comprobar la compatibilidad por alérgeno sin salir del modelo. Es una extensión aditiva: no obliga a reestructurar ninguna tabla existente, porque el mecanismo por grupo seguiría funcionando igual.
+Esa última merece una palabra, porque es el punto de extensión más claro del diseño. La compatibilidad alimentaria se resuelve hoy en dos niveles: por grupo nutricional dentro de PostgreSQL, y por alérgeno en la capa de aplicación, que contrasta la ficha de cada ítem contra las restricciones de la dieta. Lo que el modelo relacional no registra es **qué alérgeno excluye cada restricción** —que *sin gluten* excluye *gluten*—, una correspondencia que queda en la configuración de la aplicación. Llevarla al esquema, con un nomenclador de alérgenos y una relación hacia `RestricciónAlimentaria`, permitiría comprobar la compatibilidad por alérgeno sin salir del modelo. Es una extensión aditiva: no obliga a reestructurar ninguna tabla existente, porque el mecanismo por grupo seguiría funcionando igual.
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 103 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa; y valoración formal de la corrección.
+El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 103 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa (§4); y valoración formal de la corrección.
 
-El esquema relacional se obtuvo aplicando el algoritmo de síntesis al cubrimiento minimal extraído del modelo conceptual, y consta de **28 esquemas**. La descomposición cumple las tres condiciones del criterio de corrección: cada esquema alcanza al menos la 3FN, se preservan todas las dependencias funcionales del dominio —garantizado por construcción del algoritmo— y el join natural no introduce tuplas espurias: la descomposición que incluye el esquema de la llave es sin pérdida por el lema de Ullman, y partir ese esquema según las dependencias multivaluadas del dominio también lo es, por el teorema de Fagin. La verificación adicional muestra que los 28 esquemas alcanzan además la Forma Normal de Boyce-Codd, condición más fuerte que la exigida.
+El esquema relacional se obtuvo así: del modelo conceptual se extrajo el conjunto F de dependencias funcionales, se calculó su cubrimiento minimal G y se le aplicó el algoritmo de síntesis, que da 20 esquemas más el esquema de la llave. Ese último se descompuso a 4FN según las dependencias multivaluadas del dominio, y el resultado son **28 esquemas**. La descomposición cumple las tres condiciones del criterio de corrección: cada esquema alcanza al menos la 3FN, se preservan todas las dependencias funcionales del dominio —garantizado por construcción del algoritmo— y el join natural no introduce tuplas espurias: la descomposición que incluye el esquema de la llave es sin pérdida por el lema de Ullman, y partir ese esquema según las dependencias multivaluadas del dominio también lo es, por el teorema de Fagin. La verificación adicional muestra que los 28 esquemas alcanzan además la Forma Normal de Boyce-Codd, condición más fuerte que la exigida.
 
 La base de datos propuesta es, por tanto, estructuralmente correcta y está preparada para su implementación.

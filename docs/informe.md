@@ -7,7 +7,7 @@
 | Javier Fontes Basabe | C312 |
 | Heily Rodriguez Rodriguez | C312 |
 | Ernesto Alejandro Soler Choong | C312 |
-| Mauricio Brindon Carbo | C312 |
+| Mauricio Bridon Carbo | C312 |
 
 **Gestión para la generación automática de
 menús nutricionales**
@@ -99,7 +99,7 @@ Cada día en que un menú asignado se sirve a un paciente queda registrado como 
 |---|---|
 | RF-09 | El sistema permite definir dietas con programa de atención, grupos nutricionales a cubrir y restricciones alimentarias a respetar. |
 | RF-10 | El sistema soporta la generación automática de menús aplicando parámetros inmutables: proporción por tipo de preparación, cobertura de grupos nutricionales y cantidad total de alimentos. |
-| RF-11 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. |
+| RF-11 | El sistema permite la confección manual de menús bajo criterios del jefe de nutrición. Cuando el jefe rechaza un menú e indica confeccionar otro, el menú nuevo queda vinculado al dictamen rechazado que lo originó. |
 | RF-12 | El sistema registra la validación de un menú con fecha, dictamen (aprobado/rechazado) y observaciones, garantizando que el validador no sea el creador. |
 | RF-13 | El sistema asigna menús validados a pacientes inscritos en la dieta correspondiente, impidiendo la asignación doble. |
 
@@ -137,7 +137,7 @@ El sistema debe dar respuesta a seis consultas informacionales y a dos consultas
 
 > *«Obtener los alimentos más utilizados en los menús finales de una dieta, clasificados por nivel calórico y grupo nutricional.»*
 
-**Reformulación:** Dado el identificador de una dieta, el sistema filtra los **menús finales** — aquellos cuya única validación está aprobada — y sobre ellos cuenta cuántos menús distintos contienen cada alimento simple (presencia, no cantidad servida). Para esta consulta, un plato incluido se descompone por `Compone`: un alimento puede llegar directamente mediante `MenuItem` o como componente de un `Plato` incluido mediante `MenuItem`. Cada alimento cuenta una sola vez por menú aunque llegue por ambas vías. El resultado es una tabla de alimentos simples con número de apariciones, nivel calórico y grupo nutricional, ordenable y filtrable por top-N, exportable a PDF.
+**Reformulación:** Dado el identificador de una dieta, el sistema filtra los **menús finales** — aquellos cuya única validación está aprobada — y sobre ellos cuenta cuántos menús distintos contienen cada alimento simple (presencia, no cantidad servida). Para esta consulta, un plato incluido se descompone por `Compone`: un alimento puede llegar directamente por `Incluye` o como componente de un `Plato` incluido por `Incluye`. Cada alimento cuenta una sola vez por menú aunque llegue por ambas vías. El resultado es una tabla de alimentos simples con número de apariciones, nivel calórico y grupo nutricional, ordenable y filtrable por top-N, exportable a PDF.
 
 ---
 
@@ -283,6 +283,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RR-20 | Toda ocurrencia de `Excluye` referencia una restricción alimentaria y un grupo nutricional existentes. |
 | RR-21 | No se elimina una restricción alimentaria ni un grupo nutricional mientras figuren en `Excluye`. |
 | RR-22 | No se elimina un nutricionista ni un paciente mientras tengan hechos asociados: ítems descritos, menús creados, validaciones, valoraciones emitidas, revalorizaciones ejecutadas, autorizaciones o inscripciones. Tampoco se elimina un ítem alimentario que figure en algún menú, ni un valor de nomenclador que use algún menú. |
+| RR-23 | Todo menú de reemplazo referencia la validación que lo originó, que tiene que existir (`Origina`). Esa validación no se elimina mientras origine un menú. |
 
 > RR-04, RR-12, RR-19 y RR-21 son las reglas que impiden borrar un hecho del que dependen otros, y se implementan con `ON DELETE RESTRICT`. No son las únicas claves foráneas del esquema ni agotan la política de borrado: la política completa, clave foránea por clave foránea, está en RX-02 (§4.4).
 
@@ -328,6 +329,7 @@ Las restricciones se agrupan por su origen: **clave**, **referenciales**, **domi
 | RK-12 | Cada ítem es exactamente un alimento o un plato: la especialización de `ItemAlimentario` es total y disjunta. |
 | RK-13 | Cada menú recibe a lo sumo un dictamen: `(0,1)` del lado de `Nutricionista` en `Valida`. |
 | RK-14 | Cada servicio pertenece a exactamente una asignación: `(1,1)` del lado de `Asignación` en `Sirve`. Una asignación puede tener cero o más servicios. |
+| RK-15 | Una validación origina a lo sumo un menú de reemplazo, y un menú reemplaza a lo sumo una validación: `(0,1)` en los dos extremos de `Origina`. |
 
 > Las restricciones de cardinalidad mínima ≥ 1 (RK-03, RK-07 y RK-09) no son expresables con claves foráneas: la entidad se registra antes que sus ocurrencias y la comprobación solo tiene sentido al cierre de la operación. En la capa de aplicación, el alta y su detalle se registran en una misma unidad de trabajo; en PostgreSQL se refuerzan con un trigger de restricción diferido (`DEFERRABLE INITIALLY DEFERRED`).
 
@@ -355,6 +357,9 @@ Las restricciones semánticas no acotan los valores que se pueden almacenar, sin
 | RS-14 | Ningún servicio es anterior al día en que se aprobó el menú. |
 | RS-15 | La validación de un menú no se modifica ni se borra: el primer dictamen cierra el menú. |
 | RS-16 | Solo se asigna un menú final: un menú pendiente o rechazado no se asigna. |
+| RS-17 | Solo un rechazo origina un menú de reemplazo: la validación de origen no está aprobada. Un menú final no se reemplaza. |
+| RS-18 | El menú de reemplazo es de la misma dieta que el menú rechazado. |
+| RS-19 | Un menú no es reemplazo de sí mismo. |
 
 > **RS-11 restringe la definición de la dieta, no el contenido de sus menús.** Una dieta que exige un grupo y a la vez lo prohíbe es incoherente: ningún menú podría cumplirla. Por eso solo cuenta `Tipo` *Requerido*; un grupo marcado *Restringido* que además esté excluido por una restricción repite la prohibición sin contradecirla. Que un **menú** incluya ítems de un grupo prohibido por su dieta es una cuestión distinta, y no es una restricción: se trata en §4.5.
 
@@ -416,7 +421,7 @@ El criterio distingue dos situaciones. Una fila **existe por su dueño y carece 
 | Exclusión por restricción | `Excluye` → `RestricciónAlimentaria`, `GrupoNutricional` | RR-21. |
 | Origen del menú | `Menú` → `Dieta`, `Nutricionista` creador | El menú documenta quién lo creó y para qué dieta. |
 | Ciclo de revisión y servicio | `Menú` → `Validación`; `Validación` → `Nutricionista` revisor; `Menú` → `Asignación`; `Asignación` → `Paciente`; `Asignación` → `Servicio`; `Servicio` → `Consume`; `Consume` → `Incluye` | Un menú dictaminado, asignado o servido no se borra: su historial clínico depende de él (RR-19). La última impide además quitar del menú un ítem que ya tiene consumos. |
-| Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo. |
+| Menú de reemplazo | `Menú` → `Validación` de origen | No se borra la validación que originó otro menú: se perdería la traza del rechazo (RR-23). |
 | Valoración | `Valoración` → `Asignación`, `Nutricionista` emisor, `ResultadoNutricional` | La valoración documenta un hecho clínico sobre una asignación concreta (RR-19). |
 | Revalorización | `Revalorización` → `Nutricionista` ejecutor, `Valoración` revisada, `Valoración` generada | No se borra una valoración que una revalorización revisa o generó (RR-19). |
 
@@ -463,7 +468,7 @@ El punto de partida no es el cubrimiento minimal, sino el conjunto **F** de depe
 3. **Especialización.** El discriminador de una especialización es un atributo de la superclase, y en el diagrama se rotula además sobre la propia especialización. El de `ItemAlimentario` se llama `Clase`, distingue las dos subclases y aparece en F como el atributo `clase`, determinado por `id_item`. Las subclases no aportan dependencias propias, porque no tienen atributos que la superclase no tenga: lo que las distingue es la relación `Compone`, en la que un plato se compone de alimentos simples.
 4. **Interrelaciones con atributos propios.** Por cada una con clave compuesta K, se añade `K → atributos`.
 5. **Cardinalidad máxima 1.** Por cada extremo con cardinalidad máxima 1 se añade la dependencia del lado «muchos» hacia el lado «uno». Cuando el extremo 1 es obligatorio en ambos lados, la dependencia vale en los dos sentidos.
-6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, el nombre normalizado de los ítems y las dos relaciones 1:1 opcionales.
+6. **Unicidades del dominio.** Las claves candidatas declaradas con `UNIQUE` aportan la dependencia inversa: el nombre de cada nomenclador y el de `ResultadoNutricional`, su `Valor`, y las dos relaciones 1:1 opcionales. En los ítems, lo único es el nombre **normalizado** (RC-01, RS-01). Eso implica que tampoco se repite el nombre tal como se escribe, y de ahí sale la dependencia `nombre_item → id_item`. La unicidad normalizada es más fuerte (compara sin distinguir mayúsculas ni tildes), pero no es una dependencia entre atributos almacenados, así que queda como restricción.
 
 #### 5.1.2 Nombres de rol
 
@@ -578,7 +583,7 @@ Aplicado a todo F:
 |---|---|
 | `id_item → …` | 6 |
 | `id_menu → …` (entidad) | 6 |
-| `id_menu → …` (validación) | 4 |
+| `id_menu_validado → …` (validación) | 4 |
 | `id_valoracion → …` | 5 |
 | `id_revalorizacion → …` | 4 |
 | `id_paciente → …` | 3 |
@@ -749,7 +754,7 @@ Obsérvese que la clave es un **conjunto de atributos**, no un conjunto de pares
 
 **Ningún `Rᵢ` contiene K**, así que se añade `R_K(K)`. Ese esquema es *todo clave* y, al no proyectarse sobre él ninguna dependencia no trivial, está en BCNF. Pero reúne hechos independientes entre sí: qué nutricionista está autorizado en qué dieta nada tiene que ver con qué ítem compone qué plato.
 
-**Las dependencias del dominio no son solo funcionales.** Gracias a los nombres de rol, los atributos de cada interrelación sin atributos propios no aparecen en ninguna otra parte de U: qué nutricionista está autorizado en qué dieta es un hecho independiente de qué ítem incluye qué menú. Esa independencia pertenece a la semántica del dominio y no se deja expresar con dependencias funcionales, así que se declara aparte, como un conjunto **M** de **dependencias multivaluadas**: por cada interrelación sin atributos propios, con atributos X, se cumple `∅ ↠ X`. Las dependencias del dominio son, entonces, **D = F ∪ M**. La síntesis trabaja solo con F; M interviene únicamente aquí, y como no aporta ninguna dependencia funcional, la PPDF no se ve afectada.
+**Las dependencias del dominio no son solo funcionales.** Gracias a los nombres de rol, ninguna relación del modelo comparte atributos con otra: qué nutricionista está autorizado en qué dieta es un hecho independiente de qué ítem incluye qué menú, o de qué ingredientes tiene un plato. Esa independencia pertenece a la semántica del dominio y no se deja expresar con dependencias funcionales, así que se declara aparte, como un conjunto **M** de **dependencias multivaluadas**: por cada relación del modelo (entidad o interrelación, con atributos propios o sin ellos), con atributos X, se cumple `∅ ↠ X`. Dentro de `R_K`, cada una se proyecta sobre `K ∩ X`. Las dependencias del dominio son, entonces, **D = F ∪ M**. La síntesis trabaja solo con F; M interviene únicamente aquí, y como no aporta ninguna dependencia funcional, la PPDF no se ve afectada.
 
 **Descomposición de `R_K`.** `R_K` está en BCNF, pero no en 4FN respecto de M: dentro de él se cumple `∅ ↠ {id_nutricionista_autorizado, id_dieta_autorizada}`, y una análoga por cada interrelación. Por el teorema de Fagin, una dependencia multivaluada no trivial permite descomponer sin pérdida de información, y aplicándolo sucesivamente `R_K` se separa en un esquema por cada hecho independiente:
 
@@ -767,7 +772,7 @@ Obsérvese que la clave es un **conjunto de atributos**, no un conjunto de pares
 
 Los nombres de rol son los que hacen que esta partición funcione: la terna de `Servicio` y la cuaterna de `Consume` son **conjuntos de atributos disjuntos**, de modo que ninguna contiene a la otra y las dos dependencias multivaluadas son independientes. Si el consumo reutilizara los atributos del servicio, la terna quedaría contenida en la cuaterna, el último paso del algoritmo eliminaría `Servicio` y el modelo perdería los servicios sin consumos registrados, que la §4.5 admite expresamente.
 
-Los demás fragmentos de `R_K` quedan **contenidos** en esquemas ya obtenidos —los pares de `Compone`, `Distribuye` y `CubreDieta`, la cuaterna de `Consume`, el menú validado y los identificadores de entidad— y el último paso del algoritmo los elimina por redundantes. Los ocho esquemas que quedan son todo clave y están en BCNF, y con ellos `R_K` alcanza la 4FN.
+Los demás fragmentos de `R_K` son las proyecciones `K ∩ X` del resto de las relaciones: los pares de `Compone`, `Distribuye` y `CubreDieta`, la cuaterna de `Consume`, el menú validado y los identificadores de entidad. Como M también los separa, cada uno queda como un esquema propio, **contenido** en uno de los ya obtenidos, y el último paso del algoritmo los elimina por redundantes. Los ocho esquemas que quedan son todo clave y están en BCNF, y con ellos `R_K` alcanza la 4FN.
 
 **La descomposición final** es ρ = {los 20 esquemas de §5.3.1} ∪ {los 8 de este apartado} = **28 esquemas**, que son exactamente las 28 tablas del esquema implementado.
 
@@ -784,7 +789,7 @@ G ⊆ ∪ᵢ Π_{Rᵢ}(G)   y, como G es un cubrimiento de F,
 F ≡ ∪ᵢ Π_{Rᵢ}(G)
 ```
 
-Ninguna dependencia del dominio quedó repartida entre dos esquemas, así que toda comprobación de integridad asociada a una dependencia funcional se hace localmente, sin join. Los dos pasos posteriores lo conservan: la partición de `Menú` y `Validación` deja cada dependencia dentro de uno de los dos esquemas, y la descomposición de `R_K` solo afecta a atributos sobre los que no se proyecta ninguna dependencia no trivial.
+Ninguna dependencia del dominio quedó repartida entre dos esquemas, así que toda comprobación de integridad asociada a una dependencia funcional se hace localmente, sin join. El paso posterior lo conserva: la descomposición de `R_K` solo afecta a atributos sobre los que no se proyecta ninguna dependencia no trivial.
 
 #### 5.4.2 Join sin pérdida (PLJ)
 
@@ -849,7 +854,7 @@ Esa última merece una palabra, porque es el punto de extensión más claro del 
 
 ## 6. Conclusiones
 
-El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 98 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa; y valoración formal de la corrección.
+El informe recorre las cuatro etapas del diseño: análisis de los requerimientos funcionales, no funcionales e informacionales; modelo conceptual (MERX consolidado); especificación de 103 restricciones de integridad, clasificadas por su origen y con el mecanismo que las implementa; y valoración formal de la corrección.
 
 El esquema relacional se obtuvo aplicando el algoritmo de síntesis al cubrimiento minimal extraído del modelo conceptual, y consta de **28 esquemas**. La descomposición cumple las tres condiciones del criterio de corrección: cada esquema alcanza al menos la 3FN, se preservan todas las dependencias funcionales del dominio —garantizado por construcción del algoritmo— y el join natural no introduce tuplas espurias: la descomposición que incluye el esquema de la llave es sin pérdida por el lema de Ullman, y partir ese esquema según las dependencias multivaluadas del dominio también lo es, por el teorema de Fagin. La verificación adicional muestra que los 28 esquemas alcanzan además la Forma Normal de Boyce-Codd, condición más fuerte que la exigida.
 

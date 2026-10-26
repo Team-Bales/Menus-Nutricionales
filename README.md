@@ -17,7 +17,7 @@ Proyecto conjunto de las asignaturas **Bases de Datos II** e **Ingeniería de So
 | Javier Fontes Basabe | QA | @FontesHabana|
 | Heily Rodriguez Rodriguez | Data Base Engineer | @heilyrodriguez225|
 | Ernesto Alejandro Soler Choong | Backend Engineer| @solerch5510|
-| Mauricio Brindon Carbo | Frontend Engineer | @Mackandal04 |
+| Mauricio Bridon Carbo | Frontend Engineer | @Mackandal04 |
 
 ## Arquitectura
 

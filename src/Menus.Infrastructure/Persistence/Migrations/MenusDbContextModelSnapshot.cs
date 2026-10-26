@@ -17,53 +17,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Menus.Domain.Entidades.Alimento", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("GrupoNutricionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("grupo_nutricional_id");
-
-                    b.Property<string>("NivelCalorico")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nivel_calorico");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("nombre");
-
-                    b.Property<Guid>("NutricionistaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("nutricionista_id");
-
-                    b.Property<string>("TipoPreparacion")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tipo_preparacion");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GrupoNutricionalId");
-
-                    b.HasIndex("Nombre")
-                        .IsUnique();
-
-                    b.HasIndex("NutricionistaId");
-
-                    b.ToTable("alimentos", (string)null);
-                });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Asignacion", b =>
                 {
@@ -92,17 +49,21 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("paciente_id");
 
-                    b.Property<Guid>("AlimentoId")
+                    b.Property<DateOnly>("FechaServicio")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_servicio");
+
+                    b.Property<Guid>("ItemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("alimento_id");
+                        .HasColumnName("item_id");
 
                     b.Property<bool>("Aceptacion")
                         .HasColumnType("boolean")
                         .HasColumnName("aceptacion");
 
-                    b.HasKey("MenuId", "PacienteId", "AlimentoId");
+                    b.HasKey("MenuId", "PacienteId", "FechaServicio", "ItemId");
 
-                    b.HasIndex("AlimentoId");
+                    b.HasIndex("MenuId", "ItemId");
 
                     b.ToTable("consumo", (string)null);
                 });
@@ -128,7 +89,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProgramaAtencionId");
 
-                    b.ToTable("dietas", (string)null);
+                    b.ToTable("dietas", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_dietas_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.DietaGrupoNutricional", b =>
@@ -150,7 +114,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("GrupoNutricionalId");
 
-                    b.ToTable("cubre_dieta", (string)null);
+                    b.ToTable("cubre_dieta", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_cubre_dieta_r6_17b_tipo", "tipo IN ('Requerido', 'Restringido')");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.DietaRestriccion", b =>
@@ -168,6 +135,63 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("RestriccionAlimentariaId");
 
                     b.ToTable("restringe", (string)null);
+                });
+
+            modelBuilder.Entity("Menus.Domain.Entidades.ItemAlimentario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Clase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("clase");
+
+                    b.Property<Guid>("GrupoNutricionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grupo_nutricional_id");
+
+                    b.Property<Guid>("NivelCaloricoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nivel_calorico_id");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("nombre");
+
+                    b.Property<Guid>("NutricionistaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nutricionista_id");
+
+                    b.Property<Guid>("TipoPreparacionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_preparacion_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrupoNutricionalId");
+
+                    b.HasIndex("NivelCaloricoId");
+
+                    b.HasIndex("NutricionistaId");
+
+                    b.HasIndex("TipoPreparacionId");
+
+                    b.ToTable("items_alimentarios", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_11_nombre", "btrim(nombre) <> ''");
+
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_19_clase", "clase IN ('Alimento', 'Plato')");
+                        });
+
+                    b.HasDiscriminator<string>("Clase").HasValue("ItemAlimentario");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Menu", b =>
@@ -197,30 +221,26 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("nutricionista_creador_id");
 
+                    b.Property<Guid?>("ValidacionOrigenId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validacion_origen_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DietaId");
 
                     b.HasIndex("NutricionistaCreadorId");
 
-                    b.ToTable("menus", (string)null);
-                });
+                    b.HasIndex("ValidacionOrigenId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_menus_r7_38_validacion_origen");
 
-            modelBuilder.Entity("Menus.Domain.Entidades.MenuAlimento", b =>
-                {
-                    b.Property<Guid>("MenuId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("menu_id");
+                    b.ToTable("menus", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_menus_r7_15_cantidad_total_alimentos", "cantidad_total_alimentos > 0");
 
-                    b.Property<Guid>("AlimentoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("alimento_id");
-
-                    b.HasKey("MenuId", "AlimentoId");
-
-                    b.HasIndex("AlimentoId");
-
-                    b.ToTable("menu_alimento", (string)null);
+                            t.HasCheckConstraint("ck_menus_r7_37_validacion_origen", "validacion_origen_id <> id");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.MenuDistribucion", b =>
@@ -229,18 +249,23 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("menu_id");
 
-                    b.Property<string>("TipoPreparacion")
-                        .HasColumnType("text")
-                        .HasColumnName("tipo_preparacion");
+                    b.Property<Guid>("TipoPreparacionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_preparacion_id");
 
                     b.Property<decimal>("Proporcion")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)")
                         .HasColumnName("proporcion");
 
-                    b.HasKey("MenuId", "TipoPreparacion");
+                    b.HasKey("MenuId", "TipoPreparacionId");
 
-                    b.ToTable("menu_distribucion", (string)null);
+                    b.HasIndex("TipoPreparacionId");
+
+                    b.ToTable("menu_distribucion", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_menu_distribucion_r7_16_proporcion", "proporcion > 0 AND proporcion <= 1");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.MenuGrupoNutricional", b =>
@@ -260,21 +285,21 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.ToTable("menu_grupo_nutricional", (string)null);
                 });
 
-            modelBuilder.Entity("Menus.Domain.Entidades.MenuPlato", b =>
+            modelBuilder.Entity("Menus.Domain.Entidades.MenuItem", b =>
                 {
                     b.Property<Guid>("MenuId")
                         .HasColumnType("uuid")
                         .HasColumnName("menu_id");
 
-                    b.Property<Guid>("PlatoId")
+                    b.Property<Guid>("ItemId")
                         .HasColumnType("uuid")
-                        .HasColumnName("plato_id");
+                        .HasColumnName("item_id");
 
-                    b.HasKey("MenuId", "PlatoId");
+                    b.HasKey("MenuId", "ItemId");
 
-                    b.HasIndex("PlatoId");
+                    b.HasIndex("ItemId");
 
-                    b.ToTable("menu_plato", (string)null);
+                    b.ToTable("menu_item", (string)null);
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Nutricionista", b =>
@@ -298,7 +323,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("EspecialidadId");
 
-                    b.ToTable("nutricionistas", (string)null);
+                    b.ToTable("nutricionistas", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_nutricionistas_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.NutricionistasDieta", b =>
@@ -343,7 +371,12 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SalaId");
 
-                    b.ToTable("pacientes", (string)null);
+                    b.ToTable("pacientes", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pacientes_r6_14_edad", "edad >= 0");
+
+                            t.HasCheckConstraint("ck_pacientes_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.PacienteDieta", b =>
@@ -361,49 +394,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("DietaId");
 
                     b.ToTable("paciente_dieta", (string)null);
-                });
-
-            modelBuilder.Entity("Menus.Domain.Entidades.Plato", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("GrupoNutricionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("grupo_nutricional_id");
-
-                    b.Property<string>("NivelCalorico")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nivel_calorico");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("nombre");
-
-                    b.Property<Guid>("NutricionistaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("nutricionista_id");
-
-                    b.Property<string>("TipoPreparacion")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tipo_preparacion");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GrupoNutricionalId");
-
-                    b.HasIndex("Nombre")
-                        .IsUnique();
-
-                    b.HasIndex("NutricionistaId");
-
-                    b.ToTable("platos", (string)null);
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.PlatoIngrediente", b =>
@@ -425,7 +415,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AlimentoId");
 
-                    b.ToTable("composicion", (string)null);
+                    b.ToTable("composicion", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_composicion_r5_12_cantidad", "cantidad > 0");
+                        });
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Revalorizacion", b =>
@@ -443,10 +436,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("nutricionista_id");
 
-                    b.Property<Guid>("PacienteId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("paciente_id");
-
                     b.Property<Guid?>("ValoracionGeneradaId")
                         .HasColumnType("uuid")
                         .HasColumnName("valoracion_generada_id");
@@ -458,8 +447,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("NutricionistaId");
-
-                    b.HasIndex("PacienteId");
 
                     b.HasIndex("ValoracionGeneradaId")
                         .IsUnique();
@@ -484,18 +471,33 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Nombre")
-                        .IsUnique();
+                    b.ToTable("salas", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_salas_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
+                });
 
-                    b.ToTable("salas", (string)null);
+            modelBuilder.Entity("Menus.Domain.Entidades.Servicio", b =>
+                {
+                    b.Property<Guid>("MenuId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("menu_id");
+
+                    b.Property<Guid>("PacienteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paciente_id");
+
+                    b.Property<DateOnly>("FechaServicio")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_servicio");
+
+                    b.HasKey("MenuId", "PacienteId", "FechaServicio");
+
+                    b.ToTable("servicios", (string)null);
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Validacion", b =>
                 {
-                    b.Property<Guid>("NutricionistaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("nutricionista_id");
-
                     b.Property<Guid>("MenuId")
                         .HasColumnType("uuid")
                         .HasColumnName("menu_id");
@@ -508,13 +510,17 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fecha_validacion");
 
+                    b.Property<Guid>("NutricionistaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("nutricionista_id");
+
                     b.Property<string>("Observaciones")
                         .HasColumnType("text")
                         .HasColumnName("observaciones");
 
-                    b.HasKey("NutricionistaId", "MenuId");
+                    b.HasKey("MenuId");
 
-                    b.HasIndex("MenuId");
+                    b.HasIndex("NutricionistaId");
 
                     b.ToTable("validacion", (string)null);
                 });
@@ -537,10 +543,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("NutricionistaId")
                         .HasColumnType("uuid")
                         .HasColumnName("nutricionista_id");
-
-                    b.Property<string>("Observaciones")
-                        .HasColumnType("text")
-                        .HasColumnName("observaciones");
 
                     b.Property<Guid>("PacienteId")
                         .HasColumnType("uuid")
@@ -579,7 +581,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("Nombre")
                         .IsUnique();
 
-                    b.ToTable("especialidades", (string)null);
+                    b.ToTable("especialidades", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_especialidades_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
 
                     b.HasData(
                         new
@@ -617,7 +622,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("Nombre")
                         .IsUnique();
 
-                    b.ToTable("grupos_nutricionales", (string)null);
+                    b.ToTable("grupos_nutricionales", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_grupos_nutricionales_r5_11_nombre", "btrim(nombre) <> ''");
+                        });
 
                     b.HasData(
                         new
@@ -647,6 +655,47 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Menus.Domain.Nomenclators.NivelCalorico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
+                    b.ToTable("niveles_caloricos", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_niveles_caloricos_r5_09_nombre", "nombre IN ('Bajo', 'Medio', 'Alto')");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("66666666-0000-0000-0000-000000000001"),
+                            Nombre = "Bajo"
+                        },
+                        new
+                        {
+                            Id = new Guid("66666666-0000-0000-0000-000000000002"),
+                            Nombre = "Medio"
+                        },
+                        new
+                        {
+                            Id = new Guid("66666666-0000-0000-0000-000000000003"),
+                            Nombre = "Alto"
+                        });
+                });
+
             modelBuilder.Entity("Menus.Domain.Nomenclators.ProgramaAtencion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -665,7 +714,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("Nombre")
                         .IsUnique();
 
-                    b.ToTable("programas_atencion", (string)null);
+                    b.ToTable("programas_atencion", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_programas_atencion_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
 
                     b.HasData(
                         new
@@ -703,7 +755,10 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("Nombre")
                         .IsUnique();
 
-                    b.ToTable("restricciones_alimentarias", (string)null);
+                    b.ToTable("restricciones_alimentarias", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_restricciones_alimentarias_r6_15_nombre", "btrim(nombre) <> ''");
+                        });
 
                     b.HasData(
                         new
@@ -733,6 +788,23 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Menus.Domain.Nomenclators.RestriccionGrupoExcluido", b =>
+                {
+                    b.Property<Guid>("RestriccionAlimentariaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("restriccion_alimentaria_id");
+
+                    b.Property<Guid>("GrupoNutricionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grupo_nutricional_id");
+
+                    b.HasKey("RestriccionAlimentariaId", "GrupoNutricionalId");
+
+                    b.HasIndex("GrupoNutricionalId");
+
+                    b.ToTable("excluye", (string)null);
+                });
+
             modelBuilder.Entity("Menus.Domain.Nomenclators.ResultadoNutricional", b =>
                 {
                     b.Property<Guid>("Id")
@@ -758,7 +830,12 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.HasIndex("Valor")
                         .IsUnique();
 
-                    b.ToTable("resultados_nutricionales", (string)null);
+                    b.ToTable("resultados_nutricionales", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_resultados_nutricionales_r7_19_nombre", "nombre IN ('Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente')");
+
+                            t.HasCheckConstraint("ck_resultados_nutricionales_r7_19_valor", "valor BETWEEN 1 AND 5");
+                        });
 
                     b.HasData(
                         new
@@ -793,19 +870,78 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Menus.Domain.Nomenclators.TipoPreparacion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique();
+
+                    b.ToTable("tipos_preparacion", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_tipos_preparacion_r5_08_nombre", "nombre IN ('Entrante', 'Plato fuerte', 'Postre', 'Bebida')");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0000-000000000001"),
+                            Nombre = "Entrante"
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0000-000000000002"),
+                            Nombre = "Plato fuerte"
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0000-000000000003"),
+                            Nombre = "Postre"
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0000-000000000004"),
+                            Nombre = "Bebida"
+                        });
+                });
+
             modelBuilder.Entity("Menus.Domain.Entidades.Alimento", b =>
                 {
-                    b.HasOne("Menus.Domain.Nomenclators.GrupoNutricional", null)
-                        .WithMany()
-                        .HasForeignKey("GrupoNutricionalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.HasBaseType("Menus.Domain.Entidades.ItemAlimentario");
 
-                    b.HasOne("Menus.Domain.Entidades.Nutricionista", null)
-                        .WithMany()
-                        .HasForeignKey("NutricionistaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_11_nombre", "btrim(nombre) <> ''");
+
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_19_clase", "clase IN ('Alimento', 'Plato')");
+                        });
+
+                    b.HasDiscriminator().HasValue("Alimento");
+                });
+
+            modelBuilder.Entity("Menus.Domain.Entidades.Plato", b =>
+                {
+                    b.HasBaseType("Menus.Domain.Entidades.ItemAlimentario");
+
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_11_nombre", "btrim(nombre) <> ''");
+
+                            t.HasCheckConstraint("ck_items_alimentarios_r5_19_clase", "clase IN ('Alimento', 'Plato')");
+                        });
+
+                    b.HasDiscriminator().HasValue("Plato");
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Asignacion", b =>
@@ -825,15 +961,15 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Menus.Domain.Entidades.Consumo", b =>
                 {
-                    b.HasOne("Menus.Domain.Entidades.Alimento", null)
+                    b.HasOne("Menus.Domain.Entidades.MenuItem", null)
                         .WithMany()
-                        .HasForeignKey("AlimentoId")
+                        .HasForeignKey("MenuId", "ItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Menus.Domain.Entidades.Asignacion", null)
+                    b.HasOne("Menus.Domain.Entidades.Servicio", null)
                         .WithMany("Consumos")
-                        .HasForeignKey("MenuId", "PacienteId")
+                        .HasForeignKey("MenuId", "PacienteId", "FechaServicio")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -877,6 +1013,33 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Menus.Domain.Entidades.ItemAlimentario", b =>
+                {
+                    b.HasOne("Menus.Domain.Nomenclators.GrupoNutricional", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoNutricionalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Menus.Domain.Nomenclators.NivelCalorico", null)
+                        .WithMany()
+                        .HasForeignKey("NivelCaloricoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Menus.Domain.Entidades.Nutricionista", null)
+                        .WithMany()
+                        .HasForeignKey("NutricionistaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Menus.Domain.Nomenclators.TipoPreparacion", null)
+                        .WithMany()
+                        .HasForeignKey("TipoPreparacionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Menus.Domain.Entidades.Menu", b =>
                 {
                     b.HasOne("Menus.Domain.Entidades.Dieta", null)
@@ -890,21 +1053,11 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasForeignKey("NutricionistaCreadorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-                });
 
-            modelBuilder.Entity("Menus.Domain.Entidades.MenuAlimento", b =>
-                {
-                    b.HasOne("Menus.Domain.Entidades.Alimento", null)
-                        .WithMany()
-                        .HasForeignKey("AlimentoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Menus.Domain.Entidades.Menu", null)
-                        .WithMany("Alimentos")
-                        .HasForeignKey("MenuId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("Menus.Domain.Entidades.Validacion", null)
+                        .WithOne()
+                        .HasForeignKey("Menus.Domain.Entidades.Menu", "ValidacionOrigenId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.MenuDistribucion", b =>
@@ -913,6 +1066,12 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .WithMany("Distribuciones")
                         .HasForeignKey("MenuId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Menus.Domain.Nomenclators.TipoPreparacion", null)
+                        .WithMany()
+                        .HasForeignKey("TipoPreparacionId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -931,18 +1090,18 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Menus.Domain.Entidades.MenuPlato", b =>
+            modelBuilder.Entity("Menus.Domain.Entidades.MenuItem", b =>
                 {
-                    b.HasOne("Menus.Domain.Entidades.Menu", null)
-                        .WithMany("Platos")
-                        .HasForeignKey("MenuId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("Menus.Domain.Entidades.ItemAlimentario", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Menus.Domain.Entidades.Plato", null)
-                        .WithMany()
-                        .HasForeignKey("PlatoId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("Menus.Domain.Entidades.Menu", null)
+                        .WithMany("Items")
+                        .HasForeignKey("MenuId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
@@ -994,21 +1153,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Menus.Domain.Entidades.Plato", b =>
-                {
-                    b.HasOne("Menus.Domain.Nomenclators.GrupoNutricional", null)
-                        .WithMany()
-                        .HasForeignKey("GrupoNutricionalId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Menus.Domain.Entidades.Nutricionista", null)
-                        .WithMany()
-                        .HasForeignKey("NutricionistaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Menus.Domain.Entidades.PlatoIngrediente", b =>
                 {
                     b.HasOne("Menus.Domain.Entidades.Alimento", null)
@@ -1032,12 +1176,6 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Menus.Domain.Entidades.Paciente", null)
-                        .WithMany()
-                        .HasForeignKey("PacienteId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Menus.Domain.Entidades.ValoracionNutricional", null)
                         .WithOne()
                         .HasForeignKey("Menus.Domain.Entidades.Revalorizacion", "ValoracionGeneradaId")
@@ -1050,11 +1188,20 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Menus.Domain.Entidades.Servicio", b =>
+                {
+                    b.HasOne("Menus.Domain.Entidades.Asignacion", null)
+                        .WithMany("Servicios")
+                        .HasForeignKey("MenuId", "PacienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Menus.Domain.Entidades.Validacion", b =>
                 {
                     b.HasOne("Menus.Domain.Entidades.Menu", null)
-                        .WithMany("Validaciones")
-                        .HasForeignKey("MenuId")
+                        .WithOne("Validacion")
+                        .HasForeignKey("Menus.Domain.Entidades.Validacion", "MenuId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1086,9 +1233,24 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Menus.Domain.Nomenclators.RestriccionGrupoExcluido", b =>
+                {
+                    b.HasOne("Menus.Domain.Nomenclators.GrupoNutricional", null)
+                        .WithMany()
+                        .HasForeignKey("GrupoNutricionalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Menus.Domain.Nomenclators.RestriccionAlimentaria", null)
+                        .WithMany("GruposExcluidos")
+                        .HasForeignKey("RestriccionAlimentariaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Menus.Domain.Entidades.Asignacion", b =>
                 {
-                    b.Navigation("Consumos");
+                    b.Navigation("Servicios");
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Dieta", b =>
@@ -1100,17 +1262,15 @@ namespace Menus.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Menus.Domain.Entidades.Menu", b =>
                 {
-                    b.Navigation("Alimentos");
-
                     b.Navigation("Asignaciones");
 
                     b.Navigation("Distribuciones");
 
                     b.Navigation("GruposNutricionales");
 
-                    b.Navigation("Platos");
+                    b.Navigation("Items");
 
-                    b.Navigation("Validaciones");
+                    b.Navigation("Validacion");
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Nutricionista", b =>
@@ -1121,6 +1281,16 @@ namespace Menus.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Menus.Domain.Entidades.Paciente", b =>
                 {
                     b.Navigation("Dietas");
+                });
+
+            modelBuilder.Entity("Menus.Domain.Entidades.Servicio", b =>
+                {
+                    b.Navigation("Consumos");
+                });
+
+            modelBuilder.Entity("Menus.Domain.Nomenclators.RestriccionAlimentaria", b =>
+                {
+                    b.Navigation("GruposExcluidos");
                 });
 
             modelBuilder.Entity("Menus.Domain.Entidades.Plato", b =>

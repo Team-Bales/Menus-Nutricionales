@@ -1,11 +1,12 @@
 using System;
+using Menus.Infrastructure.Persistence.Sql;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace Menus.Infrastructure.Migrations
+namespace Menus.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -23,6 +24,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_especialidades", x => x.id);
+                    table.CheckConstraint("ck_especialidades_r6_15_nombre", "btrim(nombre) <> ''");
                 });
 
             migrationBuilder.CreateTable(
@@ -35,6 +37,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_grupos_nutricionales", x => x.id);
+                    table.CheckConstraint("ck_grupos_nutricionales_r5_11_nombre", "btrim(nombre) <> ''");
                 });
 
             migrationBuilder.CreateTable(
@@ -47,6 +50,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_niveles_caloricos", x => x.id);
+                    table.CheckConstraint("ck_niveles_caloricos_r5_09_nombre", "nombre IN ('Bajo', 'Medio', 'Alto')");
                 });
 
             migrationBuilder.CreateTable(
@@ -59,6 +63,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_programas_atencion", x => x.id);
+                    table.CheckConstraint("ck_programas_atencion_r6_15_nombre", "btrim(nombre) <> ''");
                 });
 
             migrationBuilder.CreateTable(
@@ -71,6 +76,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_restricciones_alimentarias", x => x.id);
+                    table.CheckConstraint("ck_restricciones_alimentarias_r6_15_nombre", "btrim(nombre) <> ''");
                 });
 
             migrationBuilder.CreateTable(
@@ -84,6 +90,8 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_resultados_nutricionales", x => x.id);
+                    table.CheckConstraint("ck_resultados_nutricionales_r7_19_nombre", "nombre IN ('Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente')");
+                    table.CheckConstraint("ck_resultados_nutricionales_r7_19_valor", "valor BETWEEN 1 AND 5");
                 });
 
             migrationBuilder.CreateTable(
@@ -96,6 +104,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_salas", x => x.id);
+                    table.CheckConstraint("ck_salas_r6_15_nombre", "btrim(nombre) <> ''");
                 });
 
             migrationBuilder.CreateTable(
@@ -108,6 +117,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_tipos_preparacion", x => x.id);
+                    table.CheckConstraint("ck_tipos_preparacion_r5_08_nombre", "nombre IN ('Entrante', 'Plato fuerte', 'Postre', 'Bebida')");
                 });
 
             migrationBuilder.CreateTable(
@@ -121,6 +131,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_nutricionistas", x => x.id);
+                    table.CheckConstraint("ck_nutricionistas_r6_15_nombre", "btrim(nombre) <> ''");
                     table.ForeignKey(
                         name: "FK_nutricionistas_especialidades_especialidad_id",
                         column: x => x.especialidad_id,
@@ -140,10 +151,35 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_dietas", x => x.id);
+                    table.CheckConstraint("ck_dietas_r6_15_nombre", "btrim(nombre) <> ''");
                     table.ForeignKey(
                         name: "FK_dietas_programas_atencion_programa_atencion_id",
                         column: x => x.programa_atencion_id,
                         principalTable: "programas_atencion",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "excluye",
+                columns: table => new
+                {
+                    restriccion_alimentaria_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    grupo_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_excluye", x => new { x.restriccion_alimentaria_id, x.grupo_nutricional_id });
+                    table.ForeignKey(
+                        name: "FK_excluye_grupos_nutricionales_grupo_nutricional_id",
+                        column: x => x.grupo_nutricional_id,
+                        principalTable: "grupos_nutricionales",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_excluye_restricciones_alimentarias_restriccion_alimentaria_~",
+                        column: x => x.restriccion_alimentaria_id,
+                        principalTable: "restricciones_alimentarias",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -160,6 +196,8 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_pacientes", x => x.id);
+                    table.CheckConstraint("ck_pacientes_r6_14_edad", "edad >= 0");
+                    table.CheckConstraint("ck_pacientes_r6_15_nombre", "btrim(nombre) <> ''");
                     table.ForeignKey(
                         name: "FK_pacientes_salas_sala_id",
                         column: x => x.sala_id,
@@ -169,7 +207,7 @@ namespace Menus.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "alimentos",
+                name: "items_alimentarios",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -177,71 +215,34 @@ namespace Menus.Infrastructure.Migrations
                     grupo_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_preparacion_id = table.Column<Guid>(type: "uuid", nullable: false),
                     nivel_calorico_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    clase = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_alimentos", x => x.id);
+                    table.PrimaryKey("PK_items_alimentarios", x => x.id);
+                    table.CheckConstraint("ck_items_alimentarios_r5_11_nombre", "btrim(nombre) <> ''");
+                    table.CheckConstraint("ck_items_alimentarios_r5_19_clase", "clase IN ('Alimento', 'Plato')");
                     table.ForeignKey(
-                        name: "FK_alimentos_grupos_nutricionales_grupo_nutricional_id",
+                        name: "FK_items_alimentarios_grupos_nutricionales_grupo_nutricional_id",
                         column: x => x.grupo_nutricional_id,
                         principalTable: "grupos_nutricionales",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_alimentos_niveles_caloricos_nivel_calorico_id",
+                        name: "FK_items_alimentarios_niveles_caloricos_nivel_calorico_id",
                         column: x => x.nivel_calorico_id,
                         principalTable: "niveles_caloricos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_alimentos_nutricionistas_nutricionista_id",
+                        name: "FK_items_alimentarios_nutricionistas_nutricionista_id",
                         column: x => x.nutricionista_id,
                         principalTable: "nutricionistas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_alimentos_tipos_preparacion_tipo_preparacion_id",
-                        column: x => x.tipo_preparacion_id,
-                        principalTable: "tipos_preparacion",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "platos",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nombre = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    grupo_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_preparacion_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nivel_calorico_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_platos", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_platos_grupos_nutricionales_grupo_nutricional_id",
-                        column: x => x.grupo_nutricional_id,
-                        principalTable: "grupos_nutricionales",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_platos_niveles_caloricos_nivel_calorico_id",
-                        column: x => x.nivel_calorico_id,
-                        principalTable: "niveles_caloricos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_platos_nutricionistas_nutricionista_id",
-                        column: x => x.nutricionista_id,
-                        principalTable: "nutricionistas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_platos_tipos_preparacion_tipo_preparacion_id",
+                        name: "FK_items_alimentarios_tipos_preparacion_tipo_preparacion_id",
                         column: x => x.tipo_preparacion_id,
                         principalTable: "tipos_preparacion",
                         principalColumn: "id",
@@ -283,6 +284,7 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_cubre_dieta", x => new { x.dieta_id, x.grupo_nutricional_id });
+                    table.CheckConstraint("ck_cubre_dieta_r6_17b_tipo", "tipo IN ('Requerido', 'Restringido')");
                     table.ForeignKey(
                         name: "FK_cubre_dieta_dietas_dieta_id",
                         column: x => x.dieta_id,
@@ -293,34 +295,6 @@ namespace Menus.Infrastructure.Migrations
                         name: "FK_cubre_dieta_grupos_nutricionales_grupo_nutricional_id",
                         column: x => x.grupo_nutricional_id,
                         principalTable: "grupos_nutricionales",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "menus",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    dieta_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    nutricionista_creador_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fecha_creacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    cantidad_total_alimentos = table.Column<int>(type: "integer", nullable: false),
-                    es_automatico = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_menus", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_menus_dietas_dieta_id",
-                        column: x => x.dieta_id,
-                        principalTable: "dietas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_menus_nutricionistas_nutricionista_creador_id",
-                        column: x => x.nutricionista_creador_id,
-                        principalTable: "nutricionistas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -384,16 +358,17 @@ namespace Menus.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_composicion", x => new { x.plato_id, x.alimento_id });
+                    table.CheckConstraint("ck_composicion_r5_12_cantidad", "cantidad > 0");
                     table.ForeignKey(
-                        name: "FK_composicion_alimentos_alimento_id",
+                        name: "FK_composicion_items_alimentarios_alimento_id",
                         column: x => x.alimento_id,
-                        principalTable: "alimentos",
+                        principalTable: "items_alimentarios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_composicion_platos_plato_id",
+                        name: "FK_composicion_items_alimentarios_plato_id",
                         column: x => x.plato_id,
-                        principalTable: "platos",
+                        principalTable: "items_alimentarios",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -409,12 +384,6 @@ namespace Menus.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_asignacion", x => new { x.menu_id, x.paciente_id });
                     table.ForeignKey(
-                        name: "FK_asignacion_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
                         name: "FK_asignacion_pacientes_paciente_id",
                         column: x => x.paciente_id,
                         principalTable: "pacientes",
@@ -423,149 +392,18 @@ namespace Menus.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "menu_alimento",
-                columns: table => new
-                {
-                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    alimento_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_menu_alimento", x => new { x.menu_id, x.alimento_id });
-                    table.ForeignKey(
-                        name: "FK_menu_alimento_alimentos_alimento_id",
-                        column: x => x.alimento_id,
-                        principalTable: "alimentos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_menu_alimento_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "menu_distribucion",
-                columns: table => new
-                {
-                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_preparacion_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    proporcion = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_menu_distribucion", x => new { x.menu_id, x.tipo_preparacion_id });
-                    table.ForeignKey(
-                        name: "FK_menu_distribucion_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_menu_distribucion_tipos_preparacion_tipo_preparacion_id",
-                        column: x => x.tipo_preparacion_id,
-                        principalTable: "tipos_preparacion",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "menu_grupo_nutricional",
-                columns: table => new
-                {
-                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    grupo_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_menu_grupo_nutricional", x => new { x.menu_id, x.grupo_nutricional_id });
-                    table.ForeignKey(
-                        name: "FK_menu_grupo_nutricional_grupos_nutricionales_grupo_nutricion~",
-                        column: x => x.grupo_nutricional_id,
-                        principalTable: "grupos_nutricionales",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_menu_grupo_nutricional_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "menu_plato",
-                columns: table => new
-                {
-                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    plato_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_menu_plato", x => new { x.menu_id, x.plato_id });
-                    table.ForeignKey(
-                        name: "FK_menu_plato_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_menu_plato_platos_plato_id",
-                        column: x => x.plato_id,
-                        principalTable: "platos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "validacion",
-                columns: table => new
-                {
-                    nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fecha_validacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    aprobado = table.Column<bool>(type: "boolean", nullable: false),
-                    observaciones = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_validacion", x => new { x.nutricionista_id, x.menu_id });
-                    table.ForeignKey(
-                        name: "FK_validacion_menus_menu_id",
-                        column: x => x.menu_id,
-                        principalTable: "menus",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_validacion_nutricionistas_nutricionista_id",
-                        column: x => x.nutricionista_id,
-                        principalTable: "nutricionistas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "consumo",
+                name: "servicios",
                 columns: table => new
                 {
                     menu_id = table.Column<Guid>(type: "uuid", nullable: false),
                     paciente_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    alimento_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    aceptacion = table.Column<bool>(type: "boolean", nullable: false)
+                    fecha_servicio = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_consumo", x => new { x.menu_id, x.paciente_id, x.alimento_id });
+                    table.PrimaryKey("PK_servicios", x => new { x.menu_id, x.paciente_id, x.fecha_servicio });
                     table.ForeignKey(
-                        name: "FK_consumo_alimentos_alimento_id",
-                        column: x => x.alimento_id,
-                        principalTable: "alimentos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_consumo_asignacion_menu_id_paciente_id",
+                        name: "FK_servicios_asignacion_menu_id_paciente_id",
                         columns: x => new { x.menu_id, x.paciente_id },
                         principalTable: "asignacion",
                         principalColumns: new[] { "menu_id", "paciente_id" },
@@ -581,8 +419,7 @@ namespace Menus.Infrastructure.Migrations
                     paciente_id = table.Column<Guid>(type: "uuid", nullable: false),
                     nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false),
                     resultado_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fecha_valoracion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    observaciones = table.Column<string>(type: "text", nullable: true)
+                    fecha_valoracion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -613,7 +450,6 @@ namespace Menus.Infrastructure.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     fecha_solicitud = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    paciente_id = table.Column<Guid>(type: "uuid", nullable: false),
                     nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false),
                     valoracion_revisada_id = table.Column<Guid>(type: "uuid", nullable: false),
                     valoracion_generada_id = table.Column<Guid>(type: "uuid", nullable: true)
@@ -625,12 +461,6 @@ namespace Menus.Infrastructure.Migrations
                         name: "FK_revalorizaciones_nutricionistas_nutricionista_id",
                         column: x => x.nutricionista_id,
                         principalTable: "nutricionistas",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_revalorizaciones_pacientes_paciente_id",
-                        column: x => x.paciente_id,
-                        principalTable: "pacientes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -647,6 +477,163 @@ namespace Menus.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "consumo",
+                columns: table => new
+                {
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    paciente_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    fecha_servicio = table.Column<DateOnly>(type: "date", nullable: false),
+                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    aceptacion = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_consumo", x => new { x.menu_id, x.paciente_id, x.fecha_servicio, x.item_id });
+                    table.ForeignKey(
+                        name: "FK_consumo_servicios_menu_id_paciente_id_fecha_servicio",
+                        columns: x => new { x.menu_id, x.paciente_id, x.fecha_servicio },
+                        principalTable: "servicios",
+                        principalColumns: new[] { "menu_id", "paciente_id", "fecha_servicio" },
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "menu_distribucion",
+                columns: table => new
+                {
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tipo_preparacion_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    proporcion = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_menu_distribucion", x => new { x.menu_id, x.tipo_preparacion_id });
+                    table.CheckConstraint("ck_menu_distribucion_r7_16_proporcion", "proporcion > 0 AND proporcion <= 1");
+                    table.ForeignKey(
+                        name: "FK_menu_distribucion_tipos_preparacion_tipo_preparacion_id",
+                        column: x => x.tipo_preparacion_id,
+                        principalTable: "tipos_preparacion",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "menu_grupo_nutricional",
+                columns: table => new
+                {
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    grupo_nutricional_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_menu_grupo_nutricional", x => new { x.menu_id, x.grupo_nutricional_id });
+                    table.ForeignKey(
+                        name: "FK_menu_grupo_nutricional_grupos_nutricionales_grupo_nutricion~",
+                        column: x => x.grupo_nutricional_id,
+                        principalTable: "grupos_nutricionales",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "menu_item",
+                columns: table => new
+                {
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    item_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_menu_item", x => new { x.menu_id, x.item_id });
+                    table.ForeignKey(
+                        name: "FK_menu_item_items_alimentarios_item_id",
+                        column: x => x.item_id,
+                        principalTable: "items_alimentarios",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "menus",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    dieta_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    nutricionista_creador_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    fecha_creacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    cantidad_total_alimentos = table.Column<int>(type: "integer", nullable: false),
+                    es_automatico = table.Column<bool>(type: "boolean", nullable: false),
+                    validacion_origen_id = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_menus", x => x.id);
+                    table.CheckConstraint("ck_menus_r7_15_cantidad_total_alimentos", "cantidad_total_alimentos > 0");
+                    table.CheckConstraint("ck_menus_r7_37_validacion_origen", "validacion_origen_id <> id");
+                    table.ForeignKey(
+                        name: "FK_menus_dietas_dieta_id",
+                        column: x => x.dieta_id,
+                        principalTable: "dietas",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_menus_nutricionistas_nutricionista_creador_id",
+                        column: x => x.nutricionista_creador_id,
+                        principalTable: "nutricionistas",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "validacion",
+                columns: table => new
+                {
+                    menu_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    nutricionista_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    fecha_validacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    aprobado = table.Column<bool>(type: "boolean", nullable: false),
+                    observaciones = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_validacion", x => x.menu_id);
+                    table.ForeignKey(
+                        name: "FK_validacion_menus_menu_id",
+                        column: x => x.menu_id,
+                        principalTable: "menus",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_validacion_nutricionistas_nutricionista_id",
+                        column: x => x.nutricionista_id,
+                        principalTable: "nutricionistas",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.InsertData(
+                table: "especialidades",
+                columns: new[] { "id", "nombre" },
+                values: new object[,]
+                {
+                    { new Guid("44444444-0000-0000-0000-000000000001"), "Nutrición Clínica" },
+                    { new Guid("44444444-0000-0000-0000-000000000002"), "Dietética Hospitalaria" },
+                    { new Guid("44444444-0000-0000-0000-000000000003"), "Nutrición Deportiva" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "grupos_nutricionales",
+                columns: new[] { "id", "nombre" },
+                values: new object[,]
+                {
+                    { new Guid("11111111-0000-0000-0000-000000000001"), "Cereales" },
+                    { new Guid("11111111-0000-0000-0000-000000000002"), "Proteínas" },
+                    { new Guid("11111111-0000-0000-0000-000000000003"), "Lácteos" },
+                    { new Guid("11111111-0000-0000-0000-000000000004"), "Frutas" },
+                    { new Guid("11111111-0000-0000-0000-000000000005"), "Verduras" }
+                });
+
             migrationBuilder.InsertData(
                 table: "niveles_caloricos",
                 columns: new[] { "id", "nombre" },
@@ -655,6 +642,40 @@ namespace Menus.Infrastructure.Migrations
                     { new Guid("66666666-0000-0000-0000-000000000001"), "Bajo" },
                     { new Guid("66666666-0000-0000-0000-000000000002"), "Medio" },
                     { new Guid("66666666-0000-0000-0000-000000000003"), "Alto" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "programas_atencion",
+                columns: new[] { "id", "nombre" },
+                values: new object[,]
+                {
+                    { new Guid("33333333-0000-0000-0000-000000000001"), "Nutrición Pediátrica" },
+                    { new Guid("33333333-0000-0000-0000-000000000002"), "Oncología" },
+                    { new Guid("33333333-0000-0000-0000-000000000003"), "Geriatría" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "restricciones_alimentarias",
+                columns: new[] { "id", "nombre" },
+                values: new object[,]
+                {
+                    { new Guid("22222222-0000-0000-0000-000000000001"), "Sin gluten" },
+                    { new Guid("22222222-0000-0000-0000-000000000002"), "Hiposódica" },
+                    { new Guid("22222222-0000-0000-0000-000000000003"), "Sin lactosa" },
+                    { new Guid("22222222-0000-0000-0000-000000000004"), "Vegetariana" },
+                    { new Guid("22222222-0000-0000-0000-000000000005"), "Vegana" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "resultados_nutricionales",
+                columns: new[] { "id", "nombre", "valor" },
+                values: new object[,]
+                {
+                    { new Guid("023f26c4-50c4-4e20-8c24-7d27b341dfd6"), "Normal", 3 },
+                    { new Guid("138dec6d-8202-4b54-831c-e6fd21508695"), "Excelente", 5 },
+                    { new Guid("4077627e-08b1-404a-aeb5-bb64a90538ba"), "Mala", 2 },
+                    { new Guid("c0cf2cb9-45bb-4a30-ab00-0c6a8bfc5ca1"), "Buena", 4 },
+                    { new Guid("e89977e7-eeb6-4d32-96e2-096ace535bc8"), "Muy mala", 1 }
                 });
 
             migrationBuilder.InsertData(
@@ -667,32 +688,6 @@ namespace Menus.Infrastructure.Migrations
                     { new Guid("55555555-0000-0000-0000-000000000003"), "Postre" },
                     { new Guid("55555555-0000-0000-0000-000000000004"), "Bebida" }
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_alimentos_grupo_nutricional_id",
-                table: "alimentos",
-                column: "grupo_nutricional_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_alimentos_nivel_calorico_id",
-                table: "alimentos",
-                column: "nivel_calorico_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_alimentos_nombre",
-                table: "alimentos",
-                column: "nombre",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_alimentos_nutricionista_id",
-                table: "alimentos",
-                column: "nutricionista_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_alimentos_tipo_preparacion_id",
-                table: "alimentos",
-                column: "tipo_preparacion_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_asignacion_paciente_id",
@@ -710,9 +705,9 @@ namespace Menus.Infrastructure.Migrations
                 column: "alimento_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_consumo_alimento_id",
+                name: "IX_consumo_menu_id_item_id",
                 table: "consumo",
-                column: "alimento_id");
+                columns: new[] { "menu_id", "item_id" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_cubre_dieta_grupo_nutricional_id",
@@ -731,15 +726,35 @@ namespace Menus.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_excluye_grupo_nutricional_id",
+                table: "excluye",
+                column: "grupo_nutricional_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_grupos_nutricionales_nombre",
                 table: "grupos_nutricionales",
                 column: "nombre",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_menu_alimento_alimento_id",
-                table: "menu_alimento",
-                column: "alimento_id");
+                name: "IX_items_alimentarios_grupo_nutricional_id",
+                table: "items_alimentarios",
+                column: "grupo_nutricional_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_items_alimentarios_nivel_calorico_id",
+                table: "items_alimentarios",
+                column: "nivel_calorico_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_items_alimentarios_nutricionista_id",
+                table: "items_alimentarios",
+                column: "nutricionista_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_items_alimentarios_tipo_preparacion_id",
+                table: "items_alimentarios",
+                column: "tipo_preparacion_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_menu_distribucion_tipo_preparacion_id",
@@ -752,9 +767,9 @@ namespace Menus.Infrastructure.Migrations
                 column: "grupo_nutricional_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_menu_plato_plato_id",
-                table: "menu_plato",
-                column: "plato_id");
+                name: "IX_menu_item_item_id",
+                table: "menu_item",
+                column: "item_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_menus_dieta_id",
@@ -765,6 +780,12 @@ namespace Menus.Infrastructure.Migrations
                 name: "IX_menus_nutricionista_creador_id",
                 table: "menus",
                 column: "nutricionista_creador_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_menus_r7_38_validacion_origen",
+                table: "menus",
+                column: "validacion_origen_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_niveles_caloricos_nombre",
@@ -786,32 +807,6 @@ namespace Menus.Infrastructure.Migrations
                 name: "IX_pacientes_sala_id",
                 table: "pacientes",
                 column: "sala_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_platos_grupo_nutricional_id",
-                table: "platos",
-                column: "grupo_nutricional_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_platos_nivel_calorico_id",
-                table: "platos",
-                column: "nivel_calorico_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_platos_nombre",
-                table: "platos",
-                column: "nombre",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_platos_nutricionista_id",
-                table: "platos",
-                column: "nutricionista_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_platos_tipo_preparacion_id",
-                table: "platos",
-                column: "tipo_preparacion_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_programas_atencion_nombre",
@@ -848,11 +843,6 @@ namespace Menus.Infrastructure.Migrations
                 column: "nutricionista_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_revalorizaciones_paciente_id",
-                table: "revalorizaciones",
-                column: "paciente_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_revalorizaciones_valoracion_generada_id",
                 table: "revalorizaciones",
                 column: "valoracion_generada_id",
@@ -864,21 +854,15 @@ namespace Menus.Infrastructure.Migrations
                 column: "valoracion_revisada_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_salas_nombre",
-                table: "salas",
-                column: "nombre",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_tipos_preparacion_nombre",
                 table: "tipos_preparacion",
                 column: "nombre",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_validacion_menu_id",
+                name: "IX_validacion_nutricionista_id",
                 table: "validacion",
-                column: "menu_id");
+                column: "nutricionista_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_valoraciones_nutricionales_menu_id_paciente_id",
@@ -894,11 +878,70 @@ namespace Menus.Infrastructure.Migrations
                 name: "IX_valoraciones_nutricionales_resultado_nutricional_id",
                 table: "valoraciones_nutricionales",
                 column: "resultado_nutricional_id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_asignacion_menus_menu_id",
+                table: "asignacion",
+                column: "menu_id",
+                principalTable: "menus",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_consumo_menu_item_menu_id_item_id",
+                table: "consumo",
+                columns: new[] { "menu_id", "item_id" },
+                principalTable: "menu_item",
+                principalColumns: new[] { "menu_id", "item_id" },
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_menu_distribucion_menus_menu_id",
+                table: "menu_distribucion",
+                column: "menu_id",
+                principalTable: "menus",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_menu_grupo_nutricional_menus_menu_id",
+                table: "menu_grupo_nutricional",
+                column: "menu_id",
+                principalTable: "menus",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_menu_item_menus_menu_id",
+                table: "menu_item",
+                column: "menu_id",
+                principalTable: "menus",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_menus_validacion_validacion_origen_id",
+                table: "menus",
+                column: "validacion_origen_id",
+                principalTable: "validacion",
+                principalColumn: "menu_id",
+                onDelete: ReferentialAction.Restrict);
+
+            // Triggers e índice de las restricciones que EF no declara (Persistence/Sql). Van al final, cuando
+            // ya existen todas las tablas que referencian.
+            migrationBuilder.AplicarRestriccionesNoDeclarativas();
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Primero se quitan los triggers y el índice: dependen de las tablas que se borran a continuación.
+            migrationBuilder.QuitarRestriccionesNoDeclarativas();
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_validacion_menus_menu_id",
+                table: "validacion");
+
             migrationBuilder.DropTable(
                 name: "autoriza");
 
@@ -912,16 +955,13 @@ namespace Menus.Infrastructure.Migrations
                 name: "cubre_dieta");
 
             migrationBuilder.DropTable(
-                name: "menu_alimento");
+                name: "excluye");
 
             migrationBuilder.DropTable(
                 name: "menu_distribucion");
 
             migrationBuilder.DropTable(
                 name: "menu_grupo_nutricional");
-
-            migrationBuilder.DropTable(
-                name: "menu_plato");
 
             migrationBuilder.DropTable(
                 name: "paciente_dieta");
@@ -933,19 +973,25 @@ namespace Menus.Infrastructure.Migrations
                 name: "revalorizaciones");
 
             migrationBuilder.DropTable(
-                name: "validacion");
+                name: "menu_item");
 
             migrationBuilder.DropTable(
-                name: "alimentos");
-
-            migrationBuilder.DropTable(
-                name: "platos");
+                name: "servicios");
 
             migrationBuilder.DropTable(
                 name: "restricciones_alimentarias");
 
             migrationBuilder.DropTable(
                 name: "valoraciones_nutricionales");
+
+            migrationBuilder.DropTable(
+                name: "items_alimentarios");
+
+            migrationBuilder.DropTable(
+                name: "asignacion");
+
+            migrationBuilder.DropTable(
+                name: "resultados_nutricionales");
 
             migrationBuilder.DropTable(
                 name: "grupos_nutricionales");
@@ -957,28 +1003,25 @@ namespace Menus.Infrastructure.Migrations
                 name: "tipos_preparacion");
 
             migrationBuilder.DropTable(
-                name: "asignacion");
-
-            migrationBuilder.DropTable(
-                name: "resultados_nutricionales");
-
-            migrationBuilder.DropTable(
-                name: "menus");
-
-            migrationBuilder.DropTable(
                 name: "pacientes");
-
-            migrationBuilder.DropTable(
-                name: "dietas");
-
-            migrationBuilder.DropTable(
-                name: "nutricionistas");
 
             migrationBuilder.DropTable(
                 name: "salas");
 
             migrationBuilder.DropTable(
+                name: "menus");
+
+            migrationBuilder.DropTable(
+                name: "dietas");
+
+            migrationBuilder.DropTable(
+                name: "validacion");
+
+            migrationBuilder.DropTable(
                 name: "programas_atencion");
+
+            migrationBuilder.DropTable(
+                name: "nutricionistas");
 
             migrationBuilder.DropTable(
                 name: "especialidades");

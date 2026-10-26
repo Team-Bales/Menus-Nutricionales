@@ -38,6 +38,17 @@ jobs:
       - name: Compilar (Release)
         run: dotnet build MenusNutricionales.slnx --no-restore --configuration Release
 
+      # Falla si el modelo de EF cambió sin regenerar la migración: así el esquema que crea la migración no se
+      # vuelve a quedar atrás del código, como pasó antes de regenerar InitialCreate. No necesita base de datos.
+      - name: Verificar que la migración refleja el modelo
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes \
+            --project src/Menus.Infrastructure \
+            --startup-project src/Menus.Infrastructure \
+            --configuration Release \
+            --no-build
+
       - name: Tests con cobertura
         run: |
           dotnet test MenusNutricionales.slnx \

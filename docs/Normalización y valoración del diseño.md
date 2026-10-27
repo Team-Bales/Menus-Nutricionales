@@ -1,5 +1,9 @@
 # Normalización y valoración de la corrección del diseño
 
+> **Documento histórico del issue #12.** El esquema vigente (28 esquemas, con
+> `EsJefe` en `Nutricionista`), las 104 restricciones y la verificación formal
+> están en [`docs/informe.md`](informe.md), §4 y §5.
+
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #12
 **Dependencias:** submodelos #5 (`Alimento-Plato`), #6 (`Dieta-Nutricionista-Paciente-Sala`) y #7 (`Menú-Valoración-Consumo`), MERX consolidado (#9), especificación de restricciones de integridad (#11) y consultas reformuladas (`docs/consultas/`). El resultado de la validación formal contra las seis consultas (#10) se incorpora cuando esté disponible.

@@ -32,7 +32,7 @@
 
 - **Usuario, Contraseña y Rol** no se modelan. El glosario (§4.3) no incluye al usuario como candidato del dominio; el acceso a la aplicación es una responsabilidad de la capa de aplicación, y las funcionalidades F1-F6 no consultan credenciales ni permisos como dato.
 - **Administrador** no se modela. El glosario (§6) lo declara fuera del MERX: es un rol de mantenimiento de la aplicación (evitar alimentos duplicados, impedir la asignación doble de un menú), no un dato de dominio.
-- **`Jefe de nutrición`** no se modela como entidad ni como especialización. El glosario (§6) lo declara rol de `Nutricionista` sin datos propios: la aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Observaciones)` (issue #7). La información que aporta este submodelo es un tipo de restricción, no una relación: una aprobación exige que el aprobador sea un `Nutricionista` autorizado en la dieta (§3, R6-22).
+- **`Jefe de nutrición`** no se modela como entidad ni como especialización. El glosario (§6) lo declara rol de `Nutricionista` sin datos propios: la aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Observaciones)` (issue #7). La información que aporta este submodelo es un tipo de restricción, no una relación: una aprobación exige que el aprobador sea un `Nutricionista` autorizado en la dieta (§3, R6-22). *Decisión posterior:* el cargo lo representa el atributo `Nutricionista.EsJefe` (informe, §2.1, RD-18).
 
 ---
 
@@ -113,7 +113,7 @@ Estas restricciones no restringen los datos almacenados por el submodelo, sino *
 
 | # | Restricción | Evidencia | Mecanismo |
 |---|---|---|---|
-| R6-22 | Un nutricionista solo genera o valida menús de las dietas en las que está autorizado. | líneas 43-45 | capa de aplicación |
+| R6-22 | Un nutricionista solo genera o valida menús de las dietas en las que está autorizado; para validar, además, debe ser jefe de nutrición (véase la decisión posterior en §3). | líneas 43-45 | capa de aplicación |
 | R6-23 | Un paciente solo recibe menús de las dietas en las que está inscrito. | líneas 49-50 | capa de aplicación |
 
 **R6-22.** El enunciado acota el alcance de la autoridad del nutricionista: almacena «las dietas para las cuales está autorizado a generar o validar menús» (líneas 43-45), y confirma que puede «ver menús de otros nutricionistas que atienden la misma dieta» (línea 32). Es decir, la autoridad se verifica **por dieta**, no por autor: un nutricionista puede generar y validar menús de cualquier dieta en la que esté autorizado, aunque esos menús los haya creado otro. La base de datos guarda la autorización (`Autoriza`) pero no la acción de generar o validar (`Crea`, `Valida`); por eso la comprobación se hace en la capa de aplicación: antes de crear o de validar un menú, el nutricionista autenticado debe tener una fila en `Autoriza` para la dieta a la que ese menú corresponde. La misma comprobación aplica al rol de jefe de nutrición (R6-22 y §0), que no es una entidad: se valida contra el `Nutricionista` que lo ejerce.

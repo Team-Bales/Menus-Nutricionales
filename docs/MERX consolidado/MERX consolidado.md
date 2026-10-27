@@ -1,7 +1,8 @@
 # MERX consolidado — Decisiones y convenciones de la integración
 
 > **Documento histórico de los issues #5–#12.** Para las decisiones vigentes
-> sobre validación, fechas y cardinalidades prevalece [`docs/informe.md`](../informe.md).
+> sobre validación, fechas, cardinalidades y la representación del jefe de
+> nutrición (`EsJefe`) prevalece [`docs/informe.md`](../informe.md).
 
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #9

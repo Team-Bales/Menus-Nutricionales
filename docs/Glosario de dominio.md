@@ -23,8 +23,8 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 | **Restricción alimentaria** | Criterio al que se adapta el menú; cada dieta lleva una lista de restricciones. | Nomenclador |
 | **Programa de atención** | Programa institucional al que corresponde cada dieta. | Nomenclador |
 | **Especialidad** | Área de formación del nutricionista; el enunciado la enumera junto al identificador y el nombre como dato propio de cada nutricionista. | Nomenclador |
-| **Nutricionista** | Profesional que ingresa alimentos/platos al banco, los clasifica y nivela, crea menús, los valida y ejecuta revalorizaciones. Almacena id, nombre, especialidad y dietas autorizadas. | Entidad + actor |
-| **Jefe de nutrición** | Responsable de revisar y aprobar el menú generado; puede ordenar la confección de otro bajo sus criterios. | Rol de Nutricionista |
+| **Nutricionista** | Profesional que ingresa alimentos/platos al banco, los clasifica y nivela, crea menús, los valida y ejecuta revalorizaciones. Almacena id, nombre, especialidad, si es jefe de nutrición (`EsJefe`) y dietas autorizadas. | Entidad + actor |
+| **Jefe de nutrición** | Responsable de revisar y aprobar el menú generado; puede ordenar la confección de otro bajo sus criterios. | Rol de Nutricionista (`EsJefe`) |
 | **Revisor** | Jefe de nutrición al validar un menú (F3, con fecha y observaciones); debe estar autorizado para la dieta. | Rol |
 | **Administrador del sistema** | Encargado de evitar alimentos duplicados e impedir la asignación doble de un menú a pacientes. | Actor (rol de sistema, fuera del MERX) |
 | **Paciente** | Destinatario de los menús: accede a sus menús, consulta valoraciones, solicita revalorizaciones. Almacena id, nombre, edad y sala. | Entidad + actor |
@@ -164,7 +164,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 |---|---|---|---|
 | A1 | **Nutricionista** | Ingresa/clasifica/nivela alimentos y platos; crea menús; valida; ejecuta revalorización | **Entidad** E5 (se registran sus datos) |
 | A2 | **Paciente** | Accede a menús asignados; consulta valoraciones; solicita revalorización | **Entidad** E6 |
-| A3 | **Jefe de nutrición** | Revisa y aprueba menús; ordena confección de otros | Rol de Nutricionista, sin datos propios |
+| A3 | **Jefe de nutrición** | Revisa y aprueba menús; ordena confección de otros | Nutricionista con `EsJefe = verdadero`; sin entidad propia |
 | A4 | **Administrador del sistema** | Evita duplicados de alimentos; impide asignación doble | No es dato de dominio, es un rol de mantenimiento de la aplicación |
 | A5 | **Revisor** (F3) | Valida menús con fecha y observaciones | Rol asociado a la relación `Valida` (coincide con A3) |
 
@@ -216,7 +216,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Tema | Decisión | Por qué |
 |---|---|---|
 | Plato | Entidad separada de Alimento, relacionada por `Compone(Plato, Alimento, Cantidad)` | El enunciado trata "alimentos y platos" como dos catálogos paralelos (líneas 23-24, 29) |
-| Jefe de nutrición | Rol de Nutricionista, sin entidad ni atributos propios | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Aprobado, Observaciones)`; no tiene estado propio en el enunciado |
+| Jefe de nutrición | Cargo de un Nutricionista, representado por el atributo obligatorio `EsJefe` (falso por defecto); sin entidad propia (informe, §2.1) | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Aprobado, Observaciones)`; no tiene estado propio en el enunciado |
 | Administrador del sistema | Fuera del MERX | Es mantenimiento de la aplicación (evitar duplicados, asignación doble); no se consulta como dato en ninguna funcionalidad |
 | "Plan de alimentación / tratamiento" | Sin entidad propia | Es sinónimo del ciclo de la dieta (líneas 27-28, 42-43) |
 | Estado del menú | Sin atributo `Estado` en Menú | Un menú se considera final/aprobado si existe un registro en `Valida`; no hace falta duplicar el dato |

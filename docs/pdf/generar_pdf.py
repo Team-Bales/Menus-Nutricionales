@@ -5,7 +5,8 @@ Uso, desde la raíz del repo:
 
 Requiere pandoc 3 y LuaLaTeX (MiKTeX o TeX Live) con fontspec, titlesec, needspace, caption, setspace,
 etoolbox y xcolor. Prefiere Times New Roman y Consolas cuando están instaladas; en Linux usa
-Liberation Serif, DejaVu Sans Mono y Latin Modern Math.
+Liberation Serif, DejaVu Sans Mono y Latin Modern Math. Los símbolos de la §5 salen de Latin Modern Math
+y DejaVu Sans también en Windows: allí hay que tener DejaVu Sans instalada.
 Los integrantes de la portada salen del bloque PORTADA de informe.md; el título y las asignaturas están en
 portada.tex, y el estilo, en estilo.tex.
 """

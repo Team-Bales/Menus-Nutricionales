@@ -4,7 +4,8 @@ Uso, desde la raíz del repo:
     python docs/pdf/generar_pdf.py
 
 Requiere pandoc 3 y LuaLaTeX (MiKTeX o TeX Live) con fontspec, titlesec, needspace, caption, setspace,
-etoolbox y xcolor. Usa las fuentes Times New Roman, Consolas, Cambria Math y Segoe UI Symbol, que trae Windows.
+etoolbox y xcolor. Prefiere Times New Roman y Consolas cuando están instaladas; en Linux usa
+Liberation Serif, DejaVu Sans Mono y Latin Modern Math.
 Los integrantes de la portada salen del bloque PORTADA de informe.md; el título y las asignaturas están en
 portada.tex, y el estilo, en estilo.tex.
 """

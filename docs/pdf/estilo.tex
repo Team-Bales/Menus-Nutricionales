@@ -1,9 +1,14 @@
 % Estilo del PDF del informe: el mismo aspecto que el entregado el 07/10 (serif, A4, índice con puntos).
 \usepackage{fontspec}
-% Times New Roman no tiene varios símbolos de la §5 (↠, ∌, ᵢ, ⁺, ⊆…): se toman de Cambria Math o Segoe UI Symbol.
-\directlua{luaotfload.add_fallback("simbolos", {"Cambria Math:mode=harf;", "Segoe UI Symbol:mode=harf;"})}
-\setmainfont{Times New Roman}[RawFeature={fallback=simbolos}]
-\setmonofont{Consolas}[Scale=0.9, RawFeature={fallback=simbolos}]
+% Los símbolos de la §5 (↠, ∌, ᵢ, ⁺, ⊆…) se toman de fuentes matemáticas disponibles en TeX Live.
+\directlua{luaotfload.add_fallback("simbolos", {"Latin Modern Math:mode=harf;", "DejaVu Sans:mode=harf;"})}
+% Mantener las fuentes de la exportación original en Windows; usar equivalentes libres en Linux.
+\IfFontExistsTF{Times New Roman}
+  {\setmainfont{Times New Roman}[RawFeature={fallback=simbolos}]}
+  {\setmainfont{Liberation Serif}[RawFeature={fallback=simbolos}]}
+\IfFontExistsTF{Consolas}
+  {\setmonofont{Consolas}[Scale=0.9, RawFeature={fallback=simbolos}]}
+  {\setmonofont{DejaVu Sans Mono}[Scale=0.9, RawFeature={fallback=simbolos}]}
 \usepackage{xcolor}
 \definecolor{azul}{HTML}{1F3864}
 \definecolor{azulclaro}{HTML}{2E5597}

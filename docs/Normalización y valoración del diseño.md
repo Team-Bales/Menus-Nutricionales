@@ -380,7 +380,7 @@ Observaciones:
 | Unidad de `Cantidad` en `Composición` | Abierta: el enunciado no la fija y R5-12 necesita un sentido inequívoco | #5, §6 |
 | Escala de `Proporción` en `Distribución` | Abierta: fracción en (0, 1] o porcentaje; afecta a R7-16 y R7-28 | #7, §6 |
 | Precisión de `Edad` en `Paciente` | Abierta: entero en años, meses o fecha de nacimiento | #6, §6 |
-| Correspondencia entre restricciones de una dieta y alérgenos | Pendiente: los alérgenos viven en la ficha nutricional, fuera del modelo relacional | #8, #6, §5 |
+| Correspondencia entre restricciones de una dieta y alérgenos | Resuelta: se registra en la configuración de la aplicación, porque los alérgenos viven en la ficha nutricional, fuera del modelo relacional; el sistema advierte sin bloquear (informe, §4.5) | #8, #6, §5 |
 | Atributos descriptivos propios de `ProgramaDeAtención`, `RestricciónAlimentaria` y `Especialidad` | Abierta: cualquier atributo adicional debe declararse antes de usarse en el diagrama | #6, §6 |
 | Si solo pueden asignarse menús finales (aprobados) | Abierta: ni el enunciado ni las consultas lo exigen; sería una restricción semántica más | #7, §6 |
 | Opción B para `Revalorización` (eliminar `PacienteId`) | No adoptada; exigiría actualizar el MERX consolidado (#9) y el submodelo #7 | §2.3 |

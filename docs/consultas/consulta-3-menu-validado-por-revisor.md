@@ -13,6 +13,10 @@ de modelado (#2).
 
 # Consulta 3. Menús validados por revisor
 
+> **Documento preliminar.** La decisión vigente de [`docs/informe.md`](../informe.md), §2.1,
+> exige que el revisor sea el jefe de nutrición autorizado para la dieta.
+> La consulta que sigue conserva hipótesis anteriores para trazabilidad.
+
 | | |
 |---|---|
 | **Issue** | #18 (sub-issue de #4) |
@@ -95,7 +99,7 @@ Nutricionista (Revisor: id, nombre)
 | # | Ambigüedad | Lecturas posibles | Recomendación | Issue destino |
 |---|---|---|---|---|
 | A | Cardinalidad de la validación: ¿Atributos en `Menu` o entidad propia `ValidacionMenu`? | (a) Columnas directas en `Menu` (`revisor_id`, `fechaValidacion`, `observaciones`, `estado`).<br>(b) Entidad separada `ValidacionMenu` / `RevisionMenu` (historial 1:N). | **Resuelta: (b) Entidad histórica recomendada; (a) admisible si solo se conserva la última revisión.** Las líneas 40–41 indican que el revisor puede rechazar/«indicar la confección de otro bajo sus criterios», lo que implica que un menú puede pasar por más de una iteración o revisión antes de ser servido. Modelar una entidad `ValidacionMenu` garantiza histórico completo sin pérdida de datos. Decisión estructural: #7. | #7 |
-| B | ¿Quién puede ser revisor? | (a) Cualquier nutricionista autorizado para la dieta.<br>(b) Exclusivamente un usuario con rol «jefe de nutrición». | **Resuelta: (a) respaldada por regla funcional.** La línea 40 menciona que «el jefe de nutrición es quien revisa y aprueba», pero las líneas 43–44 establecen que de cada nutricionista se almacenan «las dietas para las cuales está autorizado a generar **o validar** menús». Por tanto, todo revisor es un nutricionista con habilitación explícita para validar esa dieta en el sistema. | #5, #6 |
+| B | ¿Quién puede ser revisor? | (a) Cualquier nutricionista autorizado para la dieta.<br>(b) Exclusivamente un usuario con rol «jefe de nutrición». | **Decisión final: (b) junto con autorización para la dieta.** La orientación asigna expresamente la revisión y aprobación al jefe; el registro de dietas autorizadas delimita dónde puede actuar, pero no le confiere ese rol a otro nutricionista. Véase el informe, §2.1. | #5, #6 |
 | C | Alcance del término «validados» | (a) Solo los menús que resultaron **aprobados**.<br>(b) Todos los menús que fueron objeto de un proceso de validación (aprobados o rechazados/observados). | **Resuelta: (b).** En ingeniería de software y auditoría clínica, las «observaciones hechas durante el proceso» cobran valor precisamente ante rechazos o ajustes requeridos. La consulta debe listar todos los eventos de validación completados por el revisor, reflejando el dictamen final. | Producto / UX |
 
 ## 8. Criterio de validación contra el modelo (insumo para #10)

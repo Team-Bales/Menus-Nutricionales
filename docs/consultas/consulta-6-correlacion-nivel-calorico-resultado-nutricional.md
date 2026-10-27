@@ -13,6 +13,12 @@ de modelado (#2).
 
 # Consulta 6. Correlación nivel calórico / resultado nutricional
 
+> **Documento preliminar.** Las decisiones consolidadas están en
+> [`docs/informe.md`](../informe.md), §2.2 (Consulta 6), y prevalecen sobre
+> las hipótesis de esta nota. En particular, el informe exige el coeficiente
+> de Spearman, usa fechas propias de servicio y valoración, y fija una
+> observación por menú valorado para evitar contar repetidamente sus ítems.
+
 | | |
 |---|---|
 | **Issue** | #21 (sub-issue de #4) |

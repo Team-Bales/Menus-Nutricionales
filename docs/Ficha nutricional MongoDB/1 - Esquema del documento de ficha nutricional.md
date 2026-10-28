@@ -205,4 +205,4 @@ db.fichas_nutricionales.createIndex({ "origen.tabla": 1, "origen.id": 1 }, { uni
 - Regla R8-04.
 - El campo `nombre` en cada elemento de `ingredientes` es una copia de lectura no validada: su ausencia no impide guardar la ficha. Se recomienda incluirlo para que la ficha sea legible sin consultar PostgreSQL.
 
-La correspondencia entre restricciones alimentarias y alérgenos (qué alérgenos excluye cada restricción) no forma parte del modelo relacional y queda pendiente de decisión; es condición previa para que la verificación por alérgeno de la capa de aplicación sea fiable (documento 2, §5).
+La correspondencia entre restricciones alimentarias y alérgenos (qué alérgenos excluye cada restricción) no forma parte del modelo relacional: por decisión de diseño se registra en la configuración de la aplicación, y ante un alérgeno excluido o una ficha incompleta el sistema advierte sin bloquear (documento 2, §5; informe, §4.5).

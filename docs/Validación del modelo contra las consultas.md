@@ -1,5 +1,11 @@
 # Validación del modelo contra las 6 consultas informacionales
 
+> **Documento histórico del issue #10.** Desde entonces cambiaron, entre otras
+> cosas, el dictamen (cada menú recibe a lo sumo uno, con clave `MenúId`), el
+> revisor (debe ser jefe de nutrición, `Nutricionista.EsJefe`) y el estado del
+> menú, que se deriva de ese único dictamen. Las consultas y el modelo vigentes
+> están en [`docs/informe.md`](informe.md), §2.2, §4 y §5.
+
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #10
 **Submodelos revisados:** #5 (Alimento-Plato), #6 (Dieta-Nutricionista-Paciente-Sala), #7 (Menú-Valoración-Consumo)
@@ -58,7 +64,7 @@ Un criterio se considera **satisfecho** (✅) cuando el modelo expone el dato de
 | § | Criterio | Satisfecho por | Evidencia |
 |---|---|---|---|
 | §8-1 | Desde `Dieta` se llega a **todos** sus menús. | FK `DietaId NOT NULL` en `Menú` (mismo que C1) | Submodelo #7, R7-08 |
-| §8-2 | El modelo distingue o permite derivar qué menús están **finales/aprobados**. | Estado derivado: última `Validación` con `Aprobado = true` ordenada por `FechaValidación DESC`. No se almacena atributo de estado; es intencional para no duplicar información. | Submodelo #7, §4; `Validación.Aprobado` (R7-17) |
+| §8-2 | El modelo distingue o permite derivar qué menús están **finales/aprobados**. | Estado derivado: última `Validación` con `Aprobado = true` ordenada por `FechaValidación DESC`. No se almacena atributo de estado; es intencional para no duplicar información. *Superado: el estado se deriva del único dictamen del menú (informe, §2.1).* | Submodelo #7, §4; `Validación.Aprobado` (R7-17) |
 | §8-3 | Desde cada menú se recuperan sus **alimentos**, directamente o descomponiendo platos. | `Incluye(Menú, Alimento)` directo + `Incluye(Menú, Plato)` → `Compone(Plato, Alimento)` | Submodelos #5 (R5-05), #7 (R7-09) |
 | §8-4 | Cada aparición de un alimento en un menú es identificable. | PK `(MenúId, AlimentoId)` en `Incluye`; un alimento llega una sola vez sin importar la vía (R7-06 y R7-07) | Submodelo #7, R7-07 |
 | §8-5 | Cada alimento expone su **nivel calórico** y su **grupo nutricional**. | `Tiene(Alimento, NivelCalórico)` y `Pertenece(Alimento, GrupoNutricional)` — obligatorias `(1,1)` | Submodelo #5, R5-13 |
@@ -82,7 +88,7 @@ Un criterio se considera **satisfecho** (✅) cuando el modelo expone el dato de
 | §8-3 | Existe un campo textual para registrar las `observaciones` de la revisión. | `Validación.Observaciones: TEXT` (opcional, puede ser NULL) | Submodelo #7, R7-20 |
 | §8-4 | El modelo contempla el resultado del proceso de validación. | `Validación.Aprobado: BOOLEAN NOT NULL` | Submodelo #7, R7-17 |
 | §8-5 | Desde la validación se navega hacia `Menu`, su `Dieta` y el `Nutricionista` creador. | `Validación → MenúId → Menú → DietaId → Dieta`; `Menú → NutricionistaId (Crea) → Nutricionista` | Submodelos #7 (R7-08, R7-21), #6 |
-| §8-6 | La relación `Nutricionista`–`Dieta` soporta la restricción de autorización para validar. | `Autoriza(Nutricionista, Dieta)` — relación N:M que registra qué nutricionistas están autorizados en cada dieta | Submodelo #6, §0 |
+| §8-6 | La relación `Nutricionista`–`Dieta` soporta la restricción de autorización para validar. | `Autoriza(Nutricionista, Dieta)` — relación N:M que registra qué nutricionistas están autorizados en cada dieta. *Superado: validar exige además `Nutricionista.EsJefe = verdadero` (informe, RS-03).* | Submodelo #6, §0 |
 
 **Veredicto:** ✅ Todos los criterios satisfechos.
 

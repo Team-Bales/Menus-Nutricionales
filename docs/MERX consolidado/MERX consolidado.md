@@ -1,12 +1,16 @@
 # MERX consolidado — Decisiones y convenciones de la integración
 
+> **Documento histórico de los issues #5–#12.** Para las decisiones vigentes
+> sobre validación, fechas, cardinalidades y la representación del jefe de
+> nutrición (`EsJefe`) prevalece [`docs/informe.md`](../informe.md).
+
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #9
 **Diagrama:** `MERX consolidado.drawio` (misma carpeta), en doce páginas A4 verticales con la organización de los submodelos: Página-Entidades-1 a Página-Entidades-3 y Página-Relaciones-1 a Página-Relaciones-9 (§0.4).
 
 **Alcance de este documento:** integra los submodelos de los issues #5 (Alimento-Plato), #6 (Dieta-Nutricionista-Paciente-Sala) y #7 (Menú-Valoración-Consumo) en un MERX único, resuelve las relaciones que cruzan fronteras entre ellos, unifica nombres y notación, y deja constancia de las decisiones propias de la consolidación. Recoge los submodelos tal como están en `main`, incluidos los cambios que la validación de las consultas (issue #10) y la ficha nutricional (issue #8) introdujeron en el #6: la agregación `Cobertura`, con el atributo `Tipo`, y la relación `Excluye`. Es insumo de la especificación consolidada de restricciones (issue #11), de la valoración del diseño (issue #12) y del §4 del informe. La §7 registra en qué se aparta de él la implementación y por qué.
 
-Cuando el glosario del dominio o el documento de un submodelo difiera de lo establecido aquí, prevalece este documento, que es posterior.
+Para las decisiones de esta etapa, este documento prevalecía sobre el glosario y los submodelos; las decisiones posteriores del informe prevalecen ahora sobre él.
 
 ---
 
@@ -219,7 +223,7 @@ Decisiones de las consultas formalizadas que el MERX recoge. La verificación co
 |---|---|---|
 | 1 | Discriminador de menú automático (§7-A); parámetros de generación almacenados e inmutables (§7-B y §7-D); creador y revisor distintos (§7-C) | `EsAutomático`; `CantidadTotalAlimentos`, `Distribución` y `Cubre(GrupoNutricional, Menú)`; `Crea` y `Validación` |
 | 2 | Menús finales derivables (§7-A); platos descompuestos en alimentos (§7-B); cada aparición de un alimento en un menú es identificable (§8) | La validación más reciente con `Aprobado`; `Compone`; las ocurrencias de `Incluye` |
-| 3 | Validación histórica (§7-A) por cualquier nutricionista autorizado (§7-B), con su dictamen (§7-C) | `Validación` con `FechaValidación`, `Observaciones` y `Aprobado`; `Autoriza` |
+| 3 | Decisión histórica: validación por nutricionista autorizado. La versión final exige jefe de nutrición autorizado y un dictamen por menú (§2.1 del informe). | `Validación` con `FechaValidación`, `Observaciones` y `Aprobado`; `Autoriza` |
 | 4 | Consumo por (paciente, menú, alimento) con estado de aceptación (§7-A); valoración anclada al menú recibido (§7-C); asignación única por par, sin fechas (§7-D) | `Consumo` con `Aceptación`; `Evalúa(Asignación, Valoración)`; `Asignación` |
 | 5 | Criterios de equilibrio en dos niveles (§7-A); grupos obligatorios y prohibidos de la dieta, computables (§7-C) | `Cobertura` con `Tipo`, `Restringe` y `Excluye` (D9-1); parámetros del menú |
 | 6 | Dieta del alimento a través del menú (§7-B); el resultado de una revalorización es una nueva valoración (§7-D y §7-E); sin ventanas temporales (§7-F); escala del resultado (§7-G) | `Consume` → `Asignación` → `Menú` → `Dieta`; `Revalora` y `Genera`; ancla en `Menú.FechaCreación`; `ResultadoNutricional` |

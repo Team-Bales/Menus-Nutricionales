@@ -1,5 +1,8 @@
 # Especificación de restricciones de integridad
 
+> **Documento histórico del issue #11.** La especificación vigente y sus
+> cambios posteriores están en [`docs/informe.md`](informe.md), §4.
+
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #11
 **Fuentes:** submodelos #5, #6 y #7 (`docs/Submodelos Relacionales del MERX/`), MERX consolidado (`docs/MERX consolidado/`, issue #9) y ficha nutricional (`docs/Ficha nutricional MongoDB/`, issue #8).
@@ -202,7 +205,7 @@ Las condiciones siguientes se admiten en el modelo y por eso no se restringen. P
 | No hay fechas en la asignación, el consumo ni la valoración: el ancla temporal de esos hechos es `Menú.FechaCreación`. | submodelo #7, §4 |
 | Una asignación puede no tener consumos ni valoraciones: `(0,*)` del lado de `Alimento` en `Consume` y de `Valoración` en `Evalúa`. | submodelo #7, §4 |
 | El consumo no registra cantidades: solo la aceptación por alimento. | submodelo #7, §4 |
-| El jefe de nutrición no es una subclase de `Nutricionista`: cualquier nutricionista autorizado para la dieta puede validar. | submodelo #7, §4 |
+| El jefe de nutrición no es una subclase de `Nutricionista`; la decisión final exige que solo el jefe autorizado para la dieta valide (informe, §2.1). | submodelo #7, §4 |
 | Un menú puede contener alimentos de grupos excluidos por su dieta. | MERX consolidado #9, §4 |
 | `Excluye` no sustituye a la ficha nutricional. | MERX consolidado #9, §4 |
 

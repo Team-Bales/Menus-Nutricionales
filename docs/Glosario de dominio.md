@@ -23,9 +23,9 @@ Términos del enunciado con su definición consensuada en el dominio de la diet�
 | **Restricción alimentaria** | Criterio al que se adapta el menú; cada dieta lleva una lista de restricciones. | Nomenclador |
 | **Programa de atención** | Programa institucional al que corresponde cada dieta. | Nomenclador |
 | **Especialidad** | Área de formación del nutricionista; el enunciado la enumera junto al identificador y el nombre como dato propio de cada nutricionista. | Nomenclador |
-| **Nutricionista** | Profesional que ingresa alimentos/platos al banco, los clasifica y nivela, crea menús, los valida y ejecuta revalorizaciones. Almacena id, nombre, especialidad y dietas autorizadas. | Entidad + actor |
-| **Jefe de nutrición** | Responsable de revisar y aprobar el menú generado; puede ordenar la confección de otro bajo sus criterios. | Rol de Nutricionista |
-| **Revisor** | Quien valida un menú (F3, con fecha y observaciones); asimilable al jefe/nutricionista validador. | Rol |
+| **Nutricionista** | Profesional que ingresa alimentos/platos al banco, los clasifica y nivela, crea menús, los valida y ejecuta revalorizaciones. Almacena id, nombre, especialidad, si es jefe de nutrición (`EsJefe`) y dietas autorizadas. | Entidad + actor |
+| **Jefe de nutrición** | Responsable de revisar y aprobar el menú generado; puede ordenar la confección de otro bajo sus criterios. | Rol de Nutricionista (`EsJefe`) |
+| **Revisor** | Jefe de nutrición al validar un menú (F3, con fecha y observaciones); debe estar autorizado para la dieta. | Rol |
 | **Administrador del sistema** | Encargado de evitar alimentos duplicados e impedir la asignación doble de un menú a pacientes. | Actor (rol de sistema, fuera del MERX) |
 | **Paciente** | Destinatario de los menús: accede a sus menús, consulta valoraciones, solicita revalorizaciones. Almacena id, nombre, edad y sala. | Entidad + actor |
 | **Sala** | Unidad de hospitalización a la que pertenece el paciente; se usa como agregado en reportes (promedio por sala). | Entidad |
@@ -120,7 +120,7 @@ Leyenda: **[E]** entidad fuerte · **[Agregación]** agregación · **[N]** nome
 |---|---|---|---|
 | F1 | "listado de menús generados automáticamente para una dieta específica, indicando el nombre del creador, la fecha de creación y los parámetros utilizados" | 68-69 | **[R]** Crea · **[At]** Menú(FechaCreación, Parámetros) · confirma que Menú se asocia a una Dieta específica |
 | F2 | "los alimentos más utilizados en los **menús finales** de una dieta, clasificados por nivel calórico y grupo nutricional" | 70-71 | **[Der]** ranking de alimentos · nomencladores confirmados · la expresión **"menús finales"** sugiere que no todo menú generado llega a ese estado (se deriva de `Valida`, sin atributo `Estado` propio en Menú) |
-| F3 | "los menús que fueron validados por un revisor determinado, indicando la fecha de validación y las observaciones hechas durante el proceso" | 72-73 | **[R]** Valida **con atributos propios: FechaValidación, Aprobado, Observaciones** · **[A/rol]** revisor (≈ jefe/nutricionista validador) |
+| F3 | "los menús que fueron validados por un revisor determinado, indicando la fecha de validación y las observaciones hechas durante el proceso" | 72-73 | **[R]** Valida **con atributos propios: FechaValidación, Aprobado, Observaciones** · **[A/rol]** revisor (jefe de nutrición al dictaminar) |
 | F4 | "desempeño nutricional de los pacientes ante un menú, clasificando los alimentos por nivel calórico y comparando las tasas de aceptación" | 74-75 | **[At]** Consumo.Aceptación · **[Der]** tasa de aceptación |
 | F5 | "comparar los menús generados para diferentes dietas … si los criterios de equilibrio fueron cumplidos" | 76-77 | **[Der]** verificación de parámetros de generación vs. composición real del menú |
 | F6 | "correlación entre el nivel calórico … los 10 alimentos con la tasa de rechazo más alta, el nutricionista que los creó y la dieta a la que pertenecen" | 78-80 | **[R]** Describe (Nutricionista → Alimento) confirmada como consultable · **[Der]** correlaciones · pertenencia de un alimento a una dieta, siempre indirecta (vía Menú) |
@@ -164,7 +164,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 |---|---|---|---|
 | A1 | **Nutricionista** | Ingresa/clasifica/nivela alimentos y platos; crea menús; valida; ejecuta revalorización | **Entidad** E5 (se registran sus datos) |
 | A2 | **Paciente** | Accede a menús asignados; consulta valoraciones; solicita revalorización | **Entidad** E6 |
-| A3 | **Jefe de nutrición** | Revisa y aprueba menús; ordena confección de otros | Rol de Nutricionista, sin datos propios |
+| A3 | **Jefe de nutrición** | Revisa y aprueba menús; ordena confección de otros | Nutricionista con `EsJefe = verdadero`; sin entidad propia |
 | A4 | **Administrador del sistema** | Evita duplicados de alimentos; impide asignación doble | No es dato de dominio, es un rol de mantenimiento de la aplicación |
 | A5 | **Revisor** (F3) | Valida menús con fecha y observaciones | Rol asociado a la relación `Valida` (coincide con A3) |
 
@@ -216,7 +216,7 @@ Resultado del barrido: todo candidato del enunciado cae en una de las cuatro lis
 | Tema | Decisión | Por qué |
 |---|---|---|
 | Plato | Entidad separada de Alimento, relacionada por `Compone(Plato, Alimento, Cantidad)` | El enunciado trata "alimentos y platos" como dos catálogos paralelos (líneas 23-24, 29) |
-| Jefe de nutrición | Rol de Nutricionista, sin entidad ni atributos propios | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Aprobado, Observaciones)`; no tiene estado propio en el enunciado |
+| Jefe de nutrición | Cargo de un Nutricionista, representado por el atributo obligatorio `EsJefe` (falso por defecto); sin entidad propia (informe, §2.1) | La aprobación ya vive en `Valida(Nutricionista, Menú; FechaValidación, Aprobado, Observaciones)`; no tiene estado propio en el enunciado |
 | Administrador del sistema | Fuera del MERX | Es mantenimiento de la aplicación (evitar duplicados, asignación doble); no se consulta como dato en ninguna funcionalidad |
 | "Plan de alimentación / tratamiento" | Sin entidad propia | Es sinónimo del ciclo de la dieta (líneas 27-28, 42-43) |
 | Estado del menú | Sin atributo `Estado` en Menú | Un menú se considera final/aprobado si existe un registro en `Valida`; no hace falta duplicar el dato |

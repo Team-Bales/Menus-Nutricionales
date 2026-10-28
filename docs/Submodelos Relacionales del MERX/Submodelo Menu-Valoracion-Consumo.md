@@ -1,5 +1,8 @@
 # Submodelo Menú-Valoración-Consumo — Restricciones locales
 
+> **Documento histórico.** Las decisiones vigentes sobre el revisor, el dictamen
+> único y las fechas están en [`docs/informe.md`](../informe.md), §2.1 y §4.
+
 **Asignatura:** Bases de Datos II / Ingeniería de Software — Curso 2026-2027
 **Issue:** #7
 **Diagrama:** `Submodelo Menu-Valoracion-Consumo.drawio` (misma carpeta): Entidades, Relaciones-1, Relaciones-2, Relaciones-3 y Relaciones-4.
@@ -111,7 +114,7 @@ Cada restricción cita la línea del enunciado o la sección de la consulta form
 - **No hay fechas en la asignación, el consumo ni la valoración.** El ancla temporal de estos hechos es `Menú.FechaCreación` (consulta 4, §7-D; consulta 6, §7-F). Dentro de una misma asignación, el orden entre una valoración y la que la revaloriza se deduce de la cadena `Revalora`–`Genera`: la generada es posterior a la revisada. Así se sostiene la serie de «valoraciones más recientes» (línea 58).
 - **Una asignación puede no tener consumos ni valoraciones:** `(0,*)` del lado de `Alimento` en `Consume` y de `Valoración` en `Evalúa`. Un paciente asignado sin consumo registrado queda fuera del denominador de la tasa de aceptación (consulta 4, §7-B).
 - **El consumo no registra cantidades**, solo la aceptación por alimento (consulta 2, §7-D; consulta 4, §7-A).
-- **El jefe de nutrición no es una subclase de `Nutricionista`.** Cualquier nutricionista autorizado para la dieta puede validar (consulta 3, §7-B).
+- **El jefe de nutrición no es una subclase de `Nutricionista`.** La decisión final exige que solo el jefe autorizado para la dieta valide (informe, §2.1); la conclusión de la consulta 3, §7-B, quedó superada.
 
 ---
 

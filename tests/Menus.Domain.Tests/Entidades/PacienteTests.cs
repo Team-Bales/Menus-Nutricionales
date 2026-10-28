@@ -96,4 +96,41 @@ public sealed class PacienteTests
         Assert.IsAssignableFrom<IReadOnlyCollection<PacienteDieta>>(collection);
         Assert.NotSame(paciente.Dietas, collection);
     }
+
+    [Fact]
+    public void TrasladarASala_SalaDistinta_ActualizaSalaId()
+    {
+        // §4.5 del informe: el traslado actualiza la fila del paciente, sin historial.
+        var paciente = new Paciente(Guid.NewGuid(), "Pedro Gómez", 50, _salaId);
+        var nuevaSalaId = Guid.NewGuid();
+
+        paciente.TrasladarASala(nuevaSalaId);
+
+        Assert.Equal(nuevaSalaId, paciente.SalaId);
+    }
+
+    [Fact]
+    public void TrasladarASala_NoAfectaElRestoDelEstado()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Lucía Fernández", 40, _salaId);
+        paciente.InscribirDieta(Guid.NewGuid());
+        var nuevaSalaId = Guid.NewGuid();
+
+        paciente.TrasladarASala(nuevaSalaId);
+
+        Assert.Equal("Lucía Fernández", paciente.Nombre);
+        Assert.Equal(40, paciente.Edad);
+        Assert.Single(paciente.Dietas);
+    }
+
+    [Fact]
+    public void TrasladarASala_MismaSala_NoLanzaYMantieneSalaId()
+    {
+        // No se exige que la sala cambie: el traslado es idempotente, no hay historial que proteger.
+        var paciente = new Paciente(Guid.NewGuid(), "Jorge Ibáñez", 33, _salaId);
+
+        paciente.TrasladarASala(_salaId);
+
+        Assert.Equal(_salaId, paciente.SalaId);
+    }
 }

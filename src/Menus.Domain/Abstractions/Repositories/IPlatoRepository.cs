@@ -8,7 +8,7 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// </summary>
 /// <remarks>
 /// Que el nombre no esté repetido se comprueba con <see cref="IItemAlimentarioRepository.ExisteNombreAsync"/>,
-/// porque abarca también a los alimentos (R5-16, extendida a los platos por decisión del equipo: submodelo #5;
+/// porque abarca también a los alimentos (RC-01, extendida a los platos por decisión del equipo: submodelo #5;
 /// con la generalización <see cref="ItemAlimentario"/>, los dos comparten un mismo espacio de nombres).
 /// </remarks>
 public interface IPlatoRepository : IRepository<Plato, Guid>

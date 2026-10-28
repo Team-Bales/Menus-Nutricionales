@@ -4,7 +4,7 @@ namespace Menus.Domain.Nomenclators;
 
 /// <summary>
 /// Clasificación del aporte calórico de un alimento o plato.
-/// Catálogo cerrado: exactamente tres categorías con identificadores fijos (R5).
+/// Catálogo cerrado: exactamente tres categorías con identificadores fijos (RD-02).
 /// </summary>
 public sealed class NivelCalorico : Entity<Guid>
 {
@@ -23,7 +23,7 @@ public sealed class NivelCalorico : Entity<Guid>
 
     public string Nombre { get; }
 
-    /// <summary>Indica si el identificador corresponde a uno de los niveles calóricos del catálogo (R5-09).</summary>
+    /// <summary>Indica si el identificador corresponde a uno de los niveles calóricos del catálogo (RD-02).</summary>
     /// <param name="id">Identificador que se quiere comprobar.</param>
     /// <returns><see langword="true"/> si es el de <see cref="Bajo"/>, <see cref="Medio"/> o <see cref="Alto"/>.</returns>
     public static bool Existe(Guid id) => Todos.Any(n => n.Id == id);

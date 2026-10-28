@@ -16,7 +16,7 @@ public interface IRevalorizacionRepository : IRepository<Revalorizacion, Guid>
 {
     /// <summary>
     /// Devuelve las revalorizaciones que solicitó un paciente: las que revisan alguna de sus valoraciones. El
-    /// solicitante no se guarda; se deduce de la valoración revisada (R7-29).
+    /// solicitante no se guarda; se deduce de la valoración revisada (RS-09).
     /// </summary>
     /// <param name="pacienteId">Identificador del paciente solicitante.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
@@ -24,7 +24,7 @@ public interface IRevalorizacionRepository : IRepository<Revalorizacion, Guid>
 
     /// <summary>
     /// Devuelve las revalorizaciones pendientes de un nutricionista: las que debe ejecutar y todavía
-    /// no tienen valoración generada (<see cref="Revalorizacion.ValoracionGeneradaId"/> nulo, R7-24).
+    /// no tienen valoración generada (<see cref="Revalorizacion.ValoracionGeneradaId"/> nulo, RK-11).
     /// </summary>
     /// <param name="nutricionistaId">Identificador del nutricionista que ejecuta la revalorización.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

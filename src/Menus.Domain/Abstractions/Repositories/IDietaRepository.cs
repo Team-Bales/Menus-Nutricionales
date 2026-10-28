@@ -11,7 +11,7 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
     /// <summary>
     /// Devuelve una dieta con sus grupos nutricionales (<see cref="Dieta.GruposNutricionales"/>, con su
     /// tipo de cobertura) y sus restricciones (<see cref="Dieta.Restricciones"/>) cargados. Es la que se
-    /// usa para modificarlas, porque la regla de no repetir un grupo o una restricción (R6-05) se
+    /// usa para modificarlas, porque la regla de no repetir un grupo o una restricción (RC-08) se
     /// comprueba sobre esas colecciones.
     /// </summary>
     /// <param name="id">Identificador de la dieta.</param>

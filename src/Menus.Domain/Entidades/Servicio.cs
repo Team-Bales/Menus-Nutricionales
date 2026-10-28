@@ -16,7 +16,7 @@ namespace Menus.Domain.Entidades;
 /// </para>
 /// <para>
 /// <b>Por qué es una entidad débil de la asignación.</b> Un servicio no existe sin la asignación que lo
-/// autoriza, y la asignación sigue siendo única por menú y paciente (R7-05: no se asigna dos veces); lo que se
+/// autoriza, y la asignación sigue siendo única por menú y paciente (RC-13: no se asigna dos veces); lo que se
 /// repite es el servicio. Su identidad es la de la asignación más la fecha.
 /// </para>
 /// <para>
@@ -28,7 +28,7 @@ namespace Menus.Domain.Entidades;
 /// corresponde a una sola comida del día, la clave sumaría el turno.
 /// </para>
 /// <para>
-/// <b>Lo que deliberadamente no se restringe.</b> Que el paciente esté inscrito en la dieta del menú (R6-23) se
+/// <b>Lo que deliberadamente no se restringe.</b> Que el paciente esté inscrito en la dieta del menú (RS-04) se
 /// comprueba al asignar, no en cada servicio. Si después deja la dieta, la asignación queda como historial, y
 /// seguir sirviéndole ese menú o no es una decisión clínica que corresponde a la capa de aplicación.
 /// </para>

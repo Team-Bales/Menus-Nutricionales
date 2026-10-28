@@ -12,14 +12,14 @@ namespace Menus.Domain.Entidades;
 /// <b>Por qué el ítem y no el alimento.</b> Antes solo se registraba el consumo de alimentos, y un plato se
 /// registraba alimento por alimento: no había forma de decir que el paciente rechazó el plato entero, y el
 /// profesor lo señaló (feedback del 19/10). Con la generalización <see cref="ItemAlimentario"/>, se consume lo
-/// que el menú incluye: un alimento o un plato (R11-01).
+/// que el menú incluye: un alimento o un plato (RX-01).
 /// </para>
 /// <para>
 /// <b>Por qué cuelga del servicio.</b> Así el mismo ítem puede registrarse en cada servicio del menú, una vez por
 /// servicio (ver <see cref="Servicio"/>).
 /// </para>
 /// <para>
-/// <b>R11-01 es declarativa.</b> Que el ítem consumido esté en el menú es la dependencia de inclusión
+/// <b>RX-01 es declarativa.</b> Que el ítem consumido esté en el menú es la dependencia de inclusión
 /// consumo[menú, ítem] ⊆ incluye[menú, ítem], así que la base la garantiza con una FK compuesta hacia
 /// <see cref="MenuItem"/>, que además impide quitar del menú un ítem que ya tiene consumos. Antes hacía falta un
 /// trigger, porque había que buscar el alimento también dentro de los platos incluidos. El dominio la comprueba

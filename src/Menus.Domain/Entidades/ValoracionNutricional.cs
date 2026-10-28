@@ -16,7 +16,7 @@ namespace Menus.Domain.Entidades;
 /// </para>
 /// <para>
 /// <b>Lo que deliberadamente no se restringe.</b> <see cref="FechaValoracion"/> no se compara con la aprobación
-/// del menú ni con sus servicios. La valoración evalúa una asignación, que ya exige un menú aprobado (R7-34); su
+/// del menú ni con sus servicios. La valoración evalúa una asignación, que ya exige un menú aprobado (RS-16); su
 /// fecha la fija quien la emite, puede registrarse después del hecho, y solo se usa para ordenar las valoraciones
 /// (decisión del 19/10).
 /// </para>
@@ -31,7 +31,7 @@ public sealed class ValoracionNutricional : Entity<Guid>
     /// <param name="fechaValoracion">Fecha y hora en que se emite la valoración (UTC).</param>
     /// <exception cref="ArgumentException">
     /// Si <paramref name="fechaValoracion"/> no está en UTC o si <paramref name="resultadoNutricionalId"/> no es una
-    /// categoría del catálogo (R7-19).
+    /// categoría del catálogo (RR-17).
     /// </exception>
     public ValoracionNutricional(
         Guid id,

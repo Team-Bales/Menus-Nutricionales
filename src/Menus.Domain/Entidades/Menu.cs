@@ -13,29 +13,29 @@ namespace Menus.Domain.Entidades;
 /// <para>
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
-/// cambian después (submodelo #7, R7-27), por eso no hay métodos para modificarlos.
+/// cambian después (submodelo #7, RS-07), por eso no hay métodos para modificarlos.
 /// </para>
 /// <para>
 /// El menú no guarda un estado, se deriva de su validación (submodelo #7, §4): está pendiente mientras no
 /// tiene dictamen (<see cref="EsPendiente"/>), es final cuando fue aprobado (<see cref="EsFinal"/>) y está
 /// rechazado cuando el dictamen lo rechazó (<see cref="EsRechazado"/>). El primer dictamen lo cierra, y los dos se
 /// registran (<see cref="Aprobar"/> y <see cref="Rechazar"/>; decisión del equipo del 24/10, que revierte la del
-/// 16/10 de borrar el menú rechazado). Por eso un menú tiene a lo sumo una validación (R7-32), que después no
-/// cambia (R7-33). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes (R7-34). Un menú
+/// 16/10 de borrar el menú rechazado). Por eso un menú tiene a lo sumo una validación (RC-12, RK-13), que después no
+/// cambia (RS-15). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes (RS-16). Un menú
 /// rechazado no se vuelve a revisar: se confecciona otro, que lo referencia (<see cref="RegistrarComoReemplazo"/>,
 /// relación <c>Origina</c>).
 /// </para>
 /// <para>
 /// Tampoco guarda un único paciente: un menú puede asignarse a varios pacientes, una sola vez a cada uno
-/// (agregación <c>Asignación</c>, R7-05), y servirse a cada uno las veces que haga falta
+/// (agregación <c>Asignación</c>, RC-13), y servirse a cada uno las veces que haga falta
 /// (<see cref="RegistrarServicio"/>). El servicio y el consumo se registran por la raíz, y no por la asignación,
-/// porque sus reglas dependen del menú: solo se sirve después de la aprobación (R7-31) y solo se consume lo que el
-/// menú incluye (R11-01).
+/// porque sus reglas dependen del menú: solo se sirve después de la aprobación (RS-14) y solo se consume lo que el
+/// menú incluye (RX-01).
 /// </para>
 /// <para>
-/// Que el paciente esté inscrito en la dieta del menú (R6-23) lo verifica la capa de aplicación, porque la
+/// Que el paciente esté inscrito en la dieta del menú (RS-04) lo verifica la capa de aplicación, porque la
 /// inscripción pertenece al agregado del paciente; lo mismo ocurre con que el nutricionista creador esté
-/// autorizado en esa dieta (R6-22).
+/// autorizado en esa dieta (RS-03).
 /// </para>
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
@@ -46,7 +46,7 @@ public sealed class Menu : AggregateRoot<Guid>
     private readonly List<Asignacion> _asignaciones = [];
 
     /// <summary>
-    /// Diferencia máxima admitida entre la suma de las proporciones y 1 (R7-28).
+    /// Diferencia máxima admitida entre la suma de las proporciones y 1 (RS-08).
     /// </summary>
     /// <remarks>
     /// La suma no se compara por igualdad exacta por dos motivos: hay fracciones sin representación
@@ -64,14 +64,14 @@ public sealed class Menu : AggregateRoot<Guid>
     /// Instante de creación del menú. Debe estar en UTC (<see cref="DateTimeKind.Utc"/>), porque así se
     /// persiste, y no puede ser posterior al instante actual.
     /// </param>
-    /// <param name="cantidadTotalAlimentos">Cantidad total de alimentos del menú (&gt; 0, R7-15).</param>
+    /// <param name="cantidadTotalAlimentos">Cantidad total de alimentos del menú (&gt; 0, RD-10).</param>
     /// <param name="esAutomatico">Indica si el menú fue generado automáticamente (consulta 1, §7-A).</param>
     /// <param name="distribucion">
-    /// Proporción de alimentos por tipo de preparación: al menos una (R7-22), cada una en (0, 1] (R7-16),
-    /// sin tipos repetidos (R7-03) y con suma igual a 1, con la tolerancia
-    /// <see cref="ToleranciaSumaProporciones"/> (R7-28).
+    /// Proporción de alimentos por tipo de preparación: al menos una (RK-09), cada una en (0, 1] (RD-11),
+    /// sin tipos repetidos (RC-11) y con suma igual a 1, con la tolerancia
+    /// <see cref="ToleranciaSumaProporciones"/> (RS-08).
     /// </param>
-    /// <param name="gruposNutricionalesIds">Grupos nutricionales que cubre el menú: al menos uno (R7-22) y sin repetidos (R7-07).</param>
+    /// <param name="gruposNutricionalesIds">Grupos nutricionales que cubre el menú: al menos uno (RK-09) y sin repetidos (RC-15).</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="distribucion"/> o <paramref name="gruposNutricionalesIds"/> es nulo.</exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Si <paramref name="fechaCreacion"/> es futura, si <paramref name="cantidadTotalAlimentos"/> no es positiva
@@ -165,7 +165,7 @@ public sealed class Menu : AggregateRoot<Guid>
 
     /// <summary>
     /// Dictamen del menú (aprobación o rechazo), o <see langword="null"/> si todavía no lo tiene. Es a lo sumo uno
-    /// (R7-32): el primer dictamen cierra el menú.
+    /// (RC-12, RK-13): el primer dictamen cierra el menú.
     /// </summary>
     /// <remarks>
     /// La persistencia la carga siempre junto con el menú (<c>AutoInclude</c>), porque <see cref="EsPendiente"/>,
@@ -193,7 +193,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="itemId">Identificador del alimento o plato.</param>
     /// <returns>La inclusión registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú ya tiene dictamen o si el ítem ya está incluido en el menú (R7-07).
+    /// Si el menú ya tiene dictamen o si el ítem ya está incluido en el menú (RC-15).
     /// </exception>
     public MenuItem AgregarItem(Guid itemId)
     {
@@ -211,7 +211,7 @@ public sealed class Menu : AggregateRoot<Guid>
 
     /// <summary>
     /// Quita un alimento o un plato incluido en el menú. Es parte de la modificación manual que admite un menú
-    /// generado mientras espera revisión; los parámetros de generación no se modifican (R7-27).
+    /// generado mientras espera revisión; los parámetros de generación no se modifican (RS-07).
     /// </summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
     /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el ítem no está incluido.</exception>
@@ -229,8 +229,8 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
     /// <returns>La asignación registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú no es final (solo se asignan menús aprobados, R7-34; un menú pendiente o rechazado no) o si ya
-    /// está asignado a ese paciente (R7-05).
+    /// Si el menú no es final (solo se asignan menús aprobados, RS-16; un menú pendiente o rechazado no) o si ya
+    /// está asignado a ese paciente (RC-13).
     /// </exception>
     public Asignacion AsignarPaciente(Guid pacienteId)
     {
@@ -253,7 +253,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="pacienteId">Identificador del paciente.</param>
     /// <param name="fechaServicio">
     /// Día del servicio, en el calendario UTC. No puede ser futuro, y tampoco anterior al día de la aprobación del
-    /// menú (R7-31).
+    /// menú (RS-14).
     /// </param>
     /// <returns>El servicio registrado.</returns>
     /// <exception cref="InvalidOperationException">
@@ -293,7 +293,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <returns>El consumo registrado.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el menú no está asignado al paciente, si no se le sirvió ese día, si el ítem no está incluido en el menú
-    /// (R11-01) o si ya tiene un consumo registrado en ese servicio.
+    /// (RX-01) o si ya tiene un consumo registrado en ese servicio.
     /// </exception>
     public Consumo RegistrarConsumo(Guid pacienteId, DateOnly fechaServicio, Guid itemId, bool aceptacion)
     {
@@ -316,10 +316,10 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
     /// <returns>La validación registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (R7-25).
+    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (RS-05).
     /// </exception>
     /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (R7-26).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (RS-06).</exception>
     public Validacion Aprobar(Guid nutricionistaId, DateTime fechaValidacion, string? observaciones = null)
     {
         ComprobarDictamen(nutricionistaId, fechaValidacion);
@@ -341,10 +341,10 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </param>
     /// <returns>La validación registrada, con <see cref="Validacion.Aprobado"/> en <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (R7-25).
+    /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (RS-05).
     /// </exception>
     /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (R7-26).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (RS-06).</exception>
     public Validacion Rechazar(Guid nutricionistaId, DateTime fechaRechazo, string? observaciones = null)
     {
         ComprobarDictamen(nutricionistaId, fechaRechazo);
@@ -360,14 +360,14 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </summary>
     /// <remarks>
     /// El menú de reemplazo se crea como cualquier otro, generado o manual, con sus parámetros; el vínculo se registra
-    /// mientras espera revisión. Que una validación rechazada origine a lo sumo un menú (R7-38) no lo puede comprobar
+    /// mientras espera revisión. Que una validación rechazada origine a lo sumo un menú (RK-15) no lo puede comprobar
     /// el agregado, porque abarca a otros menús: lo garantiza la base con una clave única.
     /// </remarks>
     /// <param name="menuRechazado">El menú rechazado al que este reemplaza.</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="menuRechazado"/> es nulo.</exception>
     /// <exception cref="InvalidOperationException">
-    /// Si este menú ya tiene dictamen o ya reemplaza a otro, si se indica a sí mismo (R7-37), si el otro menú no fue
-    /// rechazado (R7-35) o si es de otra dieta (R7-36).
+    /// Si este menú ya tiene dictamen o ya reemplaza a otro, si se indica a sí mismo (RS-19), si el otro menú no fue
+    /// rechazado (RS-17) o si es de otra dieta (RS-18).
     /// </exception>
     public void RegistrarComoReemplazo(Menu menuRechazado)
     {

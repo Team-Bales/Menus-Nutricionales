@@ -12,9 +12,9 @@ public sealed class MenuDistribucion : Entity<(Guid MenuId, Guid TipoPreparacion
 {
     /// <param name="menuId">Identificador del menú.</param>
     /// <param name="tipoPreparacionId">
-    /// FK → TipoPreparacion al que se aplica la proporción: uno de <see cref="TipoPreparacion.Todos"/> (R5-08).
+    /// FK → TipoPreparacion al que se aplica la proporción: uno de <see cref="TipoPreparacion.Todos"/> (RD-01).
     /// </param>
-    /// <param name="proporcion">Proporción como fracción, en el intervalo (0, 1] (R7-16).</param>
+    /// <param name="proporcion">Proporción como fracción, en el intervalo (0, 1] (RD-11).</param>
     /// <exception cref="ArgumentException">Si el tipo de preparación no es del catálogo.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="proporcion"/> está fuera de (0, 1].</exception>
     internal MenuDistribucion(Guid menuId, Guid tipoPreparacionId, decimal proporcion)

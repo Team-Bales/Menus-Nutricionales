@@ -9,7 +9,7 @@ namespace Menus.Domain.Entidades;
 /// <remarks>
 /// Los dos extremos son ítems del banco (<see cref="ItemAlimentario"/>), pero con papeles fijos: el compuesto es
 /// un <see cref="Plato"/> y el componente, un <see cref="Alimento"/> simple. Así la composición tiene un solo
-/// nivel (R5-18).
+/// nivel (RS-12).
 /// </remarks>
 public sealed class PlatoIngrediente : Entity<(Guid PlatoId, Guid AlimentoId)>
 {

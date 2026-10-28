@@ -1,7 +1,7 @@
 namespace Menus.Domain.Nomenclators;
 
 /// <summary>
-/// Indica si un grupo nutricional en una dieta es requerido o está restringido (R6-05b, R6-17b).
+/// Indica si un grupo nutricional en una dieta es requerido o está restringido (RC-08, RD-16).
 /// </summary>
 public enum TipoCobertura
 {

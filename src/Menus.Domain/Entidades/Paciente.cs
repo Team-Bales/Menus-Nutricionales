@@ -12,7 +12,7 @@ public sealed class Paciente : Entity<Guid>
 
     /// <param name="id">Identificador único del paciente.</param>
     /// <param name="nombre">Nombre del paciente (no vacío).</param>
-    /// <param name="edad">Edad en años enteros, mayor o igual que cero (R6-14).</param>
+    /// <param name="edad">Edad en años enteros, mayor o igual que cero (RD-06).</param>
     /// <param name="salaId">Sala de hospitalización a la que pertenece.</param>
     /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="edad"/> es negativa.</exception>

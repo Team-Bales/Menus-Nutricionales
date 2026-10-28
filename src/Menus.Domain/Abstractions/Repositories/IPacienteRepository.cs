@@ -9,7 +9,7 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// </summary>
 /// <remarks>
 /// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el paciente con sus dietas inscritas
-/// (<see cref="Paciente.Dietas"/>) cargadas, porque la regla de no repetir una inscripción (R6-04)
+/// (<see cref="Paciente.Dietas"/>) cargadas, porque la regla de no repetir una inscripción (RC-07)
 /// se comprueba sobre esa colección.
 /// </remarks>
 public interface IPacienteRepository : IRepository<Paciente, Guid>

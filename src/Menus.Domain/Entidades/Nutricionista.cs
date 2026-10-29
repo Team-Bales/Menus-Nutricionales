@@ -5,8 +5,14 @@ namespace Menus.Domain.Entidades;
 /// <summary>
 /// Representa a un nutricionista, responsable de describir platos y alimentos,
 /// y de crear o validar menús de las dietas para las que está autorizado
-/// (relación "Autoriza").
+/// (relación "Autoriza"). Validar exige además ocupar el cargo de jefe de nutrición
+/// (<see cref="EsJefe"/>, RS-03).
 /// </summary>
+/// <remarks>
+/// El jefe de nutrición es un cargo, no una especialidad ni una subclase: lo registra
+/// <see cref="EsJefe"/> (RD-18, informe §2.1). Puede haber más de un jefe a la vez, porque
+/// la orientación no fija cuántos, así que el modelo no impone que sea único.
+/// </remarks>
 public sealed class Nutricionista : Entity<Guid>
 {
     private readonly List<NutricionistasDieta> _dietasAutorizadas = [];
@@ -27,6 +33,15 @@ public sealed class Nutricionista : Entity<Guid>
 
     /// <summary>FK → Especialidad.</summary>
     public Guid EspecialidadId { get; }
+
+    /// <summary>
+    /// Si el nutricionista ocupa el cargo de jefe de nutrición (RD-18). Empieza en falso.
+    /// </summary>
+    /// <remarks>
+    /// Solo un jefe puede registrar dictámenes (RS-03). La base lo comprueba al registrar la
+    /// validación, no después: retirar el cargo no invalida los dictámenes ya registrados.
+    /// </remarks>
+    public bool EsJefe { get; private set; }
 
     /// <summary>
     /// Dietas para las que este nutricionista está autorizado a crear o validar menús (solo lectura).
@@ -50,4 +65,21 @@ public sealed class Nutricionista : Entity<Guid>
         _dietasAutorizadas.Add(autorizacion);
         return autorizacion;
     }
+
+    /// <summary>
+    /// Designa al nutricionista como jefe de nutrición. Si ya lo es, no cambia nada.
+    /// </summary>
+    /// <remarks>
+    /// La designación la gestiona la administración del sistema (RS-03): restringir quién puede
+    /// llamarla corresponde a los permisos de la aplicación, no a la entidad.
+    /// </remarks>
+    public void DesignarJefe() => EsJefe = true;
+
+    /// <summary>
+    /// Retira al nutricionista del cargo de jefe de nutrición. Si no lo era, no cambia nada.
+    /// </summary>
+    /// <remarks>
+    /// Los dictámenes que registró mientras era jefe siguen siendo válidos (RS-03).
+    /// </remarks>
+    public void RetirarJefe() => EsJefe = false;
 }

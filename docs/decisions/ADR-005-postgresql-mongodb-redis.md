@@ -3,6 +3,10 @@
 **Estado:** Aceptado  
 **Fecha:** 2026-10-09
 
+> **Actualización del 2026-10-28.** La decisión no cambia; se ajustan dos detalles al diseño del informe (`docs/informe.md`), que remite a este ADR para justificar los tres motores:
+> - **MongoDB:** con la generalización `ItemAlimentario` (§2.1), hay ficha para alimentos y para platos, no solo para alimentos. `origen.tabla` guarda la clase del ítem (RM-01 a RM-03, §4.3). Las restricciones de la ficha y cómo se mantiene coherente con PostgreSQL (RM-09, RM-10) están en `docs/Ficha nutricional MongoDB/`.
+> - **Redis:** cachea las dos consultas recurrentes, la disponibilidad calórica de una dieta y las valoraciones más recientes de un paciente, con *cache-aside*, invalidación por evento y tiempo de vida como respaldo. Si Redis no responde, la consulta va a PostgreSQL, y se pierde latencia, no corrección (informe, «Consultas recurrentes»).
+
 ## Contexto
 
 El enunciado establece dos requisitos de persistencia que no encajan en un único
@@ -27,7 +31,7 @@ del curso.
 | Motor | Responsabilidad |
 |-------|----------------|
 | **PostgreSQL** | Datos relacionales: entidades del dominio, relaciones N:M, constraints de integridad, las 6 consultas informacionales |
-| **MongoDB** | Ficha nutricional ampliada de cada `Alimento` (atributos variables por documento) |
+| **MongoDB** | Ficha nutricional ampliada de cada ítem alimentario, alimento o plato (atributos variables por documento) |
 | **Redis** | Caché de disponibilidad calórica de dietas y valoraciones recientes |
 
 Cada motor resuelve el problema para el que está optimizado. PostgreSQL mantiene
@@ -44,8 +48,8 @@ sin columnas nulas ni tablas auxiliares. Redis sirve lecturas frecuentes en memo
 
 ## Consecuencias
 
-- ✅ La ficha nutricional puede tener atributos totalmente distintos por alimento sin migraciones
-- ✅ La disponibilidad calórica se sirve desde memoria (Redis), sin tocar PostgreSQL
+- ✅ La ficha nutricional puede tener atributos totalmente distintos por ítem sin migraciones
+- ✅ La disponibilidad calórica y las valoraciones recientes se sirven desde memoria mientras su clave está en Redis; si no está, o si Redis no responde, se calculan en PostgreSQL, que es la única fuente de verdad
 - ✅ Cumple el requisito de tecnologías NoSQL de BD2
 - ⚠️ Tres motores implican tres conexiones, tres contenedores Docker y mayor complejidad operativa
-- ⚠️ Las transacciones no pueden abarcar PostgreSQL y MongoDB simultáneamente — se maneja con consistencia eventual
+- ⚠️ Las transacciones no pueden abarcar PostgreSQL y MongoDB simultáneamente — se maneja con consistencia eventual: la aplicación borra la ficha junto con su ítem (RM-09), y una tarea periódica elimina las fichas huérfanas y reconstruye los nombres copiados (RM-10)

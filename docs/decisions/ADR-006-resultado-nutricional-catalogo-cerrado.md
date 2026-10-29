@@ -3,6 +3,8 @@
 **Estado:** Aceptado  
 **Fecha:** 2026-10-13
 
+> **Nota del 2026-10-28.** Lo que aquí se presenta como excepción al ADR-003 es ahora la regla. El #142 aplicó este mismo patrón a `TipoPreparacion` y `NivelCalorico`, y el [ADR-008](ADR-008-nomencladores-entidades-catalogos-cerrados.md), que reemplaza al ADR-003, lo fija para todos los catálogos cerrados. La decisión sobre `ResultadoNutricional` no cambia. R7-19 es RD-14 en la numeración del informe.
+
 ## Contexto
 
 El ADR-003 fija dos tratamientos para los nomencladores: los catálogos cerrados por el

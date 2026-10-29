@@ -8,10 +8,10 @@ namespace Menus.Domain.Nomenclators;
 /// El <see cref="Valor"/> permite promediar los resultados (consulta 6).
 /// </summary>
 /// <remarks>
-/// A diferencia de los otros catálogos cerrados, que son enums (ADR-003), es una entidad: en el MERX
-/// tiene identificador, nombre y valor propios, y las valoraciones lo referencian por su identificador
-/// (ver ADR-006). El constructor es privado, así que no existen más categorías que estas cinco. Sus
-/// identificadores son fijos para que el seed de la base use los mismos.
+/// Como los otros catálogos cerrados (ADR-008), es una entidad: en el MERX tiene identificador, nombre y
+/// valor propios, y las valoraciones lo referencian por su identificador (ver ADR-006). El constructor es
+/// privado, así que no existen más categorías que estas cinco. Sus identificadores son fijos para que el
+/// seed de la base use los mismos.
 /// </remarks>
 public sealed class ResultadoNutricional : Entity<Guid>
 {

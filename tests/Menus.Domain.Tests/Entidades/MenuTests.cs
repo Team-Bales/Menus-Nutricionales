@@ -417,7 +417,7 @@ public sealed class MenuTests
     [Fact]
     public void RegistrarComoReemplazo_DeUnMenuAprobado_LanzaInvalidOperationException()
     {
-        // R7-35: solo un rechazo origina un menú de reemplazo.
+        // RS-17: solo un rechazo origina un menú de reemplazo.
         var reemplazo = CrearMenu();
 
         Assert.Throws<InvalidOperationException>(() => reemplazo.RegistrarComoReemplazo(CrearMenuFinal()));
@@ -435,7 +435,7 @@ public sealed class MenuTests
     [Fact]
     public void RegistrarComoReemplazo_DeOtraDieta_LanzaInvalidOperationException()
     {
-        // R7-36: el menú de reemplazo es de la misma dieta que el rechazado.
+        // RS-18: el menú de reemplazo es de la misma dieta que el rechazado.
         var rechazado = new Menu(Guid.NewGuid(), Guid.NewGuid(), _nutricionistaId, _ahora.AddDays(-1), 6, true,
             DistribucionValida, [_grupoId1]);
         rechazado.Rechazar(Guid.NewGuid(), _ahora);
@@ -446,7 +446,7 @@ public sealed class MenuTests
     [Fact]
     public void RegistrarComoReemplazo_DeSiMismo_LanzaInvalidOperationException()
     {
-        // R7-37: un menú no es reemplazo de sí mismo.
+        // RS-19: un menú no es reemplazo de sí mismo.
         var menu = CrearMenu();
 
         Assert.Throws<InvalidOperationException>(() => menu.RegistrarComoReemplazo(menu));
@@ -586,7 +586,7 @@ public sealed class MenuTests
     [Fact]
     public void RegistrarServicio_ElDiaDeLaAprobacion_EsValido()
     {
-        // R7-31 compara días: el menú aprobado ayer se puede servir ayer mismo.
+        // RS-14 compara días: el menú aprobado ayer se puede servir ayer mismo.
         var menu = CrearMenuServido(out var pacienteId);
 
         var servicio = menu.RegistrarServicio(pacienteId, Dia(-1));

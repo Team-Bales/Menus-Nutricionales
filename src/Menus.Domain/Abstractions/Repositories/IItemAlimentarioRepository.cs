@@ -10,7 +10,7 @@ public interface IItemAlimentarioRepository : IRepository<ItemAlimentario, Guid>
 {
     /// <summary>
     /// Indica si ya existe un alimento o un plato con ese nombre, sin distinguir mayúsculas ni espacios sobrantes
-    /// (R5-16: no existen alimentos duplicados).
+    /// (RC-01 / RS-01: no existen alimentos duplicados).
     /// </summary>
     /// <remarks>
     /// La comprobación abarca a las dos clases porque alimentos y platos son ítems de una misma generalización

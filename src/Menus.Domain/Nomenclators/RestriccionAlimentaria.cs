@@ -35,10 +35,10 @@ public sealed class RestriccionAlimentaria : Entity<Guid>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional que se excluye.</param>
     /// <returns>La exclusión registrada.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Si la restricción ya excluye ese grupo: el par restricción y grupo identifica cada exclusión (R6-05c).
+    /// Si la restricción ya excluye ese grupo: el par restricción y grupo identifica cada exclusión (RC-16).
     /// </exception>
     /// <remarks>
-    /// Que ninguna dieta exija un grupo que una de sus restricciones excluye (R9-04) se comprueba en la base,
+    /// Que ninguna dieta exija un grupo que una de sus restricciones excluye (RS-11) se comprueba en la base,
     /// porque involucra dietas, que son otro agregado.
     /// </remarks>
     public RestriccionGrupoExcluido ExcluirGrupo(Guid grupoNutricionalId)

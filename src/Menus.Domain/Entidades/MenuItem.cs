@@ -9,7 +9,7 @@ namespace Menus.Domain.Entidades;
 /// <remarks>
 /// Reemplaza a las dos inclusiones paralelas que había (una para alimentos y otra para platos): con la
 /// generalización <see cref="ItemAlimentario"/>, la relación existe una sola vez. Un ítem aparece a lo sumo una
-/// vez en un mismo menú (R7-07). Los consumos la referencian (R11-01), así que no se quita del menú un ítem que
+/// vez en un mismo menú (RC-15). Los consumos la referencian (RX-01), así que no se quita del menú un ítem que
 /// ya tiene consumos registrados.
 /// </remarks>
 public sealed class MenuItem : Entity<(Guid MenuId, Guid ItemId)>

@@ -4,9 +4,9 @@ namespace Menus.Domain.Entidades;
 
 /// <summary>
 /// Asignación de un menú a un paciente (agregación <c>Asignación</c> / relación <c>Asigna</c>).
-/// Un menú puede asignarse a varios pacientes, pero una sola vez a cada uno (R7-05).
+/// Un menú puede asignarse a varios pacientes, pero una sola vez a cada uno (RC-13).
 /// De la asignación dependen los servicios del menú al paciente (con sus consumos) y las valoraciones
-/// (R7-11, R7-12). Solo la crea <see cref="Menu"/>.
+/// (RR-16, RR-17). Solo la crea <see cref="Menu"/>.
 /// </summary>
 /// <remarks>
 /// Sigue siendo una agregación porque participa en otras relaciones: <c>Sirve</c> (identifica a

@@ -9,11 +9,11 @@ namespace Menus.Domain.Entidades;
 /// <remarks>
 /// <para>
 /// <b>Por qué no guarda el paciente solicitante.</b> El solicitante es siempre el paciente de la valoración que se
-/// revisa (R7-29), así que se deduce de ella: valoración revisada → asignación → paciente. Si se guardara, valdría
+/// revisa (RS-09), así que se deduce de ella: valoración revisada → asignación → paciente. Si se guardara, valdría
 /// la dependencia valoración revisada → paciente, y como la valoración revisada no es clave (una valoración puede
 /// revisarse varias veces), sería una dependencia transitiva: la tabla no estaría en 3FN. El #12 (§2.3) la había
 /// dejado así como redundancia controlada; el profesor exige al menos la 3FN (feedback del 19/10), así que se adoptó
-/// la otra opción del #12: quitar el paciente, con lo que la tabla queda en BCNF y R7-29 se cumple por estructura.
+/// la otra opción del #12: quitar el paciente, con lo que la tabla queda en BCNF y RS-09 se cumple por estructura.
 /// </para>
 /// <para>
 /// Que quien solicita sea de verdad el paciente valorado (y no otro usuario) es una comprobación de autorización
@@ -26,7 +26,7 @@ public sealed class Revalorizacion : Entity<Guid>
     /// <param name="fechaSolicitud">Fecha y hora en que se solicita la revalorización.</param>
     /// <param name="nutricionistaId">Identificador del nutricionista que la ejecuta.</param>
     /// <param name="valoracionRevisadaId">
-    /// Identificador de la valoración que se revisa; su paciente es el solicitante (R7-29).
+    /// Identificador de la valoración que se revisa; su paciente es el solicitante (RS-09).
     /// </param>
     public Revalorizacion(
         Guid id,

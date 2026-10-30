@@ -10,7 +10,7 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// <remarks>
 /// <see cref="IRepository{TEntity, TId}.GetByIdAsync"/> devuelve el nutricionista con sus dietas
 /// autorizadas (<see cref="Nutricionista.DietasAutorizadas"/>) cargadas, porque la regla de no repetir
-/// una autorización (R6-03) se comprueba sobre esa colección.
+/// una autorización (RC-06) se comprueba sobre esa colección.
 /// </remarks>
 public interface INutricionistaRepository : IRepository<Nutricionista, Guid>
 {

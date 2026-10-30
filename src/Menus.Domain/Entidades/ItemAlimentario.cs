@@ -22,11 +22,11 @@ namespace Menus.Domain.Entidades;
 /// <b>La especialización es total y disjunta:</b> todo ítem es un alimento o un plato, nunca los dos ni
 /// ninguno. Por eso la clase es abstracta. Las subclases no tienen atributos propios: lo que las distingue
 /// es la relación <c>Compone</c>, que va de un plato a un alimento simple (composición de un solo nivel,
-/// R5-18). Por eso la persistencia usa una sola tabla con discriminador: es la traducción habitual de una
+/// RS-12). Por eso la persistencia usa una sola tabla con discriminador: es la traducción habitual de una
 /// especialización así, y deja declarativas la totalidad y la disyunción.
 /// </para>
 /// <para>
-/// El nombre es único entre todos los ítems, sin distinguir mayúsculas ni espacios sobrantes (R5-16): si un
+/// El nombre es único entre todos los ítems, sin distinguir mayúsculas ni espacios sobrantes (RC-01): si un
 /// plato es un alimento, «no existen alimentos duplicados» abarca a los dos. Lo comprueba
 /// <see cref="Abstractions.Repositories.IItemAlimentarioRepository.ExisteNombreAsync"/> antes de registrar,
 /// y la base lo garantiza con un índice único.
@@ -36,13 +36,13 @@ public abstract class ItemAlimentario : Entity<Guid>
 {
     /// <summary>Valida y asigna los datos comunes a alimentos y platos.</summary>
     /// <param name="id">Identificador único del ítem.</param>
-    /// <param name="nombre">Nombre del ítem (no vacío; único entre alimentos y platos, R5-16).</param>
+    /// <param name="nombre">Nombre del ítem (no vacío; único entre alimentos y platos, RC-01).</param>
     /// <param name="grupoNutricionalId">FK → GrupoNutricional (relación <c>Pertenece</c>).</param>
     /// <param name="tipoPreparacionId">
-    /// FK → TipoPreparacion (relación <c>Corresponde</c>): uno de <see cref="TipoPreparacion.Todos"/> (R5-08).
+    /// FK → TipoPreparacion (relación <c>Corresponde</c>): uno de <see cref="TipoPreparacion.Todos"/> (RD-01).
     /// </param>
     /// <param name="nivelCaloricoId">
-    /// FK → NivelCalorico (relación <c>Tiene</c>): uno de <see cref="NivelCalorico.Todos"/> (R5-09).
+    /// FK → NivelCalorico (relación <c>Tiene</c>): uno de <see cref="NivelCalorico.Todos"/> (RD-02).
     /// </param>
     /// <param name="nutricionistaId">Nutricionista que describió el ítem (relación <c>Describe</c>).</param>
     /// <exception cref="ArgumentException">
@@ -75,7 +75,7 @@ public abstract class ItemAlimentario : Entity<Guid>
         NutricionistaId = nutricionistaId;
     }
 
-    /// <summary>Nombre del ítem (no vacío; único entre alimentos y platos, R5-16).</summary>
+    /// <summary>Nombre del ítem (no vacío; único entre alimentos y platos, RC-01).</summary>
     public string Nombre { get; }
 
     /// <summary>FK → GrupoNutricional (relación <c>Pertenece</c>).</summary>

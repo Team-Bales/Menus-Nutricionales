@@ -4,7 +4,7 @@ namespace Menus.Domain.Nomenclators;
 
 /// <summary>
 /// Clasificación del tipo de preparación de un alimento o plato dentro de un menú.
-/// Catálogo cerrado: exactamente cuatro categorías con identificadores fijos (R4).
+/// Catálogo cerrado: exactamente cuatro categorías con identificadores fijos (RD-01).
 /// </summary>
 public sealed class TipoPreparacion : Entity<Guid>
 {
@@ -27,7 +27,7 @@ public sealed class TipoPreparacion : Entity<Guid>
 
     public string Nombre { get; }
 
-    /// <summary>Indica si el identificador corresponde a uno de los tipos de preparación del catálogo (R5-08).</summary>
+    /// <summary>Indica si el identificador corresponde a uno de los tipos de preparación del catálogo (RD-01).</summary>
     /// <param name="id">Identificador que se quiere comprobar.</param>
     /// <returns><see langword="true"/> si es el de <see cref="Entrante"/>, <see cref="PlatoFuerte"/>, <see cref="Postre"/> o <see cref="Bebida"/>.</returns>
     public static bool Existe(Guid id) => Todos.Any(t => t.Id == id);

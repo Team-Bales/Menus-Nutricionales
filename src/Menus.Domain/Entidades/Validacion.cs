@@ -9,7 +9,7 @@ namespace Menus.Domain.Entidades;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Un menú tiene a lo sumo un dictamen (R7-32), y por eso su identidad es el menú.</b> El primer dictamen
+/// <b>Un menú tiene a lo sumo un dictamen (RC-12, RK-13), y por eso su identidad es el menú.</b> El primer dictamen
 /// cierra el menú: si es una aprobación, el menú pasa a ser final; si es un rechazo, el menú queda rechazado y,
 /// cuando el jefe indica confeccionar otro, el nuevo menú lo referencia (relación <c>Origina</c>,
 /// <see cref="Menu.RegistrarComoReemplazo"/>). Un menú rechazado no se vuelve a revisar: se confecciona otro. Con
@@ -29,7 +29,7 @@ namespace Menus.Domain.Entidades;
 /// dos dictámenes registrados, toma los dos valores y depende de la clave, como cualquier otro atributo.
 /// </para>
 /// <para>
-/// <b>No se modifica ni se borra (R7-33).</b> No tiene métodos para cambiarla, y la base rechaza el UPDATE y el
+/// <b>No se modifica ni se borra (RS-15).</b> No tiene métodos para cambiarla, y la base rechaza el UPDATE y el
 /// DELETE: si se pudiera borrar o cambiar, un menú ya asignado o servido volvería a estar pendiente, y un menú de
 /// reemplazo quedaría colgado de una aprobación.
 /// </para>
@@ -60,7 +60,7 @@ public sealed class Validacion : Entity<Guid>
         Observaciones = observaciones;
     }
 
-    /// <summary>FK → Menú dictaminado, que es también la clave (R7-32).</summary>
+    /// <summary>FK → Menú dictaminado, que es también la clave (RC-12, RK-13).</summary>
     public Guid MenuId => Id;
 
     /// <summary>FK → Nutricionista revisor.</summary>
@@ -71,7 +71,7 @@ public sealed class Validacion : Entity<Guid>
 
     /// <summary>
     /// Indica si el dictamen aprobó el menú (<see langword="true"/>) o lo rechazó (<see langword="false"/>). Es
-    /// obligatorio (R7-17).
+    /// obligatorio (RD-12).
     /// </summary>
     public bool Aprobado { get; }
 

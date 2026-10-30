@@ -7,7 +7,7 @@ namespace Menus.Domain.Abstractions.Repositories;
 /// consultas que necesita la gestión de valoraciones por nutricionistas y pacientes (issues #86 y #88).
 /// </summary>
 /// <remarks>
-/// La valoración no guarda la dieta: evalúa una asignación (relación <c>Evalúa</c>, R7-12), y la dieta
+/// La valoración no guarda la dieta: evalúa una asignación (relación <c>Evalúa</c>, RR-17), y la dieta
 /// es la del menú de esa asignación. Los filtros por dieta se resuelven a través de ese menú.
 /// </remarks>
 public interface IValoracionRepository : IRepository<ValoracionNutricional, Guid>

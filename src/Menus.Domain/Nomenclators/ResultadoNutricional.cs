@@ -4,7 +4,7 @@ namespace Menus.Domain.Nomenclators;
 
 /// <summary>
 /// Resultado de una valoración nutricional. Es un catálogo cerrado de exactamente cinco categorías,
-/// de <see cref="MuyMala"/> (1) a <see cref="Excelente"/> (5), con nombre y valor únicos (RR-17).
+/// de <see cref="MuyMala"/> (1) a <see cref="Excelente"/> (5), con nombre y valor únicos (RD-14).
 /// El <see cref="Valor"/> permite promediar los resultados (consulta 6).
 /// </summary>
 /// <remarks>
@@ -53,7 +53,7 @@ public sealed class ResultadoNutricional : Entity<Guid>
         Todos.SingleOrDefault(r => r.Valor == valor)
         ?? throw new ArgumentOutOfRangeException(nameof(valor), "El resultado nutricional debe tener un valor entre 1 y 5.");
 
-    /// <summary>Indica si el identificador corresponde a una de las cinco categorías del catálogo (RR-17).</summary>
+    /// <summary>Indica si el identificador corresponde a una de las cinco categorías del catálogo (RD-14); toda valoración referencia una de ellas (RR-17).</summary>
     /// <param name="id">Identificador que se quiere comprobar.</param>
     /// <returns><see langword="true"/> si es el de una de las categorías de <see cref="Todos"/>.</returns>
     public static bool Existe(Guid id) => Todos.Any(r => r.Id == id);

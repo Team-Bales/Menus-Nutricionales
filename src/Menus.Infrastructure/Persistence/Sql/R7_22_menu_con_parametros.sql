@@ -1,6 +1,6 @@
--- R7-22: todo menú tiene al menos una proporción por tipo de preparación y al menos un grupo nutricional
+-- RK-09: todo menú tiene al menos una proporción por tipo de preparación y al menos un grupo nutricional
 -- cubierto. Cardinalidad mínima, comprobada al confirmar la transacción. El #11, §7, indica que sigue el
--- mismo patrón que R5-15.
+-- mismo patrón que RK-03.
 CREATE FUNCTION fn_r7_22() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE m uuid;
 BEGIN
@@ -8,7 +8,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM menus WHERE id = m)
        AND (NOT EXISTS (SELECT 1 FROM menu_distribucion WHERE menu_id = m)
             OR NOT EXISTS (SELECT 1 FROM menu_grupo_nutricional WHERE menu_id = m)) THEN
-        RAISE EXCEPTION 'R7-22: el menú % no tiene distribución por tipo de preparación o grupos cubiertos', m;
+         RAISE EXCEPTION 'RK-09: el menú % no tiene distribución por tipo de preparación o grupos cubiertos', m;
     END IF;
     RETURN NULL;
 END $$;

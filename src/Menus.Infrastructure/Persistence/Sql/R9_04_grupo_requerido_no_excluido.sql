@@ -1,4 +1,4 @@
--- R9-04: un grupo que la dieta exige cubrir (Tipo = Requerido) no puede estar excluido por una de sus
+-- RS-11: un grupo que la dieta exige cubrir (Tipo = Requerido) no puede estar excluido por una de sus
 -- restricciones (Restringe seguido de Excluye). Adaptado del #11, §7, a los nombres de la base, con una
 -- corrección: solo cuenta Tipo = 'Requerido'. Un grupo Restringido que además está excluido repite la
 -- prohibición sin contradecirla (MERX, D9-1), y el SQL original lo rechazaba.
@@ -9,7 +9,7 @@ BEGIN
                JOIN excluye e ON e.restriccion_alimentaria_id = r.restriccion_alimentaria_id
                              AND e.grupo_nutricional_id = cd.grupo_nutricional_id
                WHERE cd.tipo = 'Requerido') THEN
-        RAISE EXCEPTION 'R9-04: una dieta exige cubrir un grupo que una de sus restricciones excluye';
+         RAISE EXCEPTION 'RS-11: una dieta exige cubrir un grupo que una de sus restricciones excluye';
     END IF;
     RETURN NULL;
 END $$;

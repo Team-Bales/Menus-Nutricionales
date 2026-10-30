@@ -36,7 +36,7 @@ public sealed class Paciente : Entity<Guid>
     public int Edad { get; }
 
     /// <summary>FK → Sala de hospitalización a la que pertenece.</summary>
-    public Guid SalaId { get; }
+    public Guid SalaId { get; private set; }
 
     /// <summary>
     /// Dietas en las que el paciente está inscrito (solo lectura).
@@ -59,5 +59,15 @@ public sealed class Paciente : Entity<Guid>
         var inscripcion = new PacienteDieta(Id, dietaId);
         _dietas.Add(inscripcion);
         return inscripcion;
+    }
+
+    /// <summary>
+    /// Traslada al paciente a otra sala de hospitalización. Actualiza la fila del paciente, sin dejar
+    /// historial del traslado (§4.5 del informe): la sala anterior no se registra en ningún lado.
+    /// </summary>
+    /// <param name="salaId">Identificador de la nueva sala de hospitalización.</param>
+    public void TrasladarASala(Guid salaId)
+    {
+        SalaId = salaId;
     }
 }

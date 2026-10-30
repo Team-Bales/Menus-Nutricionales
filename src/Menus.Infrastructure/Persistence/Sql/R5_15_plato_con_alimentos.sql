@@ -1,4 +1,4 @@
--- R5-15: todo plato se compone de al menos un alimento. Cardinalidad mínima, comprobada al confirmar
+-- RK-03: todo plato se compone de al menos un alimento. Cardinalidad mínima, comprobada al confirmar
 -- la transacción, porque el plato se inserta antes que su composición. Adaptado del #11, §7.
 -- Los platos son los ítems de clase 'Plato' (generalización ItemAlimentario, una sola tabla).
 CREATE FUNCTION fn_r5_15() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -8,7 +8,7 @@ BEGIN
     IF TG_TABLE_NAME = 'items_alimentarios' THEN p := NEW.id; ELSE p := OLD.plato_id; END IF;
     IF EXISTS (SELECT 1 FROM items_alimentarios WHERE id = p AND clase = 'Plato')
        AND NOT EXISTS (SELECT 1 FROM composicion WHERE plato_id = p) THEN
-        RAISE EXCEPTION 'R5-15: el plato % no tiene ningún alimento', p;
+         RAISE EXCEPTION 'RK-03: el plato % no tiene ningún alimento', p;
     END IF;
     RETURN NULL;
 END $$;

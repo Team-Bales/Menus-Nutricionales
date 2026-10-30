@@ -9,7 +9,7 @@ internal sealed class DietaConfiguration : IEntityTypeConfiguration<Dieta>
 {
     public void Configure(EntityTypeBuilder<Dieta> builder)
     {
-        // R6-15: nombre no vacío
+        // RD-07: nombre no vacío
         builder.ToTable("dietas", t =>
         {
             t.HasCheckConstraint("ck_dietas_r6_15_nombre", "btrim(nombre) <> ''");
@@ -30,7 +30,7 @@ internal sealed class DietaConfiguration : IEntityTypeConfiguration<Dieta>
             .HasForeignKey(d => d.ProgramaAtencionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Cascade: Dieta → CubreDieta y Restringe (R11-02)
+        // Cascade: Dieta → CubreDieta y Restringe (RX-02)
         builder.HasMany(d => d.GruposNutricionales)
             .WithOne()
             .HasForeignKey(dg => dg.DietaId)

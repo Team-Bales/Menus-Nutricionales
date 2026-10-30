@@ -8,7 +8,7 @@ internal sealed class RevalorizacionConfiguration : IEntityTypeConfiguration<Rev
 {
     public void Configure(EntityTypeBuilder<Revalorizacion> builder)
     {
-        // Sin el paciente solicitante: se deduce de la valoración revisada (R7-29), y guardarlo dejaba la tabla
+        // Sin el paciente solicitante: se deduce de la valoración revisada (RS-09), y guardarlo dejaba la tabla
         // fuera de la 3FN por una dependencia transitiva (#12, §2.3; revisión del 19/10).
         builder.ToTable("revalorizaciones");
 
@@ -35,7 +35,7 @@ internal sealed class RevalorizacionConfiguration : IEntityTypeConfiguration<Rev
             .HasForeignKey(r => r.ValoracionRevisadaId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Genera: (0,1) en los dos lados, así que la FK es única y admite nulos (R7-24)
+        // Genera: (0,1) en los dos lados, así que la FK es única y admite nulos (RK-11)
         builder.HasOne<ValoracionNutricional>()
             .WithOne()
             .HasForeignKey<Revalorizacion>(r => r.ValoracionGeneradaId)

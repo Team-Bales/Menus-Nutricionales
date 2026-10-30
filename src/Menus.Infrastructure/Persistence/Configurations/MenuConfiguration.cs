@@ -8,7 +8,7 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
 {
     public void Configure(EntityTypeBuilder<Menu> builder)
     {
-        // R7-15: cantidad total de alimentos estrictamente positiva. R7-37: un menú no es reemplazo de sí mismo.
+        // RD-10: cantidad total de alimentos estrictamente positiva. RS-19: un menú no es reemplazo de sí mismo.
         builder.ToTable("menus", t =>
         {
             t.HasCheckConstraint("ck_menus_r7_15_cantidad_total_alimentos", "cantidad_total_alimentos > 0");
@@ -45,7 +45,7 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(m => m.NutricionistaCreadorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Cascade solo a la parametrización del menú: Incluye, Distribución y Cubre (R11-02)
+        // Cascade solo a la parametrización del menú: Incluye, Distribución y Cubre (RX-02)
         builder.HasMany(m => m.Items)
             .WithOne()
             .HasForeignKey(mi => mi.MenuId)
@@ -61,13 +61,14 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
             .HasForeignKey(mg => mg.MenuId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Restrict: no se elimina un menú asignado o validado (R7-14, R11-02)
+        // Restrict: no se elimina un menú asignado o validado (RR-19, RX-02)
         builder.HasMany(m => m.Asignaciones)
             .WithOne()
             .HasForeignKey(a => a.MenuId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Un menú tiene a lo sumo una validación (R7-32): la relación es 1 a 0..1 y la FK es la clave de Validacion
+        // Un menú tiene a lo sumo una validación (RC-12 y RK-13): la relación es 1 a 0..1 y la FK es la clave
+        // de Validacion
         builder.HasOne(m => m.Validacion)
             .WithOne()
             .HasForeignKey<Validacion>(v => v.MenuId)
@@ -78,9 +79,9 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
         builder.Navigation(m => m.Validacion).AutoInclude();
 
         // Origina (#155, P1-5): la validación rechazada origina a lo sumo un menú de reemplazo, y un menú reemplaza
-        // a lo sumo una validación, (0,1) en los dos lados (R7-38). Por eso la FK está en el menú, admite nulos y
-        // es única. RESTRICT, como todas las FK que no van del dueño a sus propias filas (R11-02). Que el origen sea
-        // un rechazo y de la misma dieta (R7-35 y R7-36) lo comprueba
+        // a lo sumo una validación, (0,1) en los dos lados (RK-15). Por eso la FK está en el menú, admite nulos y
+        // es única. RESTRICT, como todas las FK que no van del dueño a sus propias filas (RX-02). Que el origen sea
+        // un rechazo y de la misma dieta (RS-17 y RS-18) lo comprueba
         // Persistence/Sql/R7_35_R7_36_menu_de_reemplazo.sql.
         builder.Property(m => m.ValidacionOrigenId).HasColumnName("validacion_origen_id");
 

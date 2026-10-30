@@ -29,7 +29,7 @@ internal sealed class ConsumoConfiguration : IEntityTypeConfiguration<Consumo>
 
         // FK compuesta → Servicio se configura desde ServicioConfiguration (colección Consumos)
 
-        // R11-01: solo se consume lo que el menú incluye. Es la dependencia de inclusión consumo[menú, ítem] ⊆
+        // RX-01: solo se consume lo que el menú incluye. Es la dependencia de inclusión consumo[menú, ítem] ⊆
         // menu_item[menú, ítem], así que va como FK compuesta (RESTRICT): tampoco se puede quitar del menú un ítem
         // que ya tiene consumos. La FK hacia el ítem queda implicada, porque menu_item.item_id ya la tiene.
         builder.HasOne<MenuItem>()

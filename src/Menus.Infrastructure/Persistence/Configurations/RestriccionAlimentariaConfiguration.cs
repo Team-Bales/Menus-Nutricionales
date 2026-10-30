@@ -8,7 +8,7 @@ internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfigura
 {
     public void Configure(EntityTypeBuilder<RestriccionAlimentaria> builder)
     {
-        // R6-15: nombre no vacío
+        // RD-07: nombre no vacío
         builder.ToTable("restricciones_alimentarias", t =>
         {
             t.HasCheckConstraint("ck_restricciones_alimentarias_r6_15_nombre", "btrim(nombre) <> ''");
@@ -24,7 +24,7 @@ internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfigura
 
         builder.HasIndex(r => r.Nombre).IsUnique();
 
-        // Excluye: Restrict, no se elimina una restricción mientras excluya algún grupo (R6-08b)
+        // Excluye: Restrict, no se elimina una restricción mientras excluya algún grupo (RR-21)
         builder.HasMany(r => r.GruposExcluidos)
             .WithOne()
             .HasForeignKey(e => e.RestriccionAlimentariaId)

@@ -8,7 +8,7 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
 {
     public void Configure(EntityTypeBuilder<MenuItem> builder)
     {
-        // Incluye(Menú, ItemAlimentario): una sola relación para alimentos y platos (R7-07: sin repetidos)
+        // Incluye(Menú, ItemAlimentario): una sola relación para alimentos y platos (RC-15: sin repetidos)
         builder.ToTable("menu_item");
 
         builder.HasKey(mi => new { mi.MenuId, mi.ItemId });

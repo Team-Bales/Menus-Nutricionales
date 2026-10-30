@@ -25,6 +25,13 @@ internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutr
 
         builder.Property(n => n.EspecialidadId).HasColumnName("especialidad_id");
 
+        // RD-18: booleano obligatorio, falso por defecto. Que el revisor sea jefe (RS-03) lo comprueba
+        // Persistence/Sql/RS_03_revisor_jefe.sql al registrar el dictamen.
+        builder.Property(n => n.EsJefe)
+            .HasColumnName("es_jefe")
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasOne<Especialidad>()
             .WithMany()
             .HasForeignKey(n => n.EspecialidadId)

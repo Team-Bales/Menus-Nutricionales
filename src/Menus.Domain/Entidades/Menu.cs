@@ -37,6 +37,11 @@ namespace Menus.Domain.Entidades;
 /// inscripción pertenece al agregado del paciente; lo mismo ocurre con que el nutricionista creador esté
 /// autorizado en esa dieta (RS-03).
 /// </para>
+/// <para>
+/// Por la misma razón, que el revisor de un dictamen sea jefe de nutrición y esté autorizado para la dieta
+/// (RS-03) lo verifica la capa de aplicación: el cargo y las autorizaciones pertenecen al agregado del
+/// nutricionista. La base lo garantiza igual al registrar la validación.
+/// </para>
 /// </remarks>
 public sealed class Menu : AggregateRoot<Guid>
 {

@@ -19,6 +19,7 @@ public sealed class NutricionistaTests
         Assert.Equal("Dra. Pérez", nutricionista.Nombre);
         Assert.Equal(_especialidadId, nutricionista.EspecialidadId);
         Assert.Empty(nutricionista.DietasAutorizadas);
+        Assert.False(nutricionista.EsJefe); // RD-18: falso por defecto
     }
 
     [Theory]
@@ -72,5 +73,58 @@ public sealed class NutricionistaTests
 
         Assert.IsAssignableFrom<IReadOnlyCollection<NutricionistasDieta>>(collection);
         Assert.NotSame(nutricionista.DietasAutorizadas, collection); // nueva instancia cada acceso (AsReadOnly crea wrapper)
+    }
+
+    [Fact]
+    public void DesignarJefe_NoEraJefe_PasaASerJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+
+        nutricionista.DesignarJefe();
+
+        Assert.True(nutricionista.EsJefe);
+    }
+
+    [Fact]
+    public void DesignarJefe_YaEraJefe_SigueSiendoJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.DesignarJefe();
+
+        nutricionista.DesignarJefe();
+
+        Assert.True(nutricionista.EsJefe);
+    }
+
+    [Fact]
+    public void RetirarJefe_EraJefe_DejaDeSerJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.DesignarJefe();
+
+        nutricionista.RetirarJefe();
+
+        Assert.False(nutricionista.EsJefe);
+    }
+
+    [Fact]
+    public void RetirarJefe_NoEraJefe_SigueSinSerJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+
+        nutricionista.RetirarJefe();
+
+        Assert.False(nutricionista.EsJefe);
+    }
+
+    [Fact]
+    public void DesignarJefe_NoAfectaLasAutorizaciones()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+
+        nutricionista.DesignarJefe();
+
+        Assert.Single(nutricionista.DietasAutorizadas, a => a.DietaId == _dietaId1);
     }
 }

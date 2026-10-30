@@ -309,6 +309,12 @@ namespace Menus.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("EsJefe")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("es_jefe");
+
                     b.Property<Guid>("EspecialidadId")
                         .HasColumnType("uuid")
                         .HasColumnName("especialidad_id");

@@ -13,7 +13,8 @@ namespace Menus.Domain.Entidades;
 /// <para>
 /// Los parámetros de generación (<see cref="CantidadTotalAlimentos"/>, <see cref="EsAutomatico"/>,
 /// <see cref="Distribuciones"/> y <see cref="GruposNutricionales"/>) se fijan al crear el menú y no
-/// cambian después (submodelo #7, RS-07), por eso no hay métodos para modificarlos.
+/// cambian después (submodelo #7, RS-07), por eso no hay métodos para modificarlos. La base también lo
+/// garantiza: rechaza modificar, borrar o agregar parametrización a un menú creado en otra transacción.
 /// </para>
 /// <para>
 /// El menú no guarda un estado, se deriva de su validación (submodelo #7, §4): está pendiente mientras no
@@ -21,7 +22,8 @@ namespace Menus.Domain.Entidades;
 /// rechazado cuando el dictamen lo rechazó (<see cref="EsRechazado"/>). El primer dictamen lo cierra, y los dos se
 /// registran (<see cref="Aprobar"/> y <see cref="Rechazar"/>; decisión del equipo del 24/10, que revierte la del
 /// 16/10 de borrar el menú rechazado). Por eso un menú tiene a lo sumo una validación (RC-12, RK-13), que después no
-/// cambia (RS-15). Solo un menú pendiente se modifica y solo uno final se asigna a pacientes (RS-16). Un menú
+/// cambia (RS-15). Solo un menú pendiente se modifica, y la base rechaza cambiar los ítems de un menú cuyo dictamen
+/// ya está registrado. Solo un menú final se asigna a pacientes (RS-16). Un menú
 /// rechazado no se vuelve a revisar: se confecciona otro, que lo referencia (<see cref="RegistrarComoReemplazo"/>,
 /// relación <c>Origina</c>).
 /// </para>

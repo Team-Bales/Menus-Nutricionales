@@ -7,6 +7,10 @@
 -- Lo aplica la migración AgregarEsJefeANutricionista, que también crea la columna, y no InitialCreate
 -- (RestriccionesNoDeclarativas.ScriptsPosteriores). Es idempotente porque las pruebas que crean la base con
 -- EnsureCreated lo reciben también con ScriptsDeCreacion.
+-- Arranque: la migración deja a todos los nutricionistas existentes con es_jefe = false, así que nadie puede
+-- dictaminar hasta designar al menos un jefe. La designación corresponde a la administración (RS-03), con
+-- Nutricionista.DesignarJefe() desde la aplicación o, mientras no exista ese caso de uso, directamente en la base:
+--     UPDATE nutricionistas SET es_jefe = true WHERE id = '<id del nutricionista>';
 CREATE OR REPLACE FUNCTION fn_rs_03() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM nutricionistas WHERE id = NEW.nutricionista_id AND es_jefe) THEN

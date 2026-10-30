@@ -90,7 +90,7 @@ jobs:
           path: coverage-report/SummaryGithub.md
 
       - name: Subir artefactos de cobertura
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always() && steps.check-coverage.outputs.exists == 'true'
         with:
           name: cobertura-${{ github.run_number }}

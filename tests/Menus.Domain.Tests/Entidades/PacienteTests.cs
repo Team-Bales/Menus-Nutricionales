@@ -32,7 +32,7 @@ public sealed class PacienteTests
     [Fact]
     public void Constructor_EdadCero_SeAcepta()
     {
-        // R6-14: la edad es mayor o igual que cero (un recién nacido tiene 0 años).
+        // RD-06: la edad es mayor o igual que cero (un recién nacido tiene 0 años).
         var paciente = new Paciente(Guid.NewGuid(), "Recién nacido", 0, _salaId);
 
         Assert.Equal(0, paciente.Edad);

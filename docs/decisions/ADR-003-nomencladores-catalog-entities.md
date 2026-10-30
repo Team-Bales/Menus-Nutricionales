@@ -1,7 +1,9 @@
 # ADR-003: Nomencladores como catalog entities con seed data
 
-**Estado:** Aceptado  
+**Estado:** Superado por [ADR-008](ADR-008-nomencladores-entidades-catalogos-cerrados.md)  
 **Fecha:** 2026-10-09
+
+> **Superado el 2026-10-28.** `TipoPreparacion` y `NivelCalorico` ya no son enums: el #142 los convirtió en entidades de catálogo cerrado, con el patrón del ADR-006, para que tengan tabla, FK y `CHECK` como pide el informe (RD-01, RD-02). El ADR-008 fija la regla vigente para los siete nomencladores. Este documento se conserva como registro de la decisión original.
 
 ## Contexto
 

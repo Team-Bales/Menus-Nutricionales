@@ -32,8 +32,9 @@ alternativas consideradas y las consecuencias que implica.
 |---|--------|--------|
 | [001](ADR-001-clean-architecture.md) | Clean Architecture como estructura de capas | Aceptado |
 | [002](ADR-002-entity-aggregateroot-abstractions.md) | Abstracciones base `Entity<TId>` y `AggregateRoot<TId>` | Aceptado |
-| [003](ADR-003-nomencladores-catalog-entities.md) | Nomencladores como catalog entities con seed data | Aceptado |
+| [003](ADR-003-nomencladores-catalog-entities.md) | Nomencladores como catalog entities con seed data | Superado por 008 |
 | [004](ADR-004-repository-unit-of-work.md) | Separación de `IRepository<T>` e `IUnitOfWork` | Aceptado |
 | [005](ADR-005-postgresql-mongodb-redis.md) | Tres motores de persistencia: PostgreSQL, MongoDB y Redis | Aceptado |
 | [006](ADR-006-resultado-nutricional-catalogo-cerrado.md) | `ResultadoNutricional` como entidad de catálogo cerrado | Aceptado |
 | [007](ADR-007-rechazo-registrado-y-origina.md) | El rechazo del menú se registra, y el menú de reemplazo lo referencia (`Origina`) | Aceptado |
+| [008](ADR-008-nomencladores-entidades-catalogos-cerrados.md) | Todos los nomencladores son entidades; los catálogos cerrados, con identificadores fijos | Aceptado |

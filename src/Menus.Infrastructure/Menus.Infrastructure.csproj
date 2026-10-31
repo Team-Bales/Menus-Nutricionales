@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Restricciones del #11 que EF no declara (triggers e índice de R5-16); ver RestriccionesNoDeclarativas -->
+    <!-- Restricciones del #11 que EF no declara (triggers e índice de RC-01); ver RestriccionesNoDeclarativas -->
     <EmbeddedResource Include="Persistence\Sql\*.sql" />
   </ItemGroup>
 

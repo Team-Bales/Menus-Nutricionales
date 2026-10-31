@@ -5,7 +5,7 @@ namespace Menus.Infrastructure.Persistence.Sql;
 
 /// <summary>
 /// Restricciones de integridad del #11 que EF Core no puede declarar en el modelo: los triggers de su §7
-/// y el índice único sobre el nombre normalizado de alimentos y platos (R5-16).
+/// y el índice único sobre el nombre normalizado de alimentos y platos (RC-01, RS-01).
 /// </summary>
 /// <remarks>
 /// Cada restricción vive en un archivo <c>.sql</c> de esta carpeta, incrustado en el ensamblado, para que
@@ -17,6 +17,8 @@ namespace Menus.Infrastructure.Persistence.Sql;
 /// con su propio esquema.
 /// Una base creada con <c>EnsureCreated()</c> no las tiene; para pruebas se puede ejecutar
 /// <see cref="ScriptsDeCreacion"/>.
+///
+/// Los nombres de los archivos, funciones, triggers, constraints e índices conservan la numeración antigua (R5…R9); la equivalencia con la vigente está en <c>docs/Equivalencias de numeración.md</c>. No se renombran: PostgreSQL dispara los triggers de un mismo evento y momento en orden alfabético de su nombre (p. ej., en <c>validacion</c>, <c>trg_rs_03</c> va antes que <c>trg_validacion</c>), y <c>InitialCreate</c> aplica los scripts en el orden alfabético de sus archivos.
 /// </remarks>
 public static class RestriccionesNoDeclarativas
 {

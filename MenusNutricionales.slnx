@@ -10,5 +10,6 @@
     <Project Path="tests/Menus.Application.Tests/Menus.Application.Tests.csproj" />
     <Project Path="tests/Menus.Client.Tests/Menus.Client.Tests.csproj" />
     <Project Path="tests/Menus.Domain.Tests/Menus.Domain.Tests.csproj" />
+    <Project Path="tests/Menus.Infrastructure.Tests/Menus.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

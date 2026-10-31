@@ -36,7 +36,7 @@ public sealed partial class Sembrador(NpgsqlConnection conexion)
     private static readonly Guid NivelMedio = Guid.Parse("66666666-0000-0000-0000-000000000002");
 
     private static int _contadorNombres = 0;
-    private static string NombreUnico(string baseNombre) => $"{baseNombre}_{++_contadorNombres}_{Guid.NewGuid():N[..8]}";
+    private static string NombreUnico(string baseNombre) => $"{baseNombre}_{++_contadorNombres}_{Guid.NewGuid().ToString("N")[..8]}";
 
     /// <summary>
     /// Inserta una sala y devuelve su ID.

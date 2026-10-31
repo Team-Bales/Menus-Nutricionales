@@ -115,4 +115,77 @@ public sealed class DietaTests
 
         Assert.IsAssignableFrom<IReadOnlyCollection<DietaRestriccion>>(dieta.Restricciones);
     }
+
+    [Fact]
+    public void QuitarGrupo_RestringidoConUnRequeridoQueQueda_LoQuita()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
+        var requerido = Guid.NewGuid();
+        var restringido = Guid.NewGuid();
+        dieta.AgregarGrupo(requerido, TipoCobertura.Requerido);
+        dieta.AgregarGrupo(restringido, TipoCobertura.Restringido);
+
+        dieta.QuitarGrupo(restringido);
+
+        var restante = Assert.Single(dieta.GruposNutricionales);
+        Assert.Equal(requerido, restante.GrupoNutricionalId);
+    }
+
+    [Fact]
+    public void QuitarGrupo_RequeridoConOtroRequerido_LoQuita()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
+        var grupo1 = Guid.NewGuid();
+        var grupo2 = Guid.NewGuid();
+        dieta.AgregarGrupo(grupo1, TipoCobertura.Requerido);
+        dieta.AgregarGrupo(grupo2, TipoCobertura.Requerido);
+
+        dieta.QuitarGrupo(grupo1);
+
+        Assert.Single(dieta.GruposNutricionales, g => g.GrupoNutricionalId == grupo2);
+    }
+
+    [Fact]
+    public void QuitarGrupo_UnicoRequerido_LanzaInvalidOperationExceptionYLoConserva()
+    {
+        // RK-07: toda dieta exige cubrir al menos un grupo nutricional; un restringido no cuenta.
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
+        var requerido = Guid.NewGuid();
+        dieta.AgregarGrupo(requerido, TipoCobertura.Requerido);
+        dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Restringido);
+
+        Assert.Throws<InvalidOperationException>(() => dieta.QuitarGrupo(requerido));
+        Assert.Equal(2, dieta.GruposNutricionales.Count);
+    }
+
+    [Fact]
+    public void QuitarGrupo_GrupoQueNoCubre_LanzaInvalidOperationException()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
+        dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
+
+        Assert.Throws<InvalidOperationException>(() => dieta.QuitarGrupo(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void QuitarRestriccion_Existente_LaQuita()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Renal", _programaId);
+        var restriccion = Guid.NewGuid();
+        dieta.AgregarRestriccion(restriccion);
+
+        dieta.QuitarRestriccion(restriccion);
+
+        Assert.Empty(dieta.Restricciones);
+    }
+
+    [Fact]
+    public void QuitarRestriccion_QueNoTiene_LanzaInvalidOperationException()
+    {
+        var dieta = new Dieta(Guid.NewGuid(), "Dieta Renal", _programaId);
+        dieta.AgregarRestriccion(Guid.NewGuid());
+
+        Assert.Throws<InvalidOperationException>(() => dieta.QuitarRestriccion(Guid.NewGuid()));
+        Assert.Single(dieta.Restricciones);
+    }
 }

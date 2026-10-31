@@ -1,4 +1,6 @@
+using Menus.Domain.Abstractions.Repositories;
 using Menus.Infrastructure.Persistence;
+using Menus.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +15,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<MenusDbContext>(opt =>
             opt.UseNpgsql(configuration.GetConnectionString("Default")));
+
+        services.AddScoped<IMenuRepository, MenuRepository>();
 
         return services;
     }

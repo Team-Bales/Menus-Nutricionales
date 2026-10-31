@@ -72,4 +72,27 @@ public sealed class Plato : ItemAlimentario
         _ingredientes.Add(ingrediente);
         return ingrediente;
     }
+
+    /// <summary>Quita un ingrediente de la composición del plato.</summary>
+    /// <remarks>
+    /// No se quita el último: todo plato se compone de al menos un alimento (RK-03), y la base lo comprueba
+    /// igual al confirmar. Si el plato tiene ficha nutricional, el caso de uso la actualiza, porque sus
+    /// ingredientes tienen que coincidir con la composición (RM-06).
+    /// </remarks>
+    /// <param name="alimentoId">Identificador del alimento que se quita.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Si el alimento no está en la composición, o si es el único ingrediente del plato (RK-03).
+    /// </exception>
+    public void QuitarIngrediente(Guid alimentoId)
+    {
+        var ingrediente = _ingredientes.SingleOrDefault(i => i.AlimentoId == alimentoId)
+            ?? throw new InvalidOperationException($"El alimento {alimentoId} no forma parte de la composición de este plato.");
+
+        if (_ingredientes.Count == 1)
+        {
+            throw new InvalidOperationException("Un plato se compone de al menos un alimento (RK-03): no se quita su único ingrediente.");
+        }
+
+        _ingredientes.Remove(ingrediente);
+    }
 }

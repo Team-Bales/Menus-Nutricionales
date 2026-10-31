@@ -127,4 +127,51 @@ public sealed class NutricionistaTests
 
         Assert.Single(nutricionista.DietasAutorizadas, a => a.DietaId == _dietaId1);
     }
+
+    [Fact]
+    public void RevocarDieta_Autorizada_LaQuitaYConservaLasDemas()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+        nutricionista.AutorizarDieta(_dietaId2);
+
+        nutricionista.RevocarDieta(_dietaId1);
+
+        var restante = Assert.Single(nutricionista.DietasAutorizadas);
+        Assert.Equal(_dietaId2, restante.DietaId);
+    }
+
+    [Fact]
+    public void RevocarDieta_NoAutorizada_LanzaInvalidOperationException()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+
+        Assert.Throws<InvalidOperationException>(() => nutricionista.RevocarDieta(_dietaId2));
+        Assert.Single(nutricionista.DietasAutorizadas);
+    }
+
+    [Fact]
+    public void RevocarDieta_DespuesDeRevocarla_SePuedeVolverAAutorizar()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+        nutricionista.RevocarDieta(_dietaId1);
+
+        nutricionista.AutorizarDieta(_dietaId1);
+
+        Assert.Single(nutricionista.DietasAutorizadas);
+    }
+
+    [Fact]
+    public void RevocarDieta_NoAfectaElCargoDeJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+        nutricionista.DesignarJefe();
+
+        nutricionista.RevocarDieta(_dietaId1);
+
+        Assert.True(nutricionista.EsJefe);
+    }
 }

@@ -141,4 +141,24 @@ public sealed class JwtTokenServiceTests
             JwtBearerConfiguration.CreateTokenValidationParameters(otherOptions),
             out _));
     }
+
+    [Fact]
+    public void Validar_token_expone_el_rol_para_IsInRole()
+    {
+        var options = CreateOptions();
+        var service = new JwtTokenService(Options.Create(options));
+        var userId = Guid.NewGuid();
+        var token = service.GenerateToken(userId, JwtRoles.Nutricionista, "Pediatría");
+
+        var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+        var principal = handler.ValidateToken(
+            token,
+            JwtBearerConfiguration.CreateTokenValidationParameters(options),
+            out var validatedToken);
+
+        Assert.NotNull(validatedToken);
+        Assert.True(principal.IsInRole(JwtRoles.Nutricionista));
+        Assert.False(principal.IsInRole(JwtRoles.Paciente));
+        Assert.Equal(userId.ToString(), principal.Identity!.Name);
+    }
 }

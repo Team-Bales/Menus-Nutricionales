@@ -27,6 +27,8 @@ public static class JwtBearerConfiguration
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1),
+            RoleClaimType = JwtClaimTypes.Role,
+            NameClaimType = JwtClaimTypes.Subject,
         };
     }
 

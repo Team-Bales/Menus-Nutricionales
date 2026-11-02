@@ -19,6 +19,8 @@
   <ItemGroup>
     <!-- Restricciones del #11 que EF no declara (triggers e índice de R5-16); ver RestriccionesNoDeclarativas -->
     <EmbeddedResource Include="Persistence\Sql\*.sql" />
+    <!-- Consultas informacionales del informe (§2.2) como funciones de PostgreSQL; ver ConsultasInformacionales -->
+    <EmbeddedResource Include="Persistence\Consultas\*.sql" />
   </ItemGroup>
 
   <PropertyGroup>

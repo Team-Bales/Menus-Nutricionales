@@ -58,15 +58,7 @@ public abstract class ItemAlimentario : Entity<Guid>
         Guid nutricionistaId) : base(id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
-        if (!TipoPreparacion.Existe(tipoPreparacionId))
-        {
-            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
-        }
-
-        if (!NivelCalorico.Existe(nivelCaloricoId))
-        {
-            throw new ArgumentException($"{nivelCaloricoId} no es un nivel calórico del catálogo.", nameof(nivelCaloricoId));
-        }
+        ExigirCatalogo(tipoPreparacionId, nivelCaloricoId);
 
         Nombre = nombre;
         GrupoNutricionalId = grupoNutricionalId;
@@ -79,14 +71,57 @@ public abstract class ItemAlimentario : Entity<Guid>
     public string Nombre { get; }
 
     /// <summary>FK → GrupoNutricional (relación <c>Pertenece</c>).</summary>
-    public Guid GrupoNutricionalId { get; }
+    public Guid GrupoNutricionalId { get; private set; }
 
     /// <summary>FK → TipoPreparacion (relación <c>Corresponde</c>).</summary>
-    public Guid TipoPreparacionId { get; }
+    public Guid TipoPreparacionId { get; private set; }
 
     /// <summary>FK → NivelCalorico (relación <c>Tiene</c>).</summary>
-    public Guid NivelCaloricoId { get; }
+    public Guid NivelCaloricoId { get; private set; }
 
     /// <summary>FK → Nutricionista que describió el ítem (relación <c>Describe</c>).</summary>
     public Guid NutricionistaId { get; }
+
+    /// <summary>
+    /// Cambia la clasificación del ítem: su grupo nutricional, su tipo de preparación y su nivel calórico.
+    /// </summary>
+    /// <remarks>
+    /// Solo la cambia el nutricionista que describió el ítem (RS-02). El nombre, el descriptor y la clase no
+    /// cambian; la clase, además, la protege la base (RS-13). Al cambiar el grupo o el nivel calórico cambia la
+    /// disponibilidad calórica de las dietas, así que el caso de uso invalida su caché (informe, «Consultas
+    /// recurrentes»).
+    /// </remarks>
+    /// <param name="nutricionistaId">Nutricionista que pide el cambio: tiene que ser el que describió el ítem.</param>
+    /// <param name="grupoNutricionalId">Nuevo grupo nutricional.</param>
+    /// <param name="tipoPreparacionId">Nuevo tipo de preparación: uno de <see cref="TipoPreparacion.Todos"/> (RD-01).</param>
+    /// <param name="nivelCaloricoId">Nuevo nivel calórico: uno de <see cref="NivelCalorico.Todos"/> (RD-02).</param>
+    /// <exception cref="InvalidOperationException">Si quien lo pide no es el nutricionista que describió el ítem.</exception>
+    /// <exception cref="ArgumentException">Si el tipo de preparación o el nivel calórico no son del catálogo.</exception>
+    public void Reclasificar(Guid nutricionistaId, Guid grupoNutricionalId, Guid tipoPreparacionId, Guid nivelCaloricoId)
+    {
+        if (nutricionistaId != NutricionistaId)
+        {
+            throw new InvalidOperationException("Solo el nutricionista que describió el ítem puede clasificarlo (RS-02).");
+        }
+
+        ExigirCatalogo(tipoPreparacionId, nivelCaloricoId);
+
+        GrupoNutricionalId = grupoNutricionalId;
+        TipoPreparacionId = tipoPreparacionId;
+        NivelCaloricoId = nivelCaloricoId;
+    }
+
+    /// <summary>Los catálogos cerrados: el tipo de preparación y el nivel calórico (RD-01, RD-02).</summary>
+    private static void ExigirCatalogo(Guid tipoPreparacionId, Guid nivelCaloricoId)
+    {
+        if (!TipoPreparacion.Existe(tipoPreparacionId))
+        {
+            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
+        }
+
+        if (!NivelCalorico.Existe(nivelCaloricoId))
+        {
+            throw new ArgumentException($"{nivelCaloricoId} no es un nivel calórico del catálogo.", nameof(nivelCaloricoId));
+        }
+    }
 }

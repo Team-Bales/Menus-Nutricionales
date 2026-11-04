@@ -50,7 +50,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 1. Up aplica todas las migraciones: 28 tablas de usuario, 26 triggers, 18 funciones fn_*,
+    /// 1. Up aplica todas las migraciones: 28 tablas de usuario, 31 triggers, 23 funciones fn_*,
     /// índice ux_items_alimentarios_r5_16_nombre.
     /// </summary>
     [Fact]
@@ -78,21 +78,21 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
         var tablas = Convert.ToInt32(await cmdTablas.ExecuteScalarAsync());
         Assert.Equal(28, tablas);
 
-        // 26 triggers de usuario (no internos)
+        // 31 triggers de usuario (no internos)
         await using var cmdTriggers = conn.CreateCommand();
         cmdTriggers.CommandText = """
             SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal
             """;
         var triggers = Convert.ToInt32(await cmdTriggers.ExecuteScalarAsync());
-        Assert.Equal(26, triggers);
+        Assert.Equal(31, triggers);
 
-        // 18 funciones fn_*
+        // 23 funciones fn_*
         await using var cmdFunciones = conn.CreateCommand();
         cmdFunciones.CommandText = """
             SELECT count(*) FROM pg_proc WHERE proname LIKE 'fn\_%' ESCAPE '\'
             """;
         var funciones = Convert.ToInt32(await cmdFunciones.ExecuteScalarAsync());
-        Assert.Equal(18, funciones);
+        Assert.Equal(23, funciones);
 
         // índice ux_items_alimentarios_r5_16_nombre existe
         await using var cmdIndice = conn.CreateCommand();
@@ -104,10 +104,10 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 2. Down de un paso quita es_jefe y su trigger: 25 triggers, 17 funciones.
+    /// 2. Down a InitialCreate quita es_jefe, su trigger y los de RS-07 y RS-15: 25 triggers, 17 funciones.
     /// </summary>
     [Fact]
-    public async Task Down_de_un_paso_quita_es_jefe_y_su_trigger()
+    public async Task Down_a_InitialCreate_quita_es_jefe_y_los_triggers_posteriores()
     {
         // Arr: Up completo
         await _ctx.Database.MigrateAsync();
@@ -152,6 +152,40 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
             """;
         var funciones = Convert.ToInt32(await cmdFunciones.ExecuteScalarAsync());
         Assert.Equal(17, funciones);
+    }
+
+    /// <summary>
+    /// 2b. Down de un paso (a AgregarEsJefeANutricionista) quita los triggers de RS-07 y RS-15 y deja los de antes:
+    /// 26 triggers, 18 funciones fn_*.
+    /// </summary>
+    [Fact]
+    public async Task Down_de_un_paso_quita_los_triggers_de_RS07_y_RS15()
+    {
+        await _ctx.Database.MigrateAsync();
+
+        var migrator = _ctx.GetService<IMigrator>();
+        await migrator.MigrateAsync("20261029003427_AgregarEsJefeANutricionista");
+
+        await using var conn = new NpgsqlConnection(_cadenaBaseVacia);
+        await conn.OpenAsync();
+
+        await using var cmdNuevos = conn.CreateCommand();
+        cmdNuevos.CommandText = """
+            SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'trg\_rs\_07%' OR tgname LIKE 'trg\_rs\_15%'
+            """;
+        Assert.Equal(0, Convert.ToInt32(await cmdNuevos.ExecuteScalarAsync()));
+
+        await using var cmdTriggers = conn.CreateCommand();
+        cmdTriggers.CommandText = """
+            SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal
+            """;
+        Assert.Equal(26, Convert.ToInt32(await cmdTriggers.ExecuteScalarAsync()));
+
+        await using var cmdFunciones = conn.CreateCommand();
+        cmdFunciones.CommandText = """
+            SELECT count(*) FROM pg_proc WHERE proname LIKE 'fn\_%' ESCAPE '\'
+            """;
+        Assert.Equal(18, Convert.ToInt32(await cmdFunciones.ExecuteScalarAsync()));
     }
 
     /// <summary>
@@ -238,14 +272,14 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
             SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal
             """;
         var triggers = Convert.ToInt32(await cmdTriggers.ExecuteScalarAsync());
-        Assert.Equal(26, triggers);
+        Assert.Equal(31, triggers);
 
         await using var cmdFunciones = conn.CreateCommand();
         cmdFunciones.CommandText = """
             SELECT count(*) FROM pg_proc WHERE proname LIKE 'fn\_%' ESCAPE '\'
             """;
         var funciones = Convert.ToInt32(await cmdFunciones.ExecuteScalarAsync());
-        Assert.Equal(18, funciones);
+        Assert.Equal(23, funciones);
 
         await using var cmdIndice = conn.CreateCommand();
         cmdIndice.CommandText = """

@@ -5,7 +5,7 @@ namespace Menus.Infrastructure.Persistence.Sql;
 
 /// <summary>
 /// Restricciones de integridad del #11 que EF Core no puede declarar en el modelo: los triggers de su §7
-/// y el índice único sobre el nombre normalizado de alimentos y platos (R5-16).
+/// y el índice único sobre el nombre normalizado de alimentos y platos (RC-01, RS-01).
 /// </summary>
 /// <remarks>
 /// Cada restricción vive en un archivo <c>.sql</c> de esta carpeta, incrustado en el ensamblado, para que
@@ -17,6 +17,8 @@ namespace Menus.Infrastructure.Persistence.Sql;
 /// con su propio esquema.
 /// Una base creada con <c>EnsureCreated()</c> no las tiene; para pruebas se puede ejecutar
 /// <see cref="ScriptsDeCreacion"/>.
+///
+/// Los nombres de los archivos, funciones, triggers, constraints e índices conservan la numeración antigua (R5…R9); la equivalencia con la vigente está en <c>docs/Equivalencias de numeración.md</c>. No se renombran: PostgreSQL dispara los triggers de un mismo evento y momento en orden alfabético de su nombre (p. ej., en <c>validacion</c>, <c>trg_rs_03</c> va antes que <c>trg_validacion</c>), y <c>InitialCreate</c> aplica los scripts en el orden alfabético de sus archivos.
 /// </remarks>
 public static class RestriccionesNoDeclarativas
 {
@@ -24,13 +26,21 @@ public static class RestriccionesNoDeclarativas
     private const string ScriptQuitar = Prefijo + "Quitar.sql";
 
     /// <summary>
-    /// Scripts que agrega una migración posterior a <c>InitialCreate</c>, cada uno junto con las columnas que
-    /// usa. <see cref="AplicarRestriccionesNoDeclarativas"/> no los aplica: si lo hiciera, una base que se
-    /// detuviera en <c>InitialCreate</c> tendría un trigger que lee una columna que todavía no existe.
+    /// Scripts que agrega una migración posterior a <c>InitialCreate</c>.
+    /// <see cref="AplicarRestriccionesNoDeclarativas"/> no los aplica, por dos razones:
+    /// <list type="bullet">
+    /// <item>cada migración deja la base como la describe su propio esquema, también al bajar. Si <c>InitialCreate</c>
+    /// aplicara un script posterior, el <c>Down()</c> de la migración que lo agrega lo quitaría, y la base volvería a
+    /// un estado distinto del que crea <c>InitialCreate</c>;</item>
+    /// <item>algunos leen columnas que esa migración crea: si <c>InitialCreate</c> los aplicara, una base detenida
+    /// en ella tendría un trigger que lee una columna que todavía no existe.</item>
+    /// </list>
     /// </summary>
     private static readonly HashSet<string> ScriptsPosteriores =
     [
         Prefijo + "RS_03_revisor_jefe.sql", // AgregarEsJefeANutricionista (columna es_jefe)
+        Prefijo + "RS_07_parametrizacion_sin_altas.sql", // CerrarParametrizacionEItemsDelMenu
+        Prefijo + "RS_15_items_de_menu_dictaminado.sql", // CerrarParametrizacionEItemsDelMenu
     ];
 
     /// <summary>Crea los triggers y el índice normalizado de <c>InitialCreate</c>. Va al final de <c>Up()</c>.</summary>

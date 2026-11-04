@@ -38,3 +38,4 @@ alternativas consideradas y las consecuencias que implica.
 | [006](ADR-006-resultado-nutricional-catalogo-cerrado.md) | `ResultadoNutricional` como entidad de catálogo cerrado | Aceptado |
 | [007](ADR-007-rechazo-registrado-y-origina.md) | El rechazo del menú se registra, y el menú de reemplazo lo referencia (`Origina`) | Aceptado |
 | [008](ADR-008-nomencladores-entidades-catalogos-cerrados.md) | Todos los nomencladores son entidades; los catálogos cerrados, con identificadores fijos | Aceptado |
+| [009](ADR-009-mongodb-ficha-nutricional.md) | Ficha nutricional en MongoDB: conciliación RM-10, configuración restricción–alérgeno y mantenimiento de RM-06 | Propuesto |

@@ -7,9 +7,9 @@
 
 La ficha nutricional es un documento opcional que vive en MongoDB y se localiza por la pareja (`origen.tabla`, `origen.id`). Se escribe después de confirmar la fila correspondiente en PostgreSQL; al no existir una transacción común entre ambos almacenes, pueden divergir. Las reglas RM-06 a RM-10 no pueden ser declaradas ni garantizadas por el motor de base de datos, por lo que requieren lógica en la capa de aplicación.
 
-El informe de diseño (línea 247) establece que RM-06 a RM-10 se implementan «en la capa de aplicación» e incluye una tarea programada para la conciliación RM-10. El documento «Mecanismo de referencia Postgres-Mongo» (§4 y §7) deja abierta la frecuencia de dicha conciliación. La línea 469 del informe indica que «qué alérgenos excluye cada restricción se registra en la **configuración de la aplicación**, por decisión de diseño».
+El informe de diseño (§4, mecanismos de la ficha nutricional) establece que RM-06 a RM-10 se implementan «en la capa de aplicación» e incluye una tarea programada para la conciliación RM-10. El documento «Mecanismo de referencia Postgres-Mongo» (§4 y §7) deja abierta la frecuencia de dicha conciliación. La §4.5 del informe indica que «qué alérgenos excluye cada restricción se registra en la **configuración de la aplicación**, por decisión de diseño».
 
-Este ADR complementa al ADR-005 (que justifica el uso de MongoDB) y fija tres puntos que hoy están abiertos y bloquean la implementación de MongoDB (issues 09, 10 y 11).
+Este ADR complementa al ADR-005 (que justifica el uso de MongoDB) y fija tres puntos que hoy están abiertos y bloquean la implementación de MongoDB (#203, #204 y #205).
 
 ## Decisión
 
@@ -28,12 +28,12 @@ La recomendación incluye: intervalo configurable (`Conciliacion:Intervalo`, por
 
 | Opción | Descripción | A favor | En contra |
 |---|---|---|---|
-| B1 **(recomendada)** | Sección `AlergenosPorRestriccion` en la configuración de la aplicación (`appsettings.json`, `IOptions<…>`): diccionario `restricciónAlimentariaId (GUID) → lista de alérgenos` con el nombre de la restricción como comentario | Es lo que dice el informe (línea 469: «configuración de la aplicación»); los GUID de las restricciones sembradas son fijos (`22222222-0000-0000-0000-00000000000n`); versionable en Git; sin tabla ni migración | Cambiarla exige redesplegar o recargar configuración; una restricción nueva creada en la base no tiene entrada hasta que alguien la añada (ver Consecuencias) |
+| B1 **(recomendada)** | Sección `AlergenosPorRestriccion` en la configuración de la aplicación (`appsettings.json`, `IOptions<…>`): diccionario `restricciónAlimentariaId (GUID) → lista de alérgenos` con el nombre de la restricción como comentario | Es lo que dice el informe (§4.5); los GUID de las restricciones sembradas son fijos (`22222222-0000-0000-0000-00000000000n`); versionable en Git; sin tabla ni migración | Cambiarla exige redesplegar o recargar configuración; una restricción nueva creada en la base no tiene entrada hasta que alguien la añada (ver Consecuencias) |
 | B2 | Archivo JSON propio cargado como fuente de configuración | Se puede editar sin tocar `appsettings` | Un archivo más que desplegar; mismo contenido que B1 |
 | B3 | Colección propia en MongoDB | Editable en caliente | Contradice el informe (la configuración no es una ficha), y añade escritura y validación nuevas |
-| B4 | Tabla en PostgreSQL o columna en `restricciones_alimentarias` | Editable en caliente, relacional | Descartada por el informe (línea 469 y §5.6): ningún nomenclador representa alérgenos y se necesitaría una migración de esquema (P-1) |
+| B4 | Tabla en PostgreSQL o columna en `restricciones_alimentarias` | Editable en caliente, relacional | Descartada por el informe (§4.5 y §5.6): ningún nomenclador representa alérgenos y se necesitaría una migración de esquema |
 
-Condiciones comunes a la recomendación: los términos se normalizan (minúsculas, sin acentos, recortados) antes de comparar con `alergenos` de la ficha, que es texto libre (doc. 1, §6); una restricción sin entrada se trata como «compatibilidad desconocida» y **advierte, no bloquea** (informe línea 472).
+Condiciones comunes a la recomendación: los términos se normalizan (minúsculas, sin acentos, recortados) antes de comparar con `alergenos` de la ficha, que es texto libre (doc. 1, §6); una restricción sin entrada se trata como «compatibilidad desconocida» y **advierte, no bloquea** (informe, §4.5).
 
 ### (c) Cómo se mantiene RM-06 (ingredientes de la ficha ↔ `Compone`)
 
@@ -45,7 +45,7 @@ Condiciones comunes a la recomendación: los términos se normalizan (minúscula
 
 Para las tres opciones: **el informe no pide reglas entre bloques nutricionales** (RM-05: esos bloques no tienen campos obligatorios).
 
-**Alcance de código.** Este ADR no toca código. La implementación de (b) y (c) pertenece a la capa de aplicación (próximas versiones). Los issues 09 (#203), 10 y 11 solo usan (a), y solo para elegir el mecanismo de planificación de la conciliación.
+**Alcance de código.** Este ADR no toca código. La implementación de (b) y (c) pertenece a la capa de aplicación (próximas versiones). El #203, el #204 y el #205 solo usan (a), y solo para elegir el mecanismo de planificación de la conciliación.
 
 ## Alternativas consideradas
 

@@ -24,13 +24,21 @@ public static class RestriccionesNoDeclarativas
     private const string ScriptQuitar = Prefijo + "Quitar.sql";
 
     /// <summary>
-    /// Scripts que agrega una migración posterior a <c>InitialCreate</c>, cada uno junto con las columnas que
-    /// usa. <see cref="AplicarRestriccionesNoDeclarativas"/> no los aplica: si lo hiciera, una base que se
-    /// detuviera en <c>InitialCreate</c> tendría un trigger que lee una columna que todavía no existe.
+    /// Scripts que agrega una migración posterior a <c>InitialCreate</c>.
+    /// <see cref="AplicarRestriccionesNoDeclarativas"/> no los aplica, por dos razones:
+    /// <list type="bullet">
+    /// <item>cada migración deja la base como la describe su propio esquema, también al bajar. Si <c>InitialCreate</c>
+    /// aplicara un script posterior, el <c>Down()</c> de la migración que lo agrega lo quitaría, y la base volvería a
+    /// un estado distinto del que crea <c>InitialCreate</c>;</item>
+    /// <item>algunos leen columnas que esa migración crea: si <c>InitialCreate</c> los aplicara, una base detenida
+    /// en ella tendría un trigger que lee una columna que todavía no existe.</item>
+    /// </list>
     /// </summary>
     private static readonly HashSet<string> ScriptsPosteriores =
     [
         Prefijo + "RS_03_revisor_jefe.sql", // AgregarEsJefeANutricionista (columna es_jefe)
+        Prefijo + "RS_07_parametrizacion_sin_altas.sql", // CerrarParametrizacionEItemsDelMenu
+        Prefijo + "RS_15_items_de_menu_dictaminado.sql", // CerrarParametrizacionEItemsDelMenu
     ];
 
     /// <summary>Crea los triggers y el índice normalizado de <c>InitialCreate</c>. Va al final de <c>Up()</c>.</summary>

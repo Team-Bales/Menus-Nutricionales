@@ -26,7 +26,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddDbContext<MenusDbContext>(opt =>
-            opt.UseNpgsql(configuration.GetConnectionString("Default")));
+            opt.UseNpgsql(configuration.GetConnectionString("Postgres")));
 
         services.AddScoped<INutricionistaRepository, NutricionistaRepository>();
         services.AddScoped<IPacienteRepository, PacienteRepository>();

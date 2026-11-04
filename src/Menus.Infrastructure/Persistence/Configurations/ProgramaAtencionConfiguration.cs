@@ -8,7 +8,7 @@ internal sealed class ProgramaAtencionConfiguration : IEntityTypeConfiguration<P
 {
     public void Configure(EntityTypeBuilder<ProgramaAtencion> builder)
     {
-        // R6-15: nombre no vacío
+        // RD-07: nombre no vacío
         builder.ToTable("programas_atencion", t =>
         {
             t.HasCheckConstraint("ck_programas_atencion_r6_15_nombre", "btrim(nombre) <> ''");

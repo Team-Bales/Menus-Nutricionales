@@ -32,7 +32,7 @@ public sealed class PacienteTests
     [Fact]
     public void Constructor_EdadCero_SeAcepta()
     {
-        // R6-14: la edad es mayor o igual que cero (un recién nacido tiene 0 años).
+        // RD-06: la edad es mayor o igual que cero (un recién nacido tiene 0 años).
         var paciente = new Paciente(Guid.NewGuid(), "Recién nacido", 0, _salaId);
 
         Assert.Equal(0, paciente.Edad);
@@ -132,5 +132,43 @@ public sealed class PacienteTests
         paciente.TrasladarASala(_salaId);
 
         Assert.Equal(_salaId, paciente.SalaId);
+    }
+
+    [Fact]
+    public void DesinscribirDieta_Inscrito_QuitaLaInscripcionYConservaLasDemas()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
+        var dieta1 = Guid.NewGuid();
+        var dieta2 = Guid.NewGuid();
+        paciente.InscribirDieta(dieta1);
+        paciente.InscribirDieta(dieta2);
+
+        paciente.DesinscribirDieta(dieta1);
+
+        var restante = Assert.Single(paciente.Dietas);
+        Assert.Equal(dieta2, restante.DietaId);
+    }
+
+    [Fact]
+    public void DesinscribirDieta_NoInscrito_LanzaInvalidOperationException()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
+        paciente.InscribirDieta(Guid.NewGuid());
+
+        Assert.Throws<InvalidOperationException>(() => paciente.DesinscribirDieta(Guid.NewGuid()));
+        Assert.Single(paciente.Dietas);
+    }
+
+    [Fact]
+    public void DesinscribirDieta_DespuesDeDesinscribirlo_SePuedeVolverAInscribir()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
+        var dieta = Guid.NewGuid();
+        paciente.InscribirDieta(dieta);
+        paciente.DesinscribirDieta(dieta);
+
+        paciente.InscribirDieta(dieta);
+
+        Assert.Single(paciente.Dietas);
     }
 }

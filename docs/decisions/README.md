@@ -39,3 +39,4 @@ alternativas consideradas y las consecuencias que implica.
 | [007](ADR-007-rechazo-registrado-y-origina.md) | El rechazo del menú se registra, y el menú de reemplazo lo referencia (`Origina`) | Aceptado |
 | [008](ADR-008-nomencladores-entidades-catalogos-cerrados.md) | Todos los nomencladores son entidades; los catálogos cerrados, con identificadores fijos | Aceptado |
 | [009](ADR-009-mongodb-ficha-nutricional.md) | Ficha nutricional en MongoDB: conciliación RM-10, configuración restricción–alérgeno y mantenimiento de RM-06 | Propuesto |
+| [010](ADR-010-capa-de-aplicacion.md) | Capa de aplicación: casos de uso, validación, errores y transacción | Propuesto |

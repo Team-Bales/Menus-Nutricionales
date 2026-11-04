@@ -74,7 +74,7 @@ public sealed class PlatoTests
     [Fact]
     public void AgregarIngrediente_ElPropioPlato_LanzaInvalidOperationException()
     {
-        // R5-18: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
+        // RS-12: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         Assert.Throws<InvalidOperationException>(() => plato.AgregarIngrediente(plato.Id, 100m));

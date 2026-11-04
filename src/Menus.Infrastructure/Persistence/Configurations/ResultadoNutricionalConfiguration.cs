@@ -8,7 +8,7 @@ internal sealed class ResultadoNutricionalConfiguration : IEntityTypeConfigurati
 {
     public void Configure(EntityTypeBuilder<ResultadoNutricional> builder)
     {
-        // R7-19: catálogo cerrado con exactamente estas cinco categorías y sus valores
+        // RD-14: catálogo cerrado con exactamente estas cinco categorías y sus valores
         builder.ToTable("resultados_nutricionales", t =>
         {
             t.HasCheckConstraint("ck_resultados_nutricionales_r7_19_nombre", "nombre IN ('Muy mala', 'Mala', 'Normal', 'Buena', 'Excelente')");

@@ -24,7 +24,7 @@ internal sealed class ValoracionNutricionalConfiguration : IEntityTypeConfigurat
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
-        // Evalúa: FK compuesta → Asignacion (R7-12); no se borra una asignación valorada (R7-14)
+        // Evalúa: FK compuesta → Asignacion (RR-17); no se borra una asignación valorada (RR-19)
         builder.HasOne<Asignacion>()
             .WithMany()
             .HasForeignKey(v => new { v.MenuId, v.PacienteId })

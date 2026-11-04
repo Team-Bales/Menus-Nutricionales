@@ -8,7 +8,7 @@ internal sealed class NivelCaloricoConfiguration : IEntityTypeConfiguration<Nive
 {
     public void Configure(EntityTypeBuilder<NivelCalorico> builder)
     {
-        // R5-09: catálogo cerrado con exactamente estos tres valores
+        // RD-02: catálogo cerrado con exactamente estos tres valores
         builder.ToTable("niveles_caloricos", t =>
         {
             t.HasCheckConstraint("ck_niveles_caloricos_r5_09_nombre", "nombre IN ('Bajo', 'Medio', 'Alto')");

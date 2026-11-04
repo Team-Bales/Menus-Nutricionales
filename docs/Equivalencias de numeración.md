@@ -125,6 +125,7 @@ El informe §4 renumeró las reglas de integridad; el código conserva los nombr
 | R7-25 | RS-05 | Nadie valida un menú que creó | trigger `trg_validacion` | `Sql/R6_22_R7_25_R7_26_validacion.sql` |
 | R7-26 | RS-06 | La validación no es anterior a la creación del menú | trigger `trg_validacion` | `Sql/R6_22_R7_25_R7_26_validacion.sql` |
 | R7-27 | RS-07 | Parametrización del menú inmutable | triggers `trg_r7_27_menu`, `trg_r7_27_distribucion_actualizacion`, `trg_r7_27_grupos_actualizacion`, `trg_r7_27_distribucion_borrado`, `trg_r7_27_grupos_borrado` | `Sql/R7_27_parametrizacion_inmutable.sql` |
+| — (nueva) | RS-07 | La parametrización no se amplía después de creado el menú (completa a R7-27) | triggers `trg_rs_07_menu_creado`, `trg_rs_07_distribucion_alta`, `trg_rs_07_grupos_alta` (funciones `fn_rs_07_menu_creado`, `fn_rs_07_alta_parametro`) | `Sql/RS_07_parametrizacion_sin_altas.sql` |
 | R7-28 | RS-08 | La suma de proporciones del menú es 1 | App: la comprueba el dominio al crear el menú (informe línea 246). **No hay trigger y no se crea** | — |
 | R7-29 | RS-09 | El solicitante es el paciente de la valoración revisada | Estructura: el solicitante no se almacena | — |
 | R7-30 | RS-10 | La valoración generada evalúa la misma asignación y la emite el ejecutor | trigger `trg_r7_30` (función `fn_r7_30`) | `Sql/R7_30_valoracion_generada.sql` |
@@ -133,6 +134,7 @@ El informe §4 renumeró las reglas de integridad; el código conserva los nombr
 | R5-19 (trigger) | RS-13 | La clase del ítem no cambia | trigger `trg_r5_19` (función `fn_r5_19`) | `Sql/R5_19_clase_del_item.sql` |
 | R7-31 | RS-14 | Ningún servicio es anterior a la aprobación del menú | trigger diferido `trg_r7_31` (función `fn_r7_31`) | `Sql/R7_31_servicio_tras_aprobacion.sql` |
 | R7-33 | RS-15 | La validación no se modifica ni se borra | trigger `trg_r7_33` (función `fn_r7_33`) | `Sql/R7_33_validacion_inmutable.sql` |
+| — (nueva) | RS-15 | Los ítems de un menú con dictamen no cambian (completa a R7-33) | triggers `trg_rs_15_dictamen_registrado`, `trg_rs_15_items` (funciones `fn_rs_15_dictamen_registrado`, `fn_rs_15_exigir_menu_abierto`, `fn_rs_15_items`) | `Sql/RS_15_items_de_menu_dictaminado.sql` |
 | R7-34 | RS-16 | Solo se asigna un menú aprobado | trigger diferido `trg_r7_34` (función `fn_r7_34`) | `Sql/R7_34_asignacion_de_menu_aprobado.sql` |
 | R7-35 | RS-17 | Solo un rechazo origina un menú de reemplazo | trigger `trg_r7_35_r7_36` (función `fn_r7_35_r7_36`) | `Sql/R7_35_R7_36_menu_de_reemplazo.sql` |
 | R7-36 | RS-18 | El reemplazo es de la misma dieta | trigger `trg_r7_35_r7_36` | `Sql/R7_35_R7_36_menu_de_reemplazo.sql` |

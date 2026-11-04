@@ -7,7 +7,7 @@
 CREATE FUNCTION fn_r7_34() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM validacion WHERE menu_id = NEW.menu_id AND aprobado) THEN
-         RAISE EXCEPTION 'RS-16: el menú % no está aprobado y no se puede asignar', NEW.menu_id;
+        RAISE EXCEPTION 'RS-16: el menú % no está aprobado y no se puede asignar', NEW.menu_id;
     END IF;
     RETURN NULL;
 END $$;

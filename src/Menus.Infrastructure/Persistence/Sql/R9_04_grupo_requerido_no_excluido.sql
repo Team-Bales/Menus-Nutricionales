@@ -9,7 +9,7 @@ BEGIN
                JOIN excluye e ON e.restriccion_alimentaria_id = r.restriccion_alimentaria_id
                              AND e.grupo_nutricional_id = cd.grupo_nutricional_id
                WHERE cd.tipo = 'Requerido') THEN
-         RAISE EXCEPTION 'RS-11: una dieta exige cubrir un grupo que una de sus restricciones excluye';
+        RAISE EXCEPTION 'RS-11: una dieta exige cubrir un grupo que una de sus restricciones excluye';
     END IF;
     RETURN NULL;
 END $$;

@@ -3,7 +3,7 @@ CREATE FUNCTION fn_r6_22_creador() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM autoriza a
                    WHERE a.nutricionista_id = NEW.nutricionista_creador_id AND a.dieta_id = NEW.dieta_id) THEN
-         RAISE EXCEPTION 'RS-03: el nutricionista % no está autorizado para la dieta %', NEW.nutricionista_creador_id, NEW.dieta_id;
+        RAISE EXCEPTION 'RS-03: el nutricionista % no está autorizado para la dieta %', NEW.nutricionista_creador_id, NEW.dieta_id;
     END IF;
     RETURN NEW;
 END $$;

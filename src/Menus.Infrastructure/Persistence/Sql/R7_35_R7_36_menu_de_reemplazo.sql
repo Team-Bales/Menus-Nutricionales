@@ -20,7 +20,7 @@ BEGIN
     END IF;
     IF TG_OP = 'UPDATE' AND NEW.dieta_id IS DISTINCT FROM OLD.dieta_id
        AND EXISTS (SELECT 1 FROM menus r WHERE r.validacion_origen_id = NEW.id AND r.dieta_id <> NEW.dieta_id) THEN
-         RAISE EXCEPTION 'RS-18: el menú % tiene un menú de reemplazo de otra dieta', NEW.id;
+        RAISE EXCEPTION 'RS-18: el menú % tiene un menú de reemplazo de otra dieta', NEW.id;
     END IF;
     RETURN NEW;
 END $$;

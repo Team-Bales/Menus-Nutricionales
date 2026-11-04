@@ -8,7 +8,7 @@ BEGIN
     IF TG_TABLE_NAME = 'items_alimentarios' THEN p := NEW.id; ELSE p := OLD.plato_id; END IF;
     IF EXISTS (SELECT 1 FROM items_alimentarios WHERE id = p AND clase = 'Plato')
        AND NOT EXISTS (SELECT 1 FROM composicion WHERE plato_id = p) THEN
-         RAISE EXCEPTION 'RK-03: el plato % no tiene ningún alimento', p;
+        RAISE EXCEPTION 'RK-03: el plato % no tiene ningún alimento', p;
     END IF;
     RETURN NULL;
 END $$;

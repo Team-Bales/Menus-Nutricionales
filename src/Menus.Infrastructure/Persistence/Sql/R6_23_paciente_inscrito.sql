@@ -3,7 +3,7 @@ CREATE FUNCTION fn_r6_23() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM menus m JOIN paciente_dieta i ON i.dieta_id = m.dieta_id
                    WHERE m.id = NEW.menu_id AND i.paciente_id = NEW.paciente_id) THEN
-         RAISE EXCEPTION 'RS-04: el paciente % no está inscrito en la dieta del menú %', NEW.paciente_id, NEW.menu_id;
+        RAISE EXCEPTION 'RS-04: el paciente % no está inscrito en la dieta del menú %', NEW.paciente_id, NEW.menu_id;
     END IF;
     RETURN NEW;
 END $$;

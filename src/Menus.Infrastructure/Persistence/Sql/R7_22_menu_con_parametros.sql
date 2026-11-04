@@ -8,7 +8,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM menus WHERE id = m)
        AND (NOT EXISTS (SELECT 1 FROM menu_distribucion WHERE menu_id = m)
             OR NOT EXISTS (SELECT 1 FROM menu_grupo_nutricional WHERE menu_id = m)) THEN
-         RAISE EXCEPTION 'RK-09: el menú % no tiene distribución por tipo de preparación o grupos cubiertos', m;
+        RAISE EXCEPTION 'RK-09: el menú % no tiene distribución por tipo de preparación o grupos cubiertos', m;
     END IF;
     RETURN NULL;
 END $$;

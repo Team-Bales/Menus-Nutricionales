@@ -12,7 +12,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM validacion v
                    WHERE v.menu_id = NEW.menu_id AND v.aprobado
                      AND (v.fecha_validacion AT TIME ZONE 'UTC')::date <= NEW.fecha_servicio) THEN
-         RAISE EXCEPTION 'RS-14: el servicio del menú % es anterior a su aprobación', NEW.menu_id;
+        RAISE EXCEPTION 'RS-14: el servicio del menú % es anterior a su aprobación', NEW.menu_id;
     END IF;
     RETURN NULL;
 END $$;

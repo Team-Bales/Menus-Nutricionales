@@ -6,7 +6,7 @@ BEGIN
     IF TG_TABLE_NAME = 'dietas' THEN d := NEW.id; ELSE d := OLD.dieta_id; END IF;
     IF EXISTS (SELECT 1 FROM dietas WHERE id = d)
        AND NOT EXISTS (SELECT 1 FROM cubre_dieta WHERE dieta_id = d AND tipo = 'Requerido') THEN
-         RAISE EXCEPTION 'RK-07: la dieta % no exige cubrir ningún grupo nutricional', d;
+        RAISE EXCEPTION 'RK-07: la dieta % no exige cubrir ningún grupo nutricional', d;
     END IF;
     RETURN NULL;
 END $$;

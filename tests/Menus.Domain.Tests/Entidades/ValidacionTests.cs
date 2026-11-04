@@ -10,7 +10,7 @@ public sealed class ValidacionTests
     private readonly DateTime _creacion = DateTime.UtcNow.AddDays(-1);
 
     // Validacion solo se crea a través de Menu.Aprobar; dos instancias de Menu con el mismo Id
-    // representan el mismo menú leído dos veces. Su identidad es el menú (R7-32).
+    // representan el mismo menú leído dos veces. Su identidad es el menú (RC-12).
     private Menu CrearMenu(Guid? id = null) =>
         new(
             id ?? _menuId,
@@ -119,7 +119,7 @@ public sealed class ValidacionTests
     [Fact]
     public void Equality_MismoMenuConOtroRevisor_SonIguales_PorqueElMenuEsLaClave()
     {
-        // R7-32: un menú tiene a lo sumo una validación, así que dos lecturas del mismo menú son la misma
+        // RC-12: un menú tiene a lo sumo una validación, así que dos lecturas del mismo menú son la misma
         // validación aunque el revisor no coincida (en la base no pueden coexistir).
         var primera = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(1));
         var segunda = CrearMenu().Aprobar(Guid.NewGuid(), _creacion.AddHours(1));

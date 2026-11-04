@@ -21,7 +21,7 @@ namespace Menus.Infrastructure.Persistence.Repositories;
 /// <see cref="Menu.Validacion"/>, que es lo mismo expresado sobre la tabla.
 /// </para>
 /// </remarks>
-internal sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
+public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
 {
     public Task<Menu?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => dbContext.Menus

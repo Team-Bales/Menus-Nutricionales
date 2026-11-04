@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<INutricionistaRepository, NutricionistaRepository>();
         services.AddScoped<IPacienteRepository, PacienteRepository>();
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
+        services.AddScoped<IMenuRepository, MenuRepository>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         JwtBearerConfiguration.Validate(jwtOptions);

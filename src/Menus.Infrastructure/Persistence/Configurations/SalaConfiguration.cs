@@ -8,7 +8,7 @@ internal sealed class SalaConfiguration : IEntityTypeConfiguration<Sala>
 {
     public void Configure(EntityTypeBuilder<Sala> builder)
     {
-        // R6-15: nombre no vacío
+        // RD-07: nombre no vacío
         builder.ToTable("salas", t =>
         {
             t.HasCheckConstraint("ck_salas_r6_15_nombre", "btrim(nombre) <> ''");
@@ -22,6 +22,6 @@ internal sealed class SalaConfiguration : IEntityTypeConfiguration<Sala>
             .HasMaxLength(100)
             .IsRequired();
 
-        // Sin UNIQUE: el nombre único solo se exige en los nomencladores (R6-16; #12, §6.1)
+        // Sin UNIQUE: el nombre único solo se exige en los nomencladores (RD-08; #12, §6.1)
     }
 }

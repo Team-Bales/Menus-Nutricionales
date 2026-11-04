@@ -9,7 +9,7 @@ internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutr
 {
     public void Configure(EntityTypeBuilder<Nutricionista> builder)
     {
-        // R6-15: nombre no vacío
+        // RD-07: nombre no vacío
         builder.ToTable("nutricionistas", t =>
         {
             t.HasCheckConstraint("ck_nutricionistas_r6_15_nombre", "btrim(nombre) <> ''");
@@ -37,7 +37,7 @@ internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutr
             .HasForeignKey(n => n.EspecialidadId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Autoriza: Nutricionista → NutricionistasDieta (Restrict: no se elimina un nutricionista con autorizaciones, R11-02)
+        // Autoriza: Nutricionista → NutricionistasDieta (Restrict: no se elimina un nutricionista con autorizaciones, RX-02)
         builder.HasMany(n => n.DietasAutorizadas)
             .WithOne()
             .HasForeignKey(nd => nd.NutricionistaId)

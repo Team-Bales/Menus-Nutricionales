@@ -8,7 +8,7 @@ internal sealed class PlatoIngredienteConfiguration : IEntityTypeConfiguration<P
 {
     public void Configure(EntityTypeBuilder<PlatoIngrediente> builder)
     {
-        // R5-12: cantidad estrictamente positiva
+        // RD-05: cantidad estrictamente positiva
         builder.ToTable("composicion", t =>
         {
             t.HasCheckConstraint("ck_composicion_r5_12_cantidad", "cantidad > 0");

@@ -61,6 +61,21 @@ public sealed class Paciente : Entity<Guid>
         return inscripcion;
     }
 
+    /// <summary>Retira la inscripción del paciente en la dieta indicada.</summary>
+    /// <remarks>
+    /// Las asignaciones ya hechas no cambian: que el paciente esté inscrito en la dieta del menú se comprueba al
+    /// asignarlo (RS-04), no después.
+    /// </remarks>
+    /// <param name="dietaId">Identificador de la dieta.</param>
+    /// <exception cref="InvalidOperationException">Si el paciente no está inscrito en esa dieta.</exception>
+    public void DesinscribirDieta(Guid dietaId)
+    {
+        var inscripcion = _dietas.SingleOrDefault(d => d.DietaId == dietaId)
+            ?? throw new InvalidOperationException($"El paciente no está inscrito en la dieta {dietaId}.");
+
+        _dietas.Remove(inscripcion);
+    }
+
     /// <summary>
     /// Traslada al paciente a otra sala de hospitalización. Actualiza la fila del paciente, sin dejar
     /// historial del traslado (§4.5 del informe): la sala anterior no se registra en ningún lado.

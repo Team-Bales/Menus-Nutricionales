@@ -74,7 +74,7 @@ public sealed class PlatoTests
     [Fact]
     public void AgregarIngrediente_ElPropioPlato_LanzaInvalidOperationException()
     {
-        // R5-18: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
+        // RS-12: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         Assert.Throws<InvalidOperationException>(() => plato.AgregarIngrediente(plato.Id, 100m));
@@ -125,5 +125,53 @@ public sealed class PlatoTests
 
         Assert.IsAssignableFrom<IReadOnlyCollection<PlatoIngrediente>>(collection);
         Assert.NotSame(plato.Ingredientes, collection); // nueva instancia cada acceso (AsReadOnly crea wrapper)
+    }
+
+    [Fact]
+    public void QuitarIngrediente_ConVariosIngredientes_LoQuita()
+    {
+        var plato = new Plato(Guid.NewGuid(), "Ensalada", _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
+        plato.AgregarIngrediente(_alimentoId1, 100m);
+        plato.AgregarIngrediente(_alimentoId2, 50m);
+
+        plato.QuitarIngrediente(_alimentoId1);
+
+        var restante = Assert.Single(plato.Ingredientes);
+        Assert.Equal(_alimentoId2, restante.AlimentoId);
+    }
+
+    [Fact]
+    public void QuitarIngrediente_UnicoIngrediente_LanzaInvalidOperationExceptionYLoConserva()
+    {
+        // RK-03: todo plato se compone de al menos un alimento.
+        var plato = new Plato(Guid.NewGuid(), "Puré", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
+        plato.AgregarIngrediente(_alimentoId1, 200m);
+
+        Assert.Throws<InvalidOperationException>(() => plato.QuitarIngrediente(_alimentoId1));
+        Assert.Single(plato.Ingredientes);
+    }
+
+    [Fact]
+    public void QuitarIngrediente_AlimentoQueNoEstaEnLaComposicion_LanzaInvalidOperationException()
+    {
+        var plato = new Plato(Guid.NewGuid(), "Ensalada", _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
+        plato.AgregarIngrediente(_alimentoId1, 100m);
+        plato.AgregarIngrediente(_alimentoId2, 50m);
+
+        Assert.Throws<InvalidOperationException>(() => plato.QuitarIngrediente(Guid.NewGuid()));
+        Assert.Equal(2, plato.Ingredientes.Count);
+    }
+
+    [Fact]
+    public void QuitarIngrediente_DespuesDeQuitarlo_SePuedeVolverAAgregar()
+    {
+        var plato = new Plato(Guid.NewGuid(), "Ensalada", _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
+        plato.AgregarIngrediente(_alimentoId1, 100m);
+        plato.AgregarIngrediente(_alimentoId2, 50m);
+        plato.QuitarIngrediente(_alimentoId1);
+
+        plato.AgregarIngrediente(_alimentoId1, 80m);
+
+        Assert.Equal(2, plato.Ingredientes.Count);
     }
 }

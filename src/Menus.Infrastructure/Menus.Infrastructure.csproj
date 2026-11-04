@@ -6,6 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -13,11 +14,11 @@
     </PackageReference>
     <PackageReference Include="MongoDB.Driver" Version="3.12.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageReference Include="StackExchange.Redis" Version="3.4.0" />
+    <PackageReference Include="StackExchange.Redis" Version="3.4.20" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Restricciones del #11 que EF no declara (triggers e índice de R5-16); ver RestriccionesNoDeclarativas -->
+    <!-- Restricciones del #11 que EF no declara (triggers e índice de RC-01); ver RestriccionesNoDeclarativas -->
     <EmbeddedResource Include="Persistence\Sql\*.sql" />
   </ItemGroup>
 

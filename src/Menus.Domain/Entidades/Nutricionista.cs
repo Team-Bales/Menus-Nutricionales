@@ -66,6 +66,21 @@ public sealed class Nutricionista : Entity<Guid>
         return autorizacion;
     }
 
+    /// <summary>Revoca la autorización del nutricionista para la dieta indicada.</summary>
+    /// <remarks>
+    /// Los menús que ya creó o dictaminó siguen siendo válidos: la autorización se comprueba al crear el menú y
+    /// al registrar el dictamen (RS-03), no después.
+    /// </remarks>
+    /// <param name="dietaId">Identificador de la dieta cuya autorización se revoca.</param>
+    /// <exception cref="InvalidOperationException">Si el nutricionista no está autorizado para esa dieta.</exception>
+    public void RevocarDieta(Guid dietaId)
+    {
+        var autorizacion = _dietasAutorizadas.SingleOrDefault(a => a.DietaId == dietaId)
+            ?? throw new InvalidOperationException($"El nutricionista no está autorizado para la dieta {dietaId}.");
+
+        _dietasAutorizadas.Remove(autorizacion);
+    }
+
     /// <summary>
     /// Designa al nutricionista como jefe de nutrición. Si ya lo es, no cambia nada.
     /// </summary>

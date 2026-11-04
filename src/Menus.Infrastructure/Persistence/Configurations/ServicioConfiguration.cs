@@ -9,8 +9,8 @@ internal sealed class ServicioConfiguration : IEntityTypeConfiguration<Servicio>
     public void Configure(EntityTypeBuilder<Servicio> builder)
     {
         // Entidad débil de Asignación: su clave es la de la asignación más la fecha del servicio. Que el servicio
-        // no sea anterior a la aprobación (R7-31) lo comprueba Persistence/Sql/R7_31_servicio_tras_aprobacion.sql;
-        // que el menú esté aprobado lo garantiza la asignación de la que depende (R7-34).
+        // no sea anterior a la aprobación (RS-14) lo comprueba Persistence/Sql/R7_31_servicio_tras_aprobacion.sql;
+        // que el menú esté aprobado lo garantiza la asignación de la que depende (RS-16).
         builder.ToTable("servicios");
 
         builder.HasKey(s => new { s.MenuId, s.PacienteId, s.FechaServicio });
@@ -26,7 +26,7 @@ internal sealed class ServicioConfiguration : IEntityTypeConfiguration<Servicio>
         // FK compuesta (menu_id, paciente_id) → Asignacion se configura desde AsignacionConfiguration (colección Servicios)
 
         // FK compuesta (menu_id, paciente_id, fecha_servicio) desde Consumo; no se elimina un servicio con consumos
-        // (R7-14, que ahora pasa por el servicio)
+        // (RR-19, que ahora pasa por el servicio)
         builder.HasMany(s => s.Consumos)
             .WithOne()
             .HasForeignKey(c => new { c.MenuId, c.PacienteId, c.FechaServicio })

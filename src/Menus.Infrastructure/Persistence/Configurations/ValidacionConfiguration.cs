@@ -10,8 +10,8 @@ internal sealed class ValidacionConfiguration : IEntityTypeConfiguration<Validac
     {
         builder.ToTable("validacion");
 
-        // R7-32: un menú tiene a lo sumo una validación, así que el menú es la clave. El par (revisor, menú) ya no
-        // sería mínimo. La propiedad Id del dominio es la misma que MenuId y no se mapea aparte.
+        // RC-12 y RK-13: un menú tiene a lo sumo una validación, así que el menú es la clave. El par (revisor,
+        // menú) ya no sería mínimo. La propiedad Id del dominio es la misma que MenuId y no se mapea aparte.
         builder.HasKey(v => v.MenuId);
         builder.Ignore(v => v.Id);
 
@@ -23,7 +23,7 @@ internal sealed class ValidacionConfiguration : IEntityTypeConfiguration<Validac
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
-        // R7-17: el dictamen es obligatorio. Vuelve con el rechazo registrado (#155): toma los dos valores.
+        // RD-12: el dictamen es obligatorio. Vuelve con el rechazo registrado (#155): toma los dos valores.
         builder.Property(v => v.Aprobado)
             .HasColumnName("aprobado")
             .IsRequired();

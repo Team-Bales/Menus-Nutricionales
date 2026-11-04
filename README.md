@@ -69,6 +69,20 @@ docker compose up --build
 
 Servicios que levanta `docker-compose.yml`: `api` (ASP.NET Core), `client` (Blazor WebAssembly servido por nginx), `postgres`, `mongo`, `redis`.
 
+### Compilar y probar sin `sudo` ni Docker
+
+Si no tienes permisos de administrador o no quieres instalar Docker, puedes instalar el SDK de .NET en tu directorio personal y ejecutar las pruebas de dominio (las de integración necesitan Docker y corren en CI):
+
+```bash
+curl -sSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+bash /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+export DOTNET_ROOT=$HOME/.dotnet PATH=$HOME/.dotnet:$PATH   # añadir a ~/.bashrc
+dotnet build MenusNutricionales.slnx
+dotnet test MenusNutricionales.slnx --filter "FullyQualifiedName!~IntegrationTests"
+```
+
+**Nota:** Las pruebas de `tests/Menus.Infrastructure.IntegrationTests` necesitan Docker (Testcontainers) y se ejecutan en CI; sin Docker se excluyen con el filtro anterior y la ejecución completa (`dotnet test MenusNutricionales.slnx`) falla en ese proyecto.
+
 ## Flujo de trabajo del equipo
 
 Metodología Scrumban, tablero en GitHub Projects, ramas por issue (`tipo/numero-descripcion`), commits en formato [Conventional Commits](https://www.conventionalcommits.org/), Pull Request con al menos 1 revisión antes de mergear a `main` (sin squash, para conservar la evidencia de aporte individual por commit). Detalle completo en el documento de propuesta técnica del equipo.

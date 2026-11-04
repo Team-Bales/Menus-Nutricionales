@@ -54,9 +54,19 @@ jobs:
           dotnet test MenusNutricionales.slnx \
             --no-build \
             --configuration Release \
+            --filter "FullyQualifiedName!~IntegrationTests" \
             --collect:"XPlat Code Coverage;Format=opencover" \
             --results-directory ./coverage \
             --logger "trx;LogFileName=test-results.trx"
+
+      - name: Pruebas de integración (Testcontainers)
+        run: |
+          dotnet test tests/Menus.Infrastructure.IntegrationTests \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage;Format=opencover" \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=integration-results.trx"
 
       - name: Verificar si hay archivos de cobertura
         id: check-coverage

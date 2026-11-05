@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Nomenclators;
@@ -19,8 +20,8 @@ public sealed class GrupoNutricionalTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t\n")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new GrupoNutricional(Guid.NewGuid(), nombre));
+        Assert.Throws<DatoInvalidoException>(() => new GrupoNutricional(Guid.NewGuid(), nombre));
     }
 }

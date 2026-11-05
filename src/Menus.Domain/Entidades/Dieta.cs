@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
@@ -14,10 +15,10 @@ public sealed class Dieta : Entity<Guid>
     /// <param name="id">Identificador único de la dieta.</param>
     /// <param name="nombre">Nombre descriptivo de la dieta.</param>
     /// <param name="programaAtencionId">Identificador del programa de atención al que pertenece.</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o vacío.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o vacío.</exception>
     public Dieta(Guid id, string nombre, Guid programaAtencionId) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         Nombre = nombre;
         ProgramaAtencionId = programaAtencionId;
     }
@@ -38,12 +39,12 @@ public sealed class Dieta : Entity<Guid>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional.</param>
     /// <param name="tipo">Tipo de cobertura: requerido o restringido.</param>
     /// <returns>La cobertura registrada.</returns>
-    /// <exception cref="InvalidOperationException">Si el grupo ya está registrado en la dieta.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el grupo ya está registrado en la dieta.</exception>
     public DietaGrupoNutricional AgregarGrupo(Guid grupoNutricionalId, TipoCobertura tipo)
     {
         if (_gruposNutricionales.Any(g => g.GrupoNutricionalId == grupoNutricionalId))
         {
-            throw new InvalidOperationException($"La dieta ya cubre el grupo nutricional {grupoNutricionalId}.");
+            throw new ReglaDeNegocioException($"La dieta ya cubre el grupo nutricional {grupoNutricionalId}.");
         }
 
         var grupo = new DietaGrupoNutricional(Id, grupoNutricionalId, tipo);
@@ -54,12 +55,12 @@ public sealed class Dieta : Entity<Guid>
     /// <summary>Registra una restricción alimentaria en la dieta.</summary>
     /// <param name="restriccionAlimentariaId">Identificador de la restricción alimentaria.</param>
     /// <returns>La restricción registrada.</returns>
-    /// <exception cref="InvalidOperationException">Si la restricción ya está registrada en la dieta.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si la restricción ya está registrada en la dieta.</exception>
     public DietaRestriccion AgregarRestriccion(Guid restriccionAlimentariaId)
     {
         if (_restricciones.Any(r => r.RestriccionAlimentariaId == restriccionAlimentariaId))
         {
-            throw new InvalidOperationException($"La dieta ya tiene la restricción {restriccionAlimentariaId}.");
+            throw new ReglaDeNegocioException($"La dieta ya tiene la restricción {restriccionAlimentariaId}.");
         }
 
         var restriccion = new DietaRestriccion(Id, restriccionAlimentariaId);
@@ -75,18 +76,18 @@ public sealed class Dieta : Entity<Guid>
     /// recurrentes»).
     /// </remarks>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional que se quita.</param>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si la dieta no cubre ese grupo, o si es su único grupo requerido (RK-07).
     /// </exception>
     public void QuitarGrupo(Guid grupoNutricionalId)
     {
         var grupo = _gruposNutricionales.SingleOrDefault(g => g.GrupoNutricionalId == grupoNutricionalId)
-            ?? throw new InvalidOperationException($"La dieta no cubre el grupo nutricional {grupoNutricionalId}.");
+            ?? throw new ReglaDeNegocioException($"La dieta no cubre el grupo nutricional {grupoNutricionalId}.");
 
         if (grupo.Tipo == TipoCobertura.Requerido
             && _gruposNutricionales.Count(g => g.Tipo == TipoCobertura.Requerido) == 1)
         {
-            throw new InvalidOperationException("Toda dieta exige cubrir al menos un grupo nutricional (RK-07): no se quita su único grupo requerido.");
+            throw new ReglaDeNegocioException("Toda dieta exige cubrir al menos un grupo nutricional (RK-07): no se quita su único grupo requerido.", "RK-07");
         }
 
         _gruposNutricionales.Remove(grupo);
@@ -98,11 +99,11 @@ public sealed class Dieta : Entity<Guid>
     /// disponibilidad calórica de la dieta, porque cambian sus grupos prohibidos.
     /// </remarks>
     /// <param name="restriccionAlimentariaId">Identificador de la restricción alimentaria que se quita.</param>
-    /// <exception cref="InvalidOperationException">Si la dieta no tiene esa restricción.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si la dieta no tiene esa restricción.</exception>
     public void QuitarRestriccion(Guid restriccionAlimentariaId)
     {
         var restriccion = _restricciones.SingleOrDefault(r => r.RestriccionAlimentariaId == restriccionAlimentariaId)
-            ?? throw new InvalidOperationException($"La dieta no tiene la restricción {restriccionAlimentariaId}.");
+            ?? throw new ReglaDeNegocioException($"La dieta no tiene la restricción {restriccionAlimentariaId}.");
 
         _restricciones.Remove(restriccion);
     }

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
@@ -45,7 +46,7 @@ public abstract class ItemAlimentario : Entity<Guid>
     /// FK → NivelCalorico (relación <c>Tiene</c>): uno de <see cref="NivelCalorico.Todos"/> (RD-02).
     /// </param>
     /// <param name="nutricionistaId">Nutricionista que describió el ítem (relación <c>Describe</c>).</param>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si <paramref name="nombre"/> es nulo o solo espacios, o si el tipo de preparación o el nivel calórico no
     /// son del catálogo.
     /// </exception>
@@ -57,7 +58,7 @@ public abstract class ItemAlimentario : Entity<Guid>
         Guid nivelCaloricoId,
         Guid nutricionistaId) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         ExigirCatalogo(tipoPreparacionId, nivelCaloricoId);
 
         Nombre = nombre;
@@ -95,13 +96,13 @@ public abstract class ItemAlimentario : Entity<Guid>
     /// <param name="grupoNutricionalId">Nuevo grupo nutricional.</param>
     /// <param name="tipoPreparacionId">Nuevo tipo de preparación: uno de <see cref="TipoPreparacion.Todos"/> (RD-01).</param>
     /// <param name="nivelCaloricoId">Nuevo nivel calórico: uno de <see cref="NivelCalorico.Todos"/> (RD-02).</param>
-    /// <exception cref="InvalidOperationException">Si quien lo pide no es el nutricionista que describió el ítem.</exception>
-    /// <exception cref="ArgumentException">Si el tipo de preparación o el nivel calórico no son del catálogo.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si quien lo pide no es el nutricionista que describió el ítem.</exception>
+    /// <exception cref="DatoInvalidoException">Si el tipo de preparación o el nivel calórico no son del catálogo.</exception>
     public void Reclasificar(Guid nutricionistaId, Guid grupoNutricionalId, Guid tipoPreparacionId, Guid nivelCaloricoId)
     {
         if (nutricionistaId != NutricionistaId)
         {
-            throw new InvalidOperationException("Solo el nutricionista que describió el ítem puede clasificarlo (RS-02).");
+            throw new ReglaDeNegocioException("Solo el nutricionista que describió el ítem puede clasificarlo (RS-02).", "RS-02");
         }
 
         ExigirCatalogo(tipoPreparacionId, nivelCaloricoId);
@@ -116,12 +117,12 @@ public abstract class ItemAlimentario : Entity<Guid>
     {
         if (!TipoPreparacion.Existe(tipoPreparacionId))
         {
-            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
+            throw new DatoInvalidoException(nameof(tipoPreparacionId), $"{tipoPreparacionId} no es un tipo de preparación del catálogo.");
         }
 
         if (!NivelCalorico.Existe(nivelCaloricoId))
         {
-            throw new ArgumentException($"{nivelCaloricoId} no es un nivel calórico del catálogo.", nameof(nivelCaloricoId));
+            throw new DatoInvalidoException(nameof(nivelCaloricoId), $"{nivelCaloricoId} no es un nivel calórico del catálogo.");
         }
     }
 }

@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -18,8 +19,8 @@ public sealed class SalaTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Sala(Guid.NewGuid(), nombre));
+        Assert.Throws<DatoInvalidoException>(() => new Sala(Guid.NewGuid(), nombre));
     }
 }

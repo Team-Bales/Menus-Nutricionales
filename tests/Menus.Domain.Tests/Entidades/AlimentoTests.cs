@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
@@ -27,21 +28,21 @@ public sealed class AlimentoTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id, _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Alimento(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id, _nutricionistaId));
     }
 
     [Fact]
-    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaArgumentException()
+    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Medio.Id, _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Medio.Id, _nutricionistaId));
     }
 
     [Fact]
-    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaArgumentException()
+    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.Entrante.Id, Guid.NewGuid(), _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Alimento(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.Entrante.Id, Guid.NewGuid(), _nutricionistaId));
     }
 
     [Fact]
@@ -69,12 +70,12 @@ public sealed class AlimentoTests
     }
 
     [Fact]
-    public void Reclasificar_OtroNutricionista_LanzaInvalidOperationExceptionYNoCambiaNada()
+    public void Reclasificar_OtroNutricionista_LanzaReglaDeNegocioExceptionYNoCambiaNada()
     {
         // RS-02: solo el nutricionista que describió el ítem lo clasifica.
         var alimento = new Alimento(Guid.NewGuid(), "Manzana", _grupoId, TipoPreparacion.Postre.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ReglaDeNegocioException>(() =>
             alimento.Reclasificar(Guid.NewGuid(), Guid.NewGuid(), TipoPreparacion.Entrante.Id, NivelCalorico.Medio.Id));
 
         Assert.Equal(_grupoId, alimento.GrupoNutricionalId);
@@ -83,11 +84,11 @@ public sealed class AlimentoTests
     }
 
     [Fact]
-    public void Reclasificar_TipoFueraDelCatalogo_LanzaArgumentExceptionYNoCambiaNada()
+    public void Reclasificar_TipoFueraDelCatalogo_LanzaDatoInvalidoExceptionYNoCambiaNada()
     {
         var alimento = new Alimento(Guid.NewGuid(), "Manzana", _grupoId, TipoPreparacion.Postre.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
 
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             alimento.Reclasificar(_nutricionistaId, Guid.NewGuid(), Guid.NewGuid(), NivelCalorico.Medio.Id));
 
         Assert.Equal(_grupoId, alimento.GrupoNutricionalId);
@@ -95,11 +96,11 @@ public sealed class AlimentoTests
     }
 
     [Fact]
-    public void Reclasificar_NivelFueraDelCatalogo_LanzaArgumentException()
+    public void Reclasificar_NivelFueraDelCatalogo_LanzaDatoInvalidoException()
     {
         var alimento = new Alimento(Guid.NewGuid(), "Manzana", _grupoId, TipoPreparacion.Postre.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
 
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             alimento.Reclasificar(_nutricionistaId, _grupoId, TipoPreparacion.Postre.Id, Guid.NewGuid()));
     }
 }

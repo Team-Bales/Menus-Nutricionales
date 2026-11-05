@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
@@ -75,13 +76,13 @@ public sealed class ValidacionTests
     [InlineData(DateTimeKind.Unspecified, 60)]
     [InlineData(DateTimeKind.Local, -60)]
     [InlineData(DateTimeKind.Unspecified, -60)]
-    public void Aprobar_FechaNoUtc_LanzaArgumentException(DateTimeKind kind, int minutosDesdeCreacion)
+    public void Aprobar_FechaNoUtc_LanzaDatoInvalidoException(DateTimeKind kind, int minutosDesdeCreacion)
     {
         // Antes o después de la creación, una fecha que no está en UTC se rechaza por eso mismo.
         var fecha = DateTime.SpecifyKind(_creacion.AddMinutes(minutosDesdeCreacion), kind);
         var menu = CrearMenu();
 
-        Assert.Throws<ArgumentException>(() => menu.Aprobar(Guid.NewGuid(), fecha));
+        Assert.Throws<DatoInvalidoException>(() => menu.Aprobar(Guid.NewGuid(), fecha));
         Assert.Null(menu.Validacion);
     }
 

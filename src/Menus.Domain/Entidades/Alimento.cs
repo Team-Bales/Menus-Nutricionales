@@ -1,3 +1,5 @@
+using Menus.Domain.Excepciones;
+
 namespace Menus.Domain.Entidades;
 
 /// <summary>
@@ -17,7 +19,7 @@ public sealed class Alimento : ItemAlimentario
     /// <param name="tipoPreparacionId">FK → TipoPreparacion: uno de <see cref="Nomenclators.TipoPreparacion.Todos"/> (RD-01).</param>
     /// <param name="nivelCaloricoId">FK → NivelCalorico: uno de <see cref="Nomenclators.NivelCalorico.Todos"/> (RD-02).</param>
     /// <param name="nutricionistaId">Nutricionista que describió el alimento.</param>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si <paramref name="nombre"/> es nulo o solo espacios, o si el tipo de preparación o el nivel calórico no
     /// son del catálogo.
     /// </exception>

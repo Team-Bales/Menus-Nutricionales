@@ -60,6 +60,10 @@ public static class DependencyInjection
                 sp.GetRequiredService<IMongoClient>(),
                 url.DatabaseName ?? throw new InvalidOperationException(
                     "La cadena de conexión de MongoDB (ConnectionStrings:Mongo) no indica la base de datos.")));
+
+            // Baja coordinada de alimentos y platos (RM-09): solo tiene sentido si hay ficha que borrar.
+            services.AddScoped<IFichaNutricionalStore, FichaNutricionalStore>();
+            services.AddScoped<BajaCoordinadaDeItems>();
         }
 
         return services;

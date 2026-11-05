@@ -301,6 +301,25 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
         await _fixture.ReiniciarAsync();
 
         await using var conn = await _fixture.AbrirAsync();
+
+        // Captura conteos de catálogos ANTES de sembrar (independiente del orden de pruebas)
+        long espInicial, tiposInicial, resultadosInicial;
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT count(*) FROM especialidades";
+            espInicial = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+        }
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT count(*) FROM tipos_preparacion";
+            tiposInicial = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+        }
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT count(*) FROM resultados_nutricionales";
+            resultadosInicial = Convert.ToInt64(await cmd.ExecuteScalarAsync());
+        }
+
         var sembrador = new Sembrador(conn);
 
         // Crea un menú completo: Dieta -> Nutricionista (jefe) -> Autoriza -> Menu
@@ -319,7 +338,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
         // Act: ReiniciarAsync
         await _fixture.ReiniciarAsync();
 
-        // Assert: tablas de datos vacías, catálogos con datos
+        // Assert: tablas de datos vacías
         await using var cmdMenus = conn.CreateCommand();
         cmdMenus.CommandText = "SELECT count(*) FROM menus";
         Assert.Equal(0L, Convert.ToInt64(await cmdMenus.ExecuteScalarAsync()));
@@ -336,17 +355,17 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
         cmdDietas.CommandText = "SELECT count(*) FROM dietas";
         Assert.Equal(0L, Convert.ToInt64(await cmdDietas.ExecuteScalarAsync()));
 
-        // Catálogos conservados
+        // Catálogos conservados (conteos capturados antes de sembrar)
         await using var cmdEsp = conn.CreateCommand();
         cmdEsp.CommandText = "SELECT count(*) FROM especialidades";
-        Assert.Equal(3L, Convert.ToInt64(await cmdEsp.ExecuteScalarAsync()));
+        Assert.Equal(espInicial, Convert.ToInt64(await cmdEsp.ExecuteScalarAsync()));
 
         await using var cmdTipos = conn.CreateCommand();
         cmdTipos.CommandText = "SELECT count(*) FROM tipos_preparacion";
-        Assert.Equal(4L, Convert.ToInt64(await cmdTipos.ExecuteScalarAsync()));
+        Assert.Equal(tiposInicial, Convert.ToInt64(await cmdTipos.ExecuteScalarAsync()));
 
         await using var cmdResultados = conn.CreateCommand();
         cmdResultados.CommandText = "SELECT count(*) FROM resultados_nutricionales";
-        Assert.Equal(5L, Convert.ToInt64(await cmdResultados.ExecuteScalarAsync()));
+        Assert.Equal(resultadosInicial, Convert.ToInt64(await cmdResultados.ExecuteScalarAsync()));
     }
 }

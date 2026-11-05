@@ -1,7 +1,7 @@
 # ADR-010: Capa de aplicación: casos de uso, validación, errores y transacción
 
-**Estado:** Propuesto  
-**Fecha:** 2026-10-31
+**Estado:** Aceptado  
+**Fecha:** 2026-10-31 (propuesto, PR #216); aceptado el 2026-11-04
 
 ## Contexto
 
@@ -72,7 +72,7 @@ Este ADR fija esas convenciones para toda la capa. Recoge las decisiones D3, D6 
 
 **Las dos excepciones del dominio son la parte de esta decisión que cambia código existente.** Hoy el dominio lanza `InvalidOperationException` y `ArgumentException`, que también lanza el framework cuando hay un error de programación. Traducirlas sin más a 409 y 422 convertiría un error del programa en una respuesta «de negocio». Por ejemplo, una consulta que EF no puede traducir lanza `InvalidOperationException`, y el cliente vería un 409 en lugar de un 500.
 
-Se propone que el dominio lance excepciones propias:
+El dominio lanza excepciones propias:
 - una base, `ExcepcionDeDominio`;
 - `ReglaDeNegocioException`, para una regla violada;
 - `DatoInvalidoException`, para un dato inválido.

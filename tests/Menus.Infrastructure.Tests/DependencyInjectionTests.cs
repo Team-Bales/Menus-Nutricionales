@@ -1,9 +1,11 @@
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
+using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Menus.Infrastructure.Tests;
 
@@ -11,16 +13,25 @@ public sealed class DependencyInjectionTests
 {
     private const string Key = "clave-de-prueba-con-mas-de-32-bytes-1234567890";
 
-    private static IConfiguration CreateConfiguration(string? jwtKey = Key) =>
-        new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:Default"] = "Host=localhost;Database=menus;Username=menus;Password=menus",
-                ["Jwt:Key"] = jwtKey,
-                ["Jwt:Issuer"] = "menus-nutricionales-api",
-                ["Jwt:ExpiresMinutes"] = "60",
-            })
+    private static IConfiguration CreateConfiguration(string? jwtKey = Key, string? mongo = null)
+    {
+        var valores = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Default"] = "Host=localhost;Database=menus;Username=menus;Password=menus",
+            ["Jwt:Key"] = jwtKey,
+            ["Jwt:Issuer"] = "menus-nutricionales-api",
+            ["Jwt:ExpiresMinutes"] = "60",
+        };
+
+        if (mongo is not null)
+        {
+            valores["ConnectionStrings:Mongo"] = mongo;
+        }
+
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(valores)
             .Build();
+    }
 
     [Fact]
     public void AddInfrastructure_RegistersRepositoriesAndJwtTokenService()
@@ -45,5 +56,35 @@ public sealed class DependencyInjectionTests
 
         Assert.Throws<InvalidOperationException>(
             () => services.AddInfrastructure(CreateConfiguration(jwtKey: null)));
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConMongo_RegistraElBorradoCoordinadoYElAlmacenDeFichas()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(); // la baja coordinada pide un ILogger<BajaCoordinadaDeItems>
+
+        services.AddInfrastructure(CreateConfiguration(mongo: "mongodb://localhost:27017/menus_prueba"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<FichaNutricionalStore>(scope.ServiceProvider.GetRequiredService<IFichaNutricionalStore>());
+        Assert.IsType<BajaCoordinadaDeItems>(scope.ServiceProvider.GetRequiredService<BajaCoordinadaDeItems>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_SinMongo_NoRegistraLaBajaCoordinada()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.Throws<InvalidOperationException>(
+            () => scope.ServiceProvider.GetRequiredService<IFichaNutricionalStore>());
     }
 }

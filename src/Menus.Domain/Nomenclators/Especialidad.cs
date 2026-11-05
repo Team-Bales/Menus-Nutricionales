@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Nomenclators;
 
@@ -12,10 +13,10 @@ public sealed class Especialidad : Entity<Guid>
 {
     /// <param name="id">Identificador único de la especialidad.</param>
     /// <param name="nombre">Nombre descriptivo de la especialidad (no puede estar vacío).</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
     public Especialidad(Guid id, string nombre) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         Nombre = nombre;
     }
 

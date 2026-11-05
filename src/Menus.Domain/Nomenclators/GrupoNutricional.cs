@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Nomenclators;
 
@@ -14,10 +15,10 @@ public sealed class GrupoNutricional : Entity<Guid>
 {
     /// <param name="id">Identificador único del grupo.</param>
     /// <param name="nombre">Nombre descriptivo del grupo (no puede estar vacío).</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
     public GrupoNutricional(Guid id, string nombre) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         Nombre = nombre;
     }
 

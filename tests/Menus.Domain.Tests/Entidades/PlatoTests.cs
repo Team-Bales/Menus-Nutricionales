@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
@@ -30,21 +31,21 @@ public sealed class PlatoTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Alto.Id, _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Plato(Guid.NewGuid(), nombre, _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Alto.Id, _nutricionistaId));
     }
 
     [Fact]
-    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaArgumentException()
+    public void Constructor_TipoPreparacionFueraDelCatalogo_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Alto.Id, _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, Guid.NewGuid(), NivelCalorico.Alto.Id, _nutricionistaId));
     }
 
     [Fact]
-    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaArgumentException()
+    public void Constructor_NivelCaloricoFueraDelCatalogo_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.PlatoFuerte.Id, Guid.NewGuid(), _nutricionistaId));
+        Assert.Throws<DatoInvalidoException>(() => new Plato(Guid.NewGuid(), "Nombre", _grupoId, TipoPreparacion.PlatoFuerte.Id, Guid.NewGuid(), _nutricionistaId));
     }
 
     [Fact]
@@ -64,20 +65,20 @@ public sealed class PlatoTests
     [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-0.5)]
-    public void AgregarIngrediente_CantidadNoPositiva_LanzaArgumentOutOfRangeException(decimal cantidad)
+    public void AgregarIngrediente_CantidadNoPositiva_LanzaDatoInvalidoException(decimal cantidad)
     {
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => plato.AgregarIngrediente(_alimentoId1, cantidad));
+        Assert.Throws<DatoInvalidoException>(() => plato.AgregarIngrediente(_alimentoId1, cantidad));
     }
 
     [Fact]
-    public void AgregarIngrediente_ElPropioPlato_LanzaInvalidOperationException()
+    public void AgregarIngrediente_ElPropioPlato_LanzaReglaDeNegocioException()
     {
         // RS-12: la composición tiene un solo nivel; un plato no es ingrediente de sí mismo.
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
-        Assert.Throws<InvalidOperationException>(() => plato.AgregarIngrediente(plato.Id, 100m));
+        Assert.Throws<ReglaDeNegocioException>(() => plato.AgregarIngrediente(plato.Id, 100m));
         Assert.Empty(plato.Ingredientes);
     }
 
@@ -94,13 +95,13 @@ public sealed class PlatoTests
     }
 
     [Fact]
-    public void AgregarIngrediente_AlimentoDuplicado_LanzaInvalidOperationException()
+    public void AgregarIngrediente_AlimentoDuplicado_LanzaReglaDeNegocioException()
     {
         var plato = new Plato(Guid.NewGuid(), "Plato Test", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
 
         plato.AgregarIngrediente(_alimentoId1, 100m);
 
-        Assert.Throws<InvalidOperationException>(() => plato.AgregarIngrediente(_alimentoId1, 200m));
+        Assert.Throws<ReglaDeNegocioException>(() => plato.AgregarIngrediente(_alimentoId1, 200m));
     }
 
     [Fact]
@@ -141,24 +142,24 @@ public sealed class PlatoTests
     }
 
     [Fact]
-    public void QuitarIngrediente_UnicoIngrediente_LanzaInvalidOperationExceptionYLoConserva()
+    public void QuitarIngrediente_UnicoIngrediente_LanzaReglaDeNegocioExceptionYLoConserva()
     {
         // RK-03: todo plato se compone de al menos un alimento.
         var plato = new Plato(Guid.NewGuid(), "Puré", _grupoId, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, _nutricionistaId);
         plato.AgregarIngrediente(_alimentoId1, 200m);
 
-        Assert.Throws<InvalidOperationException>(() => plato.QuitarIngrediente(_alimentoId1));
+        Assert.Throws<ReglaDeNegocioException>(() => plato.QuitarIngrediente(_alimentoId1));
         Assert.Single(plato.Ingredientes);
     }
 
     [Fact]
-    public void QuitarIngrediente_AlimentoQueNoEstaEnLaComposicion_LanzaInvalidOperationException()
+    public void QuitarIngrediente_AlimentoQueNoEstaEnLaComposicion_LanzaReglaDeNegocioException()
     {
         var plato = new Plato(Guid.NewGuid(), "Ensalada", _grupoId, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
         plato.AgregarIngrediente(_alimentoId1, 100m);
         plato.AgregarIngrediente(_alimentoId2, 50m);
 
-        Assert.Throws<InvalidOperationException>(() => plato.QuitarIngrediente(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => plato.QuitarIngrediente(Guid.NewGuid()));
         Assert.Equal(2, plato.Ingredientes.Count);
     }
 

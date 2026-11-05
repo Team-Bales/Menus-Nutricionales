@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
@@ -29,7 +30,7 @@ public sealed class ValoracionNutricional : Entity<Guid>
     /// <param name="nutricionistaId">Identificador del nutricionista que emite la valoración.</param>
     /// <param name="resultadoNutricionalId">Identificador de una de las categorías de <see cref="ResultadoNutricional"/>.</param>
     /// <param name="fechaValoracion">Fecha y hora en que se emite la valoración (UTC).</param>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si <paramref name="fechaValoracion"/> no está en UTC o si <paramref name="resultadoNutricionalId"/> no es una
     /// categoría del catálogo (RR-17).
     /// </exception>
@@ -44,12 +45,12 @@ public sealed class ValoracionNutricional : Entity<Guid>
     {
         if (fechaValoracion.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante de valoración debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValoracion));
+            throw new DatoInvalidoException(nameof(fechaValoracion), "El instante de valoración debe estar en UTC (DateTimeKind.Utc).");
         }
 
         if (!ResultadoNutricional.Existe(resultadoNutricionalId))
         {
-            throw new ArgumentException($"{resultadoNutricionalId} no es una categoría de resultado nutricional.", nameof(resultadoNutricionalId));
+            throw new DatoInvalidoException(nameof(resultadoNutricionalId), $"{resultadoNutricionalId} no es una categoría de resultado nutricional.");
         }
 
         MenuId = menuId;

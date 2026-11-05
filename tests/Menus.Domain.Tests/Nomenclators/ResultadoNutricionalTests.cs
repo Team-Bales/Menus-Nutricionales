@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Nomenclators;
@@ -49,9 +50,9 @@ public sealed class ResultadoNutricionalTests
     [InlineData(0)]
     [InlineData(6)]
     [InlineData(-1)]
-    public void DesdeValor_ValorFueraDeRango_LanzaArgumentOutOfRangeException(int valor)
+    public void DesdeValor_ValorFueraDeRango_LanzaDatoInvalidoException(int valor)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ResultadoNutricional.DesdeValor(valor));
+        Assert.Throws<DatoInvalidoException>(() => ResultadoNutricional.DesdeValor(valor));
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -63,12 +64,12 @@ public sealed class Servicio : Entity<(Guid MenuId, Guid PacienteId, DateOnly Fe
     /// <param name="itemId">Identificador del alimento o plato consumido.</param>
     /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
     /// <returns>El consumo registrado.</returns>
-    /// <exception cref="InvalidOperationException">Si el ítem ya tiene un consumo registrado en este servicio.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el ítem ya tiene un consumo registrado en este servicio.</exception>
     internal Consumo RegistrarConsumo(Guid itemId, bool aceptacion)
     {
         if (_consumos.Any(c => c.ItemId == itemId))
         {
-            throw new InvalidOperationException($"El ítem {itemId} ya tiene un consumo registrado en este servicio.");
+            throw new ReglaDeNegocioException($"El ítem {itemId} ya tiene un consumo registrado en este servicio.");
         }
 
         var consumo = new Consumo(MenuId, PacienteId, FechaServicio, itemId, aceptacion);

@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
@@ -38,9 +39,9 @@ public sealed class ValoracionNutricionalTests
     }
 
     [Fact]
-    public void Constructor_ResultadoFueraDelCatalogo_LanzaArgumentException()
+    public void Constructor_ResultadoFueraDelCatalogo_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _fecha));
     }
 
@@ -49,7 +50,7 @@ public sealed class ValoracionNutricionalTests
     {
         var fechaLocal = DateTime.Now;
 
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             new ValoracionNutricional(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), _buena, fechaLocal));
     }
 

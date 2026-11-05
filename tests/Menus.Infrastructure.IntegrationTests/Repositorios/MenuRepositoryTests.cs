@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.IntegrationTests.Fixtures;
 using Menus.Infrastructure.Persistence.Repositories;
@@ -122,7 +123,7 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
             var menu = (await new MenuRepository(ctx).GetByIdAsync(_e.FinalId))!;
 
             // Con las asignaciones cargadas, el dominio ve que P1 ya estaba asignado.
-            Assert.Throws<InvalidOperationException>(() => menu.AsignarPaciente(_e.P1));
+            Assert.Throws<ReglaDeNegocioException>(() => menu.AsignarPaciente(_e.P1));
 
             menu.AsignarPaciente(_e.P2);
             menu.RegistrarServicio(_e.P1, hoy);

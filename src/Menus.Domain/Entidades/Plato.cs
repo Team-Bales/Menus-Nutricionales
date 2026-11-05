@@ -1,3 +1,5 @@
+using Menus.Domain.Excepciones;
+
 namespace Menus.Domain.Entidades;
 
 /// <summary>
@@ -19,7 +21,7 @@ public sealed class Plato : ItemAlimentario
     /// <param name="tipoPreparacionId">FK → TipoPreparacion: uno de <see cref="Nomenclators.TipoPreparacion.Todos"/> (RD-01).</param>
     /// <param name="nivelCaloricoId">FK → NivelCalorico: uno de <see cref="Nomenclators.NivelCalorico.Todos"/> (RD-02).</param>
     /// <param name="nutricionistaId">Nutricionista que describió el plato.</param>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si <paramref name="nombre"/> es nulo o solo espacios, o si el tipo de preparación o el nivel calórico no
     /// son del catálogo.
     /// </exception>
@@ -47,25 +49,25 @@ public sealed class Plato : ItemAlimentario
     /// <param name="alimentoId">Identificador del alimento simple a agregar.</param>
     /// <param name="cantidad">Cantidad del alimento en el plato (&gt; 0, RD-05).</param>
     /// <returns>El ingrediente agregado.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="cantidad"/> no es positiva.</exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="DatoInvalidoException">Si <paramref name="cantidad"/> no es positiva.</exception>
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el ingrediente es el propio plato (RS-12) o si el alimento ya está en la composición del plato.
     /// </exception>
     public PlatoIngrediente AgregarIngrediente(Guid alimentoId, decimal cantidad)
     {
         if (alimentoId == Id)
         {
-            throw new InvalidOperationException("Un plato no puede ser ingrediente de sí mismo: sus ingredientes son alimentos simples.");
+            throw new ReglaDeNegocioException("Un plato no puede ser ingrediente de sí mismo: sus ingredientes son alimentos simples.");
         }
 
         if (cantidad <= 0m)
         {
-            throw new ArgumentOutOfRangeException(nameof(cantidad), "La cantidad debe ser estrictamente positiva.");
+            throw new DatoInvalidoException(nameof(cantidad), "La cantidad debe ser estrictamente positiva.");
         }
 
         if (_ingredientes.Any(i => i.AlimentoId == alimentoId))
         {
-            throw new InvalidOperationException($"El alimento {alimentoId} ya forma parte de la composición de este plato.");
+            throw new ReglaDeNegocioException($"El alimento {alimentoId} ya forma parte de la composición de este plato.");
         }
 
         var ingrediente = new PlatoIngrediente(Id, alimentoId, cantidad);
@@ -80,17 +82,17 @@ public sealed class Plato : ItemAlimentario
     /// ingredientes tienen que coincidir con la composición (RM-06).
     /// </remarks>
     /// <param name="alimentoId">Identificador del alimento que se quita.</param>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el alimento no está en la composición, o si es el único ingrediente del plato (RK-03).
     /// </exception>
     public void QuitarIngrediente(Guid alimentoId)
     {
         var ingrediente = _ingredientes.SingleOrDefault(i => i.AlimentoId == alimentoId)
-            ?? throw new InvalidOperationException($"El alimento {alimentoId} no forma parte de la composición de este plato.");
+            ?? throw new ReglaDeNegocioException($"El alimento {alimentoId} no forma parte de la composición de este plato.");
 
         if (_ingredientes.Count == 1)
         {
-            throw new InvalidOperationException("Un plato se compone de al menos un alimento (RK-03): no se quita su único ingrediente.");
+            throw new ReglaDeNegocioException("Un plato se compone de al menos un alimento (RK-03): no se quita su único ingrediente.", "RK-03");
         }
 
         _ingredientes.Remove(ingrediente);

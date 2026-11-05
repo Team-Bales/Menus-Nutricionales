@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Nomenclators;
@@ -18,8 +19,8 @@ public sealed class EspecialidadTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Especialidad(Guid.NewGuid(), nombre));
+        Assert.Throws<DatoInvalidoException>(() => new Especialidad(Guid.NewGuid(), nombre));
     }
 }

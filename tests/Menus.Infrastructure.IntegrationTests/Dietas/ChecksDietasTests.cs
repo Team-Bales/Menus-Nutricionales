@@ -205,15 +205,38 @@ public sealed class ChecksDietasTests : IAsyncLifetime
     [Fact]
     public async Task Ck_dietas_r6_15_nombre_acepta_nombre_valido()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO dietas (id, nombre, programa_atencion_id)
-            VALUES (@id, 'Dieta Válida', @programa_atencion_id)
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
-        cmd.Parameters.AddWithValue("programa_atencion_id", Guid.Parse("33333333-0000-0000-0000-000000000001"));
+        var dietaId = Guid.NewGuid();
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO dietas (id, nombre, programa_atencion_id)
+                VALUES (@id, @nombre, @programa_atencion_id)
+                """;
+            cmd.Parameters.AddWithValue("id", dietaId);
+            cmd.Parameters.AddWithValue("nombre", "Dieta Válida");
+            cmd.Parameters.AddWithValue("programa_atencion_id", Guid.Parse("33333333-0000-0000-0000-000000000001"));
+            await cmd.ExecuteNonQueryAsync();
 
-        await cmd.ExecuteNonQueryAsync();
+            // RK-07: toda dieta debe tener al menos una cobertura Requerido (trg_r6_21_dieta diferido)
+            cmd.CommandText = """
+                INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo)
+                VALUES (@dieta_id, @grupo_nutricional_id, 'Requerido')
+                """;
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("dieta_id", dietaId);
+            cmd.Parameters.AddWithValue("grupo_nutricional_id", Guid.Parse("11111111-0000-0000-0000-000000000001")); // Cereales
+            await cmd.ExecuteNonQueryAsync();
+
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // ck_pacientes_r6_15_nombre (InitialCreate.cs:200)
@@ -405,23 +428,55 @@ public sealed class ChecksDietasTests : IAsyncLifetime
             await cmd.ExecuteNonQueryAsync();
         }
 
-        // Dos dietas con el mismo nombre
-        await using (var cmd = _conexion.CreateCommand())
-        {
-            cmd.CommandText = "INSERT INTO dietas (id, nombre, programa_atencion_id) VALUES (@id, @nombre, @prog)";
-            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
-            cmd.Parameters.AddWithValue("nombre", nombre);
-            cmd.Parameters.AddWithValue("prog", Guid.Parse("33333333-0000-0000-0000-000000000001"));
-            await cmd.ExecuteNonQueryAsync();
-        }
+        // Dos dietas con el mismo nombre (cada una con su cobertura Requerido para RK-07)
+        var grupoCereales = Guid.Parse("11111111-0000-0000-0000-000000000001");
+        var programaPediatria = Guid.Parse("33333333-0000-0000-0000-000000000001");
 
-        await using (var cmd = _conexion.CreateCommand())
+        await using (var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted))
         {
-            cmd.CommandText = "INSERT INTO dietas (id, nombre, programa_atencion_id) VALUES (@id, @nombre, @prog)";
-            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
-            cmd.Parameters.AddWithValue("nombre", nombre);
-            cmd.Parameters.AddWithValue("prog", Guid.Parse("33333333-0000-0000-0000-000000000001"));
-            await cmd.ExecuteNonQueryAsync();
+            try
+            {
+                await using (var cmd = _conexion.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    var dietaId1 = Guid.NewGuid();
+                    cmd.CommandText = "INSERT INTO dietas (id, nombre, programa_atencion_id) VALUES (@id, @nombre, @prog)";
+                    cmd.Parameters.AddWithValue("id", dietaId1);
+                    cmd.Parameters.AddWithValue("nombre", nombre);
+                    cmd.Parameters.AddWithValue("prog", programaPediatria);
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo) VALUES (@dieta_id, @grupo_id, 'Requerido')";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("dieta_id", dietaId1);
+                    cmd.Parameters.AddWithValue("grupo_id", grupoCereales);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                await using (var cmd = _conexion.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    var dietaId2 = Guid.NewGuid();
+                    cmd.CommandText = "INSERT INTO dietas (id, nombre, programa_atencion_id) VALUES (@id, @nombre, @prog)";
+                    cmd.Parameters.AddWithValue("id", dietaId2);
+                    cmd.Parameters.AddWithValue("nombre", nombre);
+                    cmd.Parameters.AddWithValue("prog", programaPediatria);
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = "INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo) VALUES (@dieta_id, @grupo_id, 'Requerido')";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("dieta_id", dietaId2);
+                    cmd.Parameters.AddWithValue("grupo_id", grupoCereales);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
     }
 }

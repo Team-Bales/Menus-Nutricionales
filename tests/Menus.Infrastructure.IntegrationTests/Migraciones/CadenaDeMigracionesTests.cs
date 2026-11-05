@@ -297,6 +297,9 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     public async Task ReiniciarAsync_deja_vacio_lo_sembrado_y_conserva_los_catalogos()
     {
         // Usa la base principal del fixture (ya migrada y con catálogos)
+        // Limpia primero para aislar de otras pruebas de la colección
+        await _fixture.ReiniciarAsync();
+
         await using var conn = await _fixture.AbrirAsync();
         var sembrador = new Sembrador(conn);
 

@@ -135,18 +135,20 @@ public sealed class IndicesUnicosDietasTests : IAsyncLifetime
     public async Task Indices_unicos_existen_en_nomencladores_y_no_en_entidades_principales()
     {
         // Verifica que los índices únicos existen en los catálogos
-        await using var cmdIdx = _conexion.CreateCommand();
-        cmdIdx.CommandText = """
-            SELECT indexname FROM pg_indexes
-            WHERE indexname IN ('IX_programas_atencion_nombre', 'IX_restricciones_alimentarias_nombre', 'IX_especialidades_nombre')
-            AND schemaname = 'public'
-            """;
         var indices = new System.Collections.Generic.List<string>();
-        await using var reader = await cmdIdx.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
         {
-            indices.Add(reader.GetString(0));
-        }
+            await using var cmdIdx = _conexion.CreateCommand();
+            cmdIdx.CommandText = """
+                SELECT indexname FROM pg_indexes
+                WHERE indexname IN ('IX_programas_atencion_nombre', 'IX_restricciones_alimentarias_nombre', 'IX_especialidades_nombre')
+                AND schemaname = 'public'
+                """;
+            await using var reader = await cmdIdx.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                indices.Add(reader.GetString(0));
+            }
+        } // reader y cmdIdx se disponen aquí
 
         Assert.Contains("IX_programas_atencion_nombre", indices);
         Assert.Contains("IX_restricciones_alimentarias_nombre", indices);
@@ -154,20 +156,22 @@ public sealed class IndicesUnicosDietasTests : IAsyncLifetime
         Assert.Equal(3, indices.Count);
 
         // Verifica que NO hay índices únicos en nombre de dietas, nutricionistas, pacientes, salas
-        await using var cmdNoIdx = _conexion.CreateCommand();
-        cmdNoIdx.CommandText = """
-            SELECT indexname FROM pg_indexes
-            WHERE tablename IN ('dietas', 'nutricionistas', 'pacientes', 'salas')
-            AND schemaname = 'public'
-            AND indexdef LIKE '%UNIQUE%'
-            AND indexdef LIKE '%nombre%'
-            """;
         var indicesUnicosEntidades = new System.Collections.Generic.List<string>();
-        await using var reader2 = await cmdNoIdx.ExecuteReaderAsync();
-        while (await reader2.ReadAsync())
         {
-            indicesUnicosEntidades.Add(reader2.GetString(0));
-        }
+            await using var cmdNoIdx = _conexion.CreateCommand();
+            cmdNoIdx.CommandText = """
+                SELECT indexname FROM pg_indexes
+                WHERE tablename IN ('dietas', 'nutricionistas', 'pacientes', 'salas')
+                AND schemaname = 'public'
+                AND indexdef LIKE '%UNIQUE%'
+                AND indexdef LIKE '%nombre%'
+                """;
+            await using var reader2 = await cmdNoIdx.ExecuteReaderAsync();
+            while (await reader2.ReadAsync())
+            {
+                indicesUnicosEntidades.Add(reader2.GetString(0));
+            }
+        } // reader2 y cmdNoIdx se disponen aquí
 
         Assert.Empty(indicesUnicosEntidades);
     }

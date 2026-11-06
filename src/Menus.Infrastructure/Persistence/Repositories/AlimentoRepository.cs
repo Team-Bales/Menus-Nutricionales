@@ -30,4 +30,47 @@ public sealed class AlimentoRepository : Repository<Alimento, Guid>, IAlimentoRe
             .AsNoTracking()
             .Where(a => a.NivelCaloricoId == nivelCalorico.Id)
             .ToListAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<Alimento> Alimentos, int Total)> BuscarAsync(
+        Guid? grupoNutricionalId,
+        Guid? tipoPreparacionId,
+        Guid? nivelCaloricoId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var consulta = Context.Alimentos.AsNoTracking();
+
+        if (grupoNutricionalId is { } grupo)
+        {
+            consulta = consulta.Where(a => a.GrupoNutricionalId == grupo);
+        }
+
+        if (tipoPreparacionId is { } tipo)
+        {
+            consulta = consulta.Where(a => a.TipoPreparacionId == tipo);
+        }
+
+        if (nivelCaloricoId is { } nivel)
+        {
+            consulta = consulta.Where(a => a.NivelCaloricoId == nivel);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken);
+
+        // El Id desempata los nombres iguales salvo mayúsculas, para que la paginación sea estable.
+        var alimentos = await consulta
+            .OrderBy(a => a.Nombre)
+            .ThenBy(a => a.Id)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
+            .ToListAsync(cancellationToken);
+
+        return (alimentos, total);
+    }
+
+    /// <inheritdoc/>
+    public Task<bool> FormaParteDeAlgunPlatoAsync(Guid alimentoId, CancellationToken cancellationToken = default)
+        => Context.PlatosIngredientes.AnyAsync(i => i.AlimentoId == alimentoId, cancellationToken);
 }

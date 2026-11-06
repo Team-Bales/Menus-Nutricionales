@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IPacienteRepository, PacienteRepository>();
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
+        services.AddScoped<IItemAlimentarioRepository, ItemAlimentarioRepository>();
         services.AddScoped<IAlimentoRepository, AlimentoRepository>();
         services.AddScoped<IPlatoRepository, PlatoRepository>();
         services.AddScoped<IDietaRepository, DietaRepository>();

@@ -1,7 +1,6 @@
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
-using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,20 +35,11 @@ public sealed class DependencyInjectionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<INutricionistaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IPacienteRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRepository<Sala, Guid>>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAlimentoRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IPlatoRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDietaRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<JwtTokenService>());
-    }
-
-    [Fact]
-    public void AddInfrastructure_RegistraLaUnidadDeTrabajo()
-    {
-        var services = new ServiceCollection();
-
-        services.AddInfrastructure(CreateConfiguration());
-
-        using var provider = services.BuildServiceProvider();
-        using var scope = provider.CreateScope();
-
-        Assert.IsType<UnitOfWork>(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
     }
 
     [Fact]

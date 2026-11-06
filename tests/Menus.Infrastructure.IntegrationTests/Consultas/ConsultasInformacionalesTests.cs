@@ -9,9 +9,9 @@ using Xunit;
 namespace Menus.Infrastructure.IntegrationTests.Consultas;
 
 /// <summary>
-/// Pruebas de las 9 funciones de las consultas informacionales 2 a 6 del informe (§2.2, #217) contra PostgreSQL
-/// real. Cada prueba siembra el escenario mínimo que permite calcular el resultado a mano y lo compara con lo
-/// que devuelve la función.
+/// Pruebas de las 10 funciones de las consultas informacionales 1 a 6 del informe (§2.2, #102, #217) contra
+/// PostgreSQL real. Cada prueba siembra el escenario mínimo que permite calcular el resultado a mano y lo
+/// compara con lo que devuelve la función.
 /// </summary>
 [Collection("PostgreSQL")]
 public sealed class ConsultasInformacionalesTests : IAsyncLifetime
@@ -51,6 +51,65 @@ public sealed class ConsultasInformacionalesTests : IAsyncLifetime
         cmd.CommandText = sql;
         parametros(cmd.Parameters);
         return await cmd.ExecuteReaderAsync();
+    }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Consulta 1: menús generados automáticamente por dieta.
+    // ---------------------------------------------------------------------------------------------------------
+    [Fact]
+    public async Task Consulta_1_filtra_por_dieta_y_solo_menus_automaticos()
+    {
+        var (dietaA, creadorA, _) = await EscenarioBaseAsync();
+        var dietaB = await _s.DietaAsync();
+        var creadorB = await _s.NutricionistaAsync();
+        await _s.AutorizarParaDietaAsync(creadorB, dietaB);
+
+        var automaticoA = await _s.MenuConParametrosAsync(
+            dietaA, creadorA, DateTime.UtcNow.AddDays(-1), 5, esAutomatico: true,
+            [(Sembrador.TipoPlatoFuerteId, 1.0m)], [Sembrador.GrupoCerealesId]);
+        // Menú manual de la misma dieta: no debe aparecer.
+        await _s.MenuConParametrosAsync(
+            dietaA, creadorA, DateTime.UtcNow, 3, esAutomatico: false,
+            [(Sembrador.TipoPlatoFuerteId, 1.0m)], [Sembrador.GrupoCerealesId]);
+        // Menú automático de otra dieta: no debe aparecer.
+        await _s.MenuConParametrosAsync(
+            dietaB, creadorB, DateTime.UtcNow, 4, esAutomatico: true,
+            [(Sembrador.TipoPlatoFuerteId, 1.0m)], [Sembrador.GrupoCerealesId]);
+
+        var filas = new List<Guid>();
+        await using var reader = await EjecutarAsync(
+            "SELECT * FROM consulta_1_menus_automaticos_por_dieta(@dieta)",
+            p => p.AddWithValue("dieta", dietaA));
+        while (await reader.ReadAsync())
+        {
+            filas.Add(reader.GetGuid(0));
+        }
+
+        Assert.Equal([automaticoA], filas);
+    }
+
+    [Fact]
+    public async Task Consulta_1_agrega_la_distribucion_y_los_grupos_cubiertos_en_una_sola_fila_por_menu()
+    {
+        var (dieta, creador, _) = await EscenarioBaseAsync();
+        var fechaCreacion = new DateTime(2026, 10, 1, 9, 30, 0, DateTimeKind.Utc);
+
+        var menuId = await _s.MenuConParametrosAsync(
+            dieta, creador, fechaCreacion, cantidadTotalAlimentos: 8, esAutomatico: true,
+            distribucion: [(Sembrador.TipoEntrante, 0.4m), (Sembrador.TipoPlatoFuerteId, 0.6m)],
+            grupos: [Sembrador.GrupoCerealesId, Sembrador.GrupoProteinas]);
+
+        await using var reader = await EjecutarAsync(
+            "SELECT * FROM consulta_1_menus_automaticos_por_dieta(@dieta)",
+            p => p.AddWithValue("dieta", dieta));
+        Assert.True(await reader.ReadAsync());
+
+        Assert.Equal(menuId, reader.GetGuid(0));
+        Assert.Equal(fechaCreacion, reader.GetDateTime(2).ToUniversalTime());
+        Assert.Equal(8, reader.GetInt32(3));
+        Assert.Equal("Entrante: 0.4000, Plato fuerte: 0.6000", reader.GetString(4));
+        Assert.Equal("Cereales, Proteínas", reader.GetString(5));
+        Assert.False(await reader.ReadAsync());
     }
 
     // ---------------------------------------------------------------------------------------------------------

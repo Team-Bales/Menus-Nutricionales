@@ -24,16 +24,27 @@ public sealed class Dieta : Entity<Guid>
     }
 
     /// <summary>Nombre descriptivo de la dieta.</summary>
-    public string Nombre { get; }
+    public string Nombre { get; private set; }
 
     /// <summary>FK → Programa de atención al que pertenece la dieta.</summary>
-    public Guid ProgramaAtencionId { get; }
+    public Guid ProgramaAtencionId { get; private set; }
 
     /// <summary>Grupos nutricionales que cubre la dieta (requeridos o restringidos).</summary>
     public IReadOnlyCollection<DietaGrupoNutricional> GruposNutricionales => _gruposNutricionales.AsReadOnly();
 
     /// <summary>Restricciones alimentarias que aplica la dieta.</summary>
     public IReadOnlyCollection<DietaRestriccion> Restricciones => _restricciones.AsReadOnly();
+
+    /// <summary>Actualiza el nombre y el programa de atención de la dieta. Su cobertura y restricciones no cambian.</summary>
+    /// <param name="nombre">Nuevo nombre descriptivo.</param>
+    /// <param name="programaAtencionId">Nuevo programa de atención.</param>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o vacío.</exception>
+    public void Actualizar(string nombre, Guid programaAtencionId)
+    {
+        DatoInvalidoException.SiVacio(nombre);
+        Nombre = nombre;
+        ProgramaAtencionId = programaAtencionId;
+    }
 
     /// <summary>Registra que la dieta cubre un grupo nutricional con el tipo indicado.</summary>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional.</param>

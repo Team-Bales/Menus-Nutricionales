@@ -27,4 +27,31 @@ public sealed class DietaRepository : Repository<Dieta, Guid>, IDietaRepository
             .AsNoTracking()
             .Where(d => d.ProgramaAtencionId == programaAtencionId)
             .ToListAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<Dieta> Dietas, int Total)> BuscarAsync(
+        Guid? programaAtencionId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var consulta = Context.Dietas.AsNoTracking();
+
+        if (programaAtencionId is { } programa)
+        {
+            consulta = consulta.Where(d => d.ProgramaAtencionId == programa);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken);
+
+        // El Id desempata los nombres iguales, para que la paginación sea estable.
+        var dietas = await consulta
+            .OrderBy(d => d.Nombre)
+            .ThenBy(d => d.Id)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
+            .ToListAsync(cancellationToken);
+
+        return (dietas, total);
+    }
 }

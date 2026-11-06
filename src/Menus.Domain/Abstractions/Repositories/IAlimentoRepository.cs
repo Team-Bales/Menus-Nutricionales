@@ -48,4 +48,13 @@ public interface IAlimentoRepository : IRepository<Alimento, Guid>
     /// <param name="alimentoId">Identificador del alimento.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<bool> FormaParteDeAlgunPlatoAsync(Guid alimentoId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Devuelve, sin rastrear, los alimentos de esos identificadores que existen. Los que no son alimentos (no
+    /// existen, o son platos) no aparecen.
+    /// </summary>
+    /// <remarks>Lo usan los casos de uso de platos, para comprobar y mostrar sus ingredientes.</remarks>
+    /// <param name="ids">Identificadores buscados.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    Task<IReadOnlyList<Alimento>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 }

@@ -200,10 +200,32 @@ public sealed class BajaCoordinadaDeItemsTests : IAsyncLifetime
         Assert.True(await ExisteFichaAsync("Alimento", alimentoId));
     }
 
+    [Fact]
+    public async Task Si_la_cancelacion_llega_en_el_borrado_de_Mongo_se_relanza_y_la_ficha_queda_huerfana()
+    {
+        var alimentoId = await _sembrador.AlimentoAsync();
+        await _mongoContexto.Fichas.InsertOneAsync(FichaAlimento(alimentoId));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => Servicio(almacen: new AlmacenCancelado()).EliminarAsync(alimentoId));
+
+        // Regla de orden (documento 2, §3): el borrado de PostgreSQL ya se confirmó y no se deshace; la ficha
+        // queda huérfana y la conciliación (RM-10) la elimina más adelante.
+        Assert.False(await ExisteItemAsync(alimentoId));
+        Assert.True(await ExisteFichaAsync("Alimento", alimentoId));
+    }
+
     private sealed class AlmacenQueLanza : IFichaNutricionalStore
     {
         public Task<bool> EliminarPorOrigenAsync(string tabla, Guid itemId, CancellationToken cancellationToken = default)
             => throw new InvalidOperationException("Mongo no disponible (prueba).");
+    }
+
+    /// <summary>Se cancela justo en el paso de MongoDB, con el borrado de PostgreSQL ya confirmado.</summary>
+    private sealed class AlmacenCancelado : IFichaNutricionalStore
+    {
+        public Task<bool> EliminarPorOrigenAsync(string tabla, Guid itemId, CancellationToken cancellationToken = default)
+            => throw new OperationCanceledException("Mongo cancelado (prueba).");
     }
 
     private sealed class LoggerDeTest : ILogger<BajaCoordinadaDeItems>

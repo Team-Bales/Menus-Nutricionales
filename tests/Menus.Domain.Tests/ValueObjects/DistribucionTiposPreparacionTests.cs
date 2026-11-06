@@ -144,4 +144,50 @@ public sealed class DistribucionTiposPreparacionTests
         Assert.NotEqual(d1, d2);
         Assert.True(d1 != d2);
     }
+
+    [Fact]
+    public void AsReadOnly_RetornaLasMismasProporciones()
+    {
+        var distribucion = DistribucionTiposPreparacion.Crear([Entrante25, PlatoFuerte50, Postre25]);
+
+        var soloLectura = distribucion.AsReadOnly();
+
+        Assert.Equal(3, soloLectura.Count);
+        Assert.Contains(Entrante25, soloLectura);
+        Assert.Contains(PlatoFuerte50, soloLectura);
+    }
+
+    [Fact]
+    public void Equals_ConNulo_EsFalso()
+    {
+        var distribucion = DistribucionTiposPreparacion.Crear([Entrante25, PlatoFuerte50, Postre25]);
+
+        Assert.False(distribucion.Equals((DistribucionTiposPreparacion?)null));
+    }
+
+    [Fact]
+    public void Equals_MismaReferencia_EsVerdadero()
+    {
+        var distribucion = DistribucionTiposPreparacion.Crear([Entrante25, PlatoFuerte50, Postre25]);
+
+        Assert.True(distribucion.Equals(distribucion));
+    }
+
+    [Fact]
+    public void Equals_DistintaCantidadDeProporciones_EsFalso()
+    {
+        var tres = DistribucionTiposPreparacion.Crear([Entrante25, PlatoFuerte50, Postre25]);
+        var una = DistribucionTiposPreparacion.Crear([ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, 1m)]);
+
+        Assert.False(tres.Equals(una));
+    }
+
+    [Fact]
+    public void GetHashCode_MismasProporcionesEnDistintoOrden_Coincide()
+    {
+        var d1 = DistribucionTiposPreparacion.Crear([Entrante25, PlatoFuerte50, Postre25]);
+        var d2 = DistribucionTiposPreparacion.Crear([Postre25, PlatoFuerte50, Entrante25]);
+
+        Assert.Equal(d1.GetHashCode(), d2.GetHashCode());
+    }
 }

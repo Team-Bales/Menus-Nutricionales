@@ -75,4 +75,50 @@ public sealed class CoberturaGruposNutricionalesTests
         Assert.Equal(c1, c2);
         Assert.True(c1 == c2);
     }
+
+    [Fact]
+    public void AsReadOnly_RetornaLosMismosGrupos()
+    {
+        var cobertura = CoberturaGruposNutricionales.Crear([_grupo1, _grupo2]);
+
+        var soloLectura = cobertura.AsReadOnly();
+
+        Assert.Equal(2, soloLectura.Count);
+        Assert.Contains(_grupo1, soloLectura);
+        Assert.Contains(_grupo2, soloLectura);
+    }
+
+    [Fact]
+    public void Equals_ConNulo_EsFalso()
+    {
+        var cobertura = CoberturaGruposNutricionales.Crear([_grupo1]);
+
+        Assert.False(cobertura.Equals((CoberturaGruposNutricionales?)null));
+    }
+
+    [Fact]
+    public void Equals_MismaReferencia_EsVerdadero()
+    {
+        var cobertura = CoberturaGruposNutricionales.Crear([_grupo1, _grupo2]);
+
+        Assert.True(cobertura.Equals(cobertura));
+    }
+
+    [Fact]
+    public void Equals_DistintaCantidadDeGrupos_EsFalso()
+    {
+        var dosGrupos = CoberturaGruposNutricionales.Crear([_grupo1, _grupo2]);
+        var unGrupo = CoberturaGruposNutricionales.Crear([_grupo1]);
+
+        Assert.False(dosGrupos.Equals(unGrupo));
+    }
+
+    [Fact]
+    public void GetHashCode_MismosGruposEnDistintoOrden_Coincide()
+    {
+        var c1 = CoberturaGruposNutricionales.Crear([_grupo1, _grupo2]);
+        var c2 = CoberturaGruposNutricionales.Crear([_grupo2, _grupo1]);
+
+        Assert.Equal(c1.GetHashCode(), c2.GetHashCode());
+    }
 }

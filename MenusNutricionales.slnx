@@ -7,6 +7,7 @@
     <Project Path="src/Menus.Infrastructure/Menus.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Menus.Api.Tests/Menus.Api.Tests.csproj" />
     <Project Path="tests/Menus.Application.Tests/Menus.Application.Tests.csproj" />
     <Project Path="tests/Menus.Client.Tests/Menus.Client.Tests.csproj" />
     <Project Path="tests/Menus.Domain.Tests/Menus.Domain.Tests.csproj" />

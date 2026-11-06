@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Menus.Infrastructure\Menus.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Menus.Api.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -104,6 +104,36 @@ public sealed class PlatoRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AgregarIngrediente_y_QuitarIngrediente_persisten_el_cambio_en_la_composicion()
+    {
+        var nuevoAlimento = new Alimento(
+            Guid.NewGuid(), "Zanahoria", GrupoCereales, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id, _nutricionistaId);
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            ctx.Add(nuevoAlimento);
+            var plato = (await new PlatoRepository(ctx).GetConIngredientesAsync(_platoId))!;
+            plato.AgregarIngrediente(nuevoAlimento.Id, 50m);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var plato = (await new PlatoRepository(ctx).GetConIngredientesAsync(_platoId))!;
+            Assert.Equal(
+                new[] { _alimentoId, nuevoAlimento.Id }.OrderBy(x => x),
+                plato.Ingredientes.Select(i => i.AlimentoId).OrderBy(x => x));
+
+            plato.QuitarIngrediente(_alimentoId);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var ctxFinal = _fixture.CrearContexto();
+        var platoFinal = (await new PlatoRepository(ctxFinal).GetConIngredientesAsync(_platoId))!;
+        Assert.Equal([nuevoAlimento.Id], platoFinal.Ingredientes.Select(i => i.AlimentoId));
+    }
+
+    [Fact]
     public async Task Remove_da_de_baja_un_plato_y_su_composicion()
     {
         await using (var ctx = _fixture.CrearContexto())

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -14,14 +15,15 @@ public sealed class Paciente : Entity<Guid>
     /// <param name="nombre">Nombre del paciente (no vacío).</param>
     /// <param name="edad">Edad en años enteros, mayor o igual que cero (RD-06).</param>
     /// <param name="salaId">Sala de hospitalización a la que pertenece.</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="edad"/> es negativa.</exception>
+    /// <exception cref="DatoInvalidoException">
+    /// Si <paramref name="nombre"/> es nulo o solo espacios, o si <paramref name="edad"/> es negativa.
+    /// </exception>
     public Paciente(Guid id, string nombre, int edad, Guid salaId) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         if (edad < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(edad), "La edad no puede ser negativa.");
+            throw new DatoInvalidoException(nameof(edad), "La edad no puede ser negativa.");
         }
 
         Nombre = nombre;
@@ -48,12 +50,12 @@ public sealed class Paciente : Entity<Guid>
     /// </summary>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <returns>La inscripción creada.</returns>
-    /// <exception cref="InvalidOperationException">Si el paciente ya está inscrito en esa dieta.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el paciente ya está inscrito en esa dieta.</exception>
     public PacienteDieta InscribirDieta(Guid dietaId)
     {
         if (_dietas.Any(d => d.DietaId == dietaId))
         {
-            throw new InvalidOperationException($"El paciente ya está inscrito en la dieta {dietaId}.");
+            throw new ReglaDeNegocioException($"El paciente ya está inscrito en la dieta {dietaId}.");
         }
 
         var inscripcion = new PacienteDieta(Id, dietaId);
@@ -67,11 +69,11 @@ public sealed class Paciente : Entity<Guid>
     /// asignarlo (RS-04), no después.
     /// </remarks>
     /// <param name="dietaId">Identificador de la dieta.</param>
-    /// <exception cref="InvalidOperationException">Si el paciente no está inscrito en esa dieta.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el paciente no está inscrito en esa dieta.</exception>
     public void DesinscribirDieta(Guid dietaId)
     {
         var inscripcion = _dietas.SingleOrDefault(d => d.DietaId == dietaId)
-            ?? throw new InvalidOperationException($"El paciente no está inscrito en la dieta {dietaId}.");
+            ?? throw new ReglaDeNegocioException($"El paciente no está inscrito en la dieta {dietaId}.");
 
         _dietas.Remove(inscripcion);
     }

@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Nomenclators;
@@ -18,9 +19,9 @@ public sealed class RestriccionAlimentariaTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new RestriccionAlimentaria(Guid.NewGuid(), nombre));
+        Assert.Throws<DatoInvalidoException>(() => new RestriccionAlimentaria(Guid.NewGuid(), nombre));
     }
 
     [Fact]
@@ -56,13 +57,13 @@ public sealed class RestriccionAlimentariaTests
     }
 
     [Fact]
-    public void ExcluirGrupo_GrupoRepetido_LanzaInvalidOperationException()
+    public void ExcluirGrupo_GrupoRepetido_LanzaReglaDeNegocioException()
     {
         var restriccion = new RestriccionAlimentaria(Guid.NewGuid(), "Sin lactosa");
         var lacteosId = Guid.NewGuid();
         restriccion.ExcluirGrupo(lacteosId);
 
-        Assert.Throws<InvalidOperationException>(() => restriccion.ExcluirGrupo(lacteosId));
+        Assert.Throws<ReglaDeNegocioException>(() => restriccion.ExcluirGrupo(lacteosId));
         Assert.Single(restriccion.GruposExcluidos);
     }
 
@@ -81,11 +82,11 @@ public sealed class RestriccionAlimentariaTests
     }
 
     [Fact]
-    public void QuitarExclusion_GrupoNoExcluido_LanzaInvalidOperationException()
+    public void QuitarExclusion_GrupoNoExcluido_LanzaReglaDeNegocioException()
     {
         var restriccion = new RestriccionAlimentaria(Guid.NewGuid(), "Sin lactosa");
 
-        Assert.Throws<InvalidOperationException>(() => restriccion.QuitarExclusion(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => restriccion.QuitarExclusion(Guid.NewGuid()));
     }
 
     [Fact]

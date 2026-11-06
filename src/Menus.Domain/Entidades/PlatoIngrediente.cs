@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -16,13 +17,13 @@ public sealed class PlatoIngrediente : Entity<(Guid PlatoId, Guid AlimentoId)>
     /// <param name="platoId">Identificador del plato compuesto.</param>
     /// <param name="alimentoId">Identificador del alimento simple que es ingrediente.</param>
     /// <param name="cantidad">Cantidad del alimento en el plato (estrictamente positiva).</param>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="cantidad"/> no es positiva.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="cantidad"/> no es positiva.</exception>
     public PlatoIngrediente(Guid platoId, Guid alimentoId, decimal cantidad)
         : base((platoId, alimentoId))
     {
         if (cantidad <= 0m)
         {
-            throw new ArgumentOutOfRangeException(nameof(cantidad), "La cantidad debe ser estrictamente positiva.");
+            throw new DatoInvalidoException(nameof(cantidad), "La cantidad debe ser estrictamente positiva.");
         }
         Cantidad = cantidad;
     }

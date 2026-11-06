@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Entidades;
@@ -15,19 +16,20 @@ public sealed class MenuDistribucion : Entity<(Guid MenuId, Guid TipoPreparacion
     /// FK → TipoPreparacion al que se aplica la proporción: uno de <see cref="TipoPreparacion.Todos"/> (RD-01).
     /// </param>
     /// <param name="proporcion">Proporción como fracción, en el intervalo (0, 1] (RD-11).</param>
-    /// <exception cref="ArgumentException">Si el tipo de preparación no es del catálogo.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="proporcion"/> está fuera de (0, 1].</exception>
+    /// <exception cref="DatoInvalidoException">
+    /// Si el tipo de preparación no es del catálogo o si <paramref name="proporcion"/> está fuera de (0, 1].
+    /// </exception>
     internal MenuDistribucion(Guid menuId, Guid tipoPreparacionId, decimal proporcion)
         : base((menuId, tipoPreparacionId))
     {
         if (!TipoPreparacion.Existe(tipoPreparacionId))
         {
-            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
+            throw new DatoInvalidoException(nameof(tipoPreparacionId), $"{tipoPreparacionId} no es un tipo de preparación del catálogo.");
         }
 
         if (proporcion <= 0m || proporcion > 1m)
         {
-            throw new ArgumentOutOfRangeException(nameof(proporcion), "La proporción debe estar en el intervalo (0, 1].");
+            throw new DatoInvalidoException(nameof(proporcion), "La proporción debe estar en el intervalo (0, 1].");
         }
 
         Proporcion = proporcion;

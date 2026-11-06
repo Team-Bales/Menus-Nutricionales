@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Nomenclators;
 
@@ -18,10 +19,10 @@ public sealed class RestriccionAlimentaria : Entity<Guid>
 
     /// <param name="id">Identificador único de la restricción.</param>
     /// <param name="nombre">Nombre descriptivo de la restricción (no puede estar vacío).</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
     public RestriccionAlimentaria(Guid id, string nombre) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         Nombre = nombre;
     }
 
@@ -34,7 +35,7 @@ public sealed class RestriccionAlimentaria : Entity<Guid>
     /// <summary>Registra que la restricción excluye un grupo nutricional.</summary>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional que se excluye.</param>
     /// <returns>La exclusión registrada.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si la restricción ya excluye ese grupo: el par restricción y grupo identifica cada exclusión (RC-16).
     /// </exception>
     /// <remarks>
@@ -45,7 +46,7 @@ public sealed class RestriccionAlimentaria : Entity<Guid>
     {
         if (_gruposExcluidos.Any(e => e.GrupoNutricionalId == grupoNutricionalId))
         {
-            throw new InvalidOperationException($"La restricción ya excluye el grupo nutricional {grupoNutricionalId}.");
+            throw new ReglaDeNegocioException($"La restricción ya excluye el grupo nutricional {grupoNutricionalId}.");
         }
 
         var exclusion = new RestriccionGrupoExcluido(Id, grupoNutricionalId);
@@ -55,11 +56,11 @@ public sealed class RestriccionAlimentaria : Entity<Guid>
 
     /// <summary>Quita la exclusión de un grupo nutricional.</summary>
     /// <param name="grupoNutricionalId">Identificador del grupo nutricional que deja de estar excluido.</param>
-    /// <exception cref="InvalidOperationException">Si la restricción no excluye ese grupo.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si la restricción no excluye ese grupo.</exception>
     public void QuitarExclusion(Guid grupoNutricionalId)
     {
         var exclusion = _gruposExcluidos.SingleOrDefault(e => e.GrupoNutricionalId == grupoNutricionalId)
-            ?? throw new InvalidOperationException($"La restricción no excluye el grupo nutricional {grupoNutricionalId}.");
+            ?? throw new ReglaDeNegocioException($"La restricción no excluye el grupo nutricional {grupoNutricionalId}.");
 
         _gruposExcluidos.Remove(exclusion);
     }

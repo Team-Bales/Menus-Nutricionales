@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -28,7 +29,7 @@ public sealed class RevalorizacionTests
     {
         var fecha = DateTime.SpecifyKind(DateTime.UtcNow, kind);
 
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             new Revalorizacion(Guid.NewGuid(), fecha, Guid.NewGuid(), Guid.NewGuid()));
     }
 
@@ -49,7 +50,7 @@ public sealed class RevalorizacionTests
         var revalorizacion = CrearRevalorizacion();
         revalorizacion.RegistrarValoracionGenerada(Guid.NewGuid());
 
-        Assert.Throws<InvalidOperationException>(() => revalorizacion.RegistrarValoracionGenerada(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => revalorizacion.RegistrarValoracionGenerada(Guid.NewGuid()));
     }
 
     [Fact]

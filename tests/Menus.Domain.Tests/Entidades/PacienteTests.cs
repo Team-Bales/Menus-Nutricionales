@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -23,9 +24,9 @@ public sealed class PacienteTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             new Paciente(Guid.NewGuid(), nombre, 25, _salaId));
     }
 
@@ -41,9 +42,9 @@ public sealed class PacienteTests
     [Theory]
     [InlineData(-1)]
     [InlineData(-100)]
-    public void Constructor_EdadNegativa_LanzaArgumentOutOfRangeException(int edad)
+    public void Constructor_EdadNegativa_LanzaDatoInvalidoException(int edad)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             new Paciente(Guid.NewGuid(), "Maria López", edad, _salaId));
     }
 
@@ -61,13 +62,13 @@ public sealed class PacienteTests
     }
 
     [Fact]
-    public void InscribirDieta_DietaDuplicada_LanzaInvalidOperationException()
+    public void InscribirDieta_DietaDuplicada_LanzaReglaDeNegocioException()
     {
         var paciente = new Paciente(Guid.NewGuid(), "Carlos Ruiz", 60, _salaId);
         var dietaId = Guid.NewGuid();
         paciente.InscribirDieta(dietaId);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ReglaDeNegocioException>(() =>
             paciente.InscribirDieta(dietaId));
     }
 
@@ -150,12 +151,12 @@ public sealed class PacienteTests
     }
 
     [Fact]
-    public void DesinscribirDieta_NoInscrito_LanzaInvalidOperationException()
+    public void DesinscribirDieta_NoInscrito_LanzaReglaDeNegocioException()
     {
         var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
         paciente.InscribirDieta(Guid.NewGuid());
 
-        Assert.Throws<InvalidOperationException>(() => paciente.DesinscribirDieta(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => paciente.DesinscribirDieta(Guid.NewGuid()));
         Assert.Single(paciente.Dietas);
     }
 

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -33,12 +34,12 @@ public sealed class Asignacion : Entity<(Guid MenuId, Guid PacienteId)>
     /// <summary>Registra un servicio del menú al paciente. Las reglas de la fecha las comprueba <see cref="Menu"/>.</summary>
     /// <param name="fechaServicio">Día del servicio, en el calendario UTC.</param>
     /// <returns>El servicio registrado.</returns>
-    /// <exception cref="InvalidOperationException">Si ya hay un servicio ese día.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si ya hay un servicio ese día.</exception>
     internal Servicio RegistrarServicio(DateOnly fechaServicio)
     {
         if (_servicios.Any(s => s.FechaServicio == fechaServicio))
         {
-            throw new InvalidOperationException($"Este menú ya se le sirvió al paciente el {fechaServicio:yyyy-MM-dd}.");
+            throw new ReglaDeNegocioException($"Este menú ya se le sirvió al paciente el {fechaServicio:yyyy-MM-dd}.");
         }
 
         var servicio = new Servicio(MenuId, PacienteId, fechaServicio);

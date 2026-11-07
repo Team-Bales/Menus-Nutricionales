@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.ValueObjects;
@@ -15,18 +16,18 @@ public sealed record ProporcionTipoPreparacion(Guid TipoPreparacionId, decimal V
     /// </summary>
     /// <param name="tipoPreparacionId">Identificador del tipo de preparación.</param>
     /// <param name="valor">Proporción en (0, 1].</param>
-    /// <exception cref="ArgumentException">Si el tipo de preparación no existe en el catálogo.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="valor"/> está fuera de (0, 1].</exception>
+    /// <exception cref="DatoInvalidoException">Si el tipo de preparación no existe en el catálogo.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="valor"/> está fuera de (0, 1].</exception>
     public static ProporcionTipoPreparacion Crear(Guid tipoPreparacionId, decimal valor)
     {
         if (!TipoPreparacion.Existe(tipoPreparacionId))
         {
-            throw new ArgumentException($"{tipoPreparacionId} no es un tipo de preparación del catálogo.", nameof(tipoPreparacionId));
+            throw new DatoInvalidoException(nameof(tipoPreparacionId), $"{tipoPreparacionId} no es un tipo de preparación del catálogo.");
         }
 
         if (valor <= 0m || valor > 1m)
         {
-            throw new ArgumentOutOfRangeException(nameof(valor), "La proporción debe estar en el intervalo (0, 1].");
+            throw new DatoInvalidoException(nameof(valor), "La proporción debe estar en el intervalo (0, 1].");
         }
 
         return new ProporcionTipoPreparacion(tipoPreparacionId, valor);

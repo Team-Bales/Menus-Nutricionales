@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.ValueObjects;
 
 namespace Menus.Domain.Tests.ValueObjects;
@@ -35,15 +36,15 @@ public sealed class CoberturaGruposNutricionalesTests
     }
 
     [Fact]
-    public void Crear_ColeccionVacia_LanzaArgumentException()
+    public void Crear_ColeccionVacia_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => CoberturaGruposNutricionales.Crear([]));
+        Assert.Throws<DatoInvalidoException>(() => CoberturaGruposNutricionales.Crear([]));
     }
 
     [Fact]
-    public void Crear_GrupoRepetido_LanzaArgumentException()
+    public void Crear_GrupoRepetido_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => CoberturaGruposNutricionales.Crear([_grupo1, _grupo1]));
+        Assert.Throws<DatoInvalidoException>(() => CoberturaGruposNutricionales.Crear([_grupo1, _grupo1]));
     }
 
     [Fact]

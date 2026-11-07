@@ -1,3 +1,5 @@
+using Menus.Domain.Excepciones;
+
 namespace Menus.Domain.ValueObjects;
 
 /// <summary>
@@ -12,7 +14,7 @@ public sealed record CoberturaGruposNutricionales(Guid[] GrupoIds) : IEquatable<
     /// </summary>
     /// <param name="grupoIds">Identificadores de los grupos nutricionales.</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="grupoIds"/> es nulo.</exception>
-    /// <exception cref="ArgumentException">Si la colección está vacía o hay grupos repetidos.</exception>
+    /// <exception cref="DatoInvalidoException">Si la colección está vacía o hay grupos repetidos.</exception>
     public static CoberturaGruposNutricionales Crear(IEnumerable<Guid> grupoIds)
     {
         ArgumentNullException.ThrowIfNull(grupoIds);
@@ -21,7 +23,7 @@ public sealed record CoberturaGruposNutricionales(Guid[] GrupoIds) : IEquatable<
 
         if (lista.Length == 0)
         {
-            throw new ArgumentException("El menú debe cubrir al menos un grupo nutricional.", nameof(grupoIds));
+            throw new DatoInvalidoException(nameof(grupoIds), "El menú debe cubrir al menos un grupo nutricional.");
         }
 
         var vistos = new HashSet<Guid>();
@@ -29,7 +31,7 @@ public sealed record CoberturaGruposNutricionales(Guid[] GrupoIds) : IEquatable<
         {
             if (!vistos.Add(id))
             {
-                throw new ArgumentException($"El grupo nutricional {id} aparece más de una vez.", nameof(grupoIds));
+                throw new DatoInvalidoException(nameof(grupoIds), $"El grupo nutricional {id} aparece más de una vez.");
             }
         }
 

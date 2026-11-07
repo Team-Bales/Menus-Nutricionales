@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.ValueObjects;
@@ -20,7 +21,7 @@ public sealed record DistribucionTiposPreparacion(ProporcionTipoPreparacion[] Pr
     /// </summary>
     /// <param name="proporciones">Colección de proporciones por tipo de preparación.</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="proporciones"/> es nulo.</exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si la colección está vacía, hay tipos de preparación repetidos, o las proporciones no suman 1.
     /// </exception>
     public static DistribucionTiposPreparacion Crear(IEnumerable<ProporcionTipoPreparacion> proporciones)
@@ -31,7 +32,7 @@ public sealed record DistribucionTiposPreparacion(ProporcionTipoPreparacion[] Pr
 
         if (lista.Length == 0)
         {
-            throw new ArgumentException("El menú debe tener al menos una proporción por tipo de preparación.", nameof(proporciones));
+            throw new DatoInvalidoException(nameof(proporciones), "El menú debe tener al menos una proporción por tipo de preparación.");
         }
 
         var tiposVistos = new HashSet<Guid>();
@@ -39,14 +40,14 @@ public sealed record DistribucionTiposPreparacion(ProporcionTipoPreparacion[] Pr
         {
             if (!tiposVistos.Add(p.TipoPreparacionId))
             {
-                throw new ArgumentException($"El tipo de preparación {p.TipoPreparacionId} aparece más de una vez en la distribución.", nameof(proporciones));
+                throw new DatoInvalidoException(nameof(proporciones), $"El tipo de preparación {p.TipoPreparacionId} aparece más de una vez en la distribución.");
             }
         }
 
         var suma = lista.Sum(p => p.Valor);
         if (Math.Abs(suma - 1m) >= ToleranciaSuma)
         {
-            throw new ArgumentException("Las proporciones de la distribución deben sumar 1.", nameof(proporciones));
+            throw new DatoInvalidoException(nameof(proporciones), "Las proporciones de la distribución deben sumar 1.");
         }
 
         return new DistribucionTiposPreparacion(lista);
@@ -57,11 +58,11 @@ public sealed record DistribucionTiposPreparacion(ProporcionTipoPreparacion[] Pr
     /// </summary>
     /// <param name="proporciones">Tuplas de (tipoPreparacionId, valor).</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="proporciones"/> es nulo.</exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="DatoInvalidoException">
     /// Si la colección está vacía, hay tipos de preparación repetidos, o las proporciones no suman 1.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si algún valor está fuera de (0, 1].</exception>
-    /// <exception cref="ArgumentException">Si algún tipo de preparación no existe en el catálogo.</exception>
+    /// <exception cref="DatoInvalidoException">Si algún valor está fuera de (0, 1].</exception>
+    /// <exception cref="DatoInvalidoException">Si algún tipo de preparación no existe en el catálogo.</exception>
     public static DistribucionTiposPreparacion CrearDesdeTuplas(IEnumerable<(Guid TipoPreparacionId, decimal Valor)> proporciones)
     {
         ArgumentNullException.ThrowIfNull(proporciones);

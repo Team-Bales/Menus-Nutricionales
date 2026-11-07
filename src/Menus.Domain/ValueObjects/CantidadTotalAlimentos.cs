@@ -1,3 +1,5 @@
+using Menus.Domain.Excepciones;
+
 namespace Menus.Domain.ValueObjects;
 
 /// <summary>
@@ -11,12 +13,12 @@ public sealed record CantidadTotalAlimentos(int Valor)
     /// Crea una nueva cantidad total de alimentos.
     /// </summary>
     /// <param name="valor">Número de alimentos (> 0).</param>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="valor"/> no es estrictamente positivo.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="valor"/> no es estrictamente positivo.</exception>
     public static CantidadTotalAlimentos Crear(int valor)
     {
         if (valor <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(valor), "La cantidad total de alimentos debe ser estrictamente positiva.");
+            throw new DatoInvalidoException(nameof(valor), "La cantidad total de alimentos debe ser estrictamente positiva.");
         }
         return new CantidadTotalAlimentos(valor);
     }

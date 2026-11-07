@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 using Menus.Domain.ValueObjects;
 
@@ -27,11 +28,11 @@ public sealed class ProporcionTipoPreparacionTests
     }
 
     [Fact]
-    public void Crear_TipoPreparacionInexistente_LanzaArgumentException()
+    public void Crear_TipoPreparacionInexistente_LanzaDatoInvalidoException()
     {
         var tipoInexistente = Guid.NewGuid();
 
-        Assert.Throws<ArgumentException>(() => ProporcionTipoPreparacion.Crear(tipoInexistente, 0.5m));
+        Assert.Throws<DatoInvalidoException>(() => ProporcionTipoPreparacion.Crear(tipoInexistente, 0.5m));
     }
 
     [Theory]
@@ -40,9 +41,9 @@ public sealed class ProporcionTipoPreparacionTests
     [InlineData(-1)]
     [InlineData(1.001)]
     [InlineData(2)]
-    public void Crear_ProporcionFueraDeRango_LanzaArgumentOutOfRangeException(decimal valor)
+    public void Crear_ProporcionFueraDeRango_LanzaDatoInvalidoException(decimal valor)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, valor));
+        Assert.Throws<DatoInvalidoException>(() => ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, valor));
     }
 
     [Fact]

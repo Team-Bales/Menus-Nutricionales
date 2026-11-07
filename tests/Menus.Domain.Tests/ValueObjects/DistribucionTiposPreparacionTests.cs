@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 using Menus.Domain.ValueObjects;
 
@@ -65,18 +66,18 @@ public sealed class DistribucionTiposPreparacionTests
     }
 
     [Fact]
-    public void Crear_ColeccionVacia_LanzaArgumentException()
+    public void Crear_ColeccionVacia_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => DistribucionTiposPreparacion.Crear([]));
+        Assert.Throws<DatoInvalidoException>(() => DistribucionTiposPreparacion.Crear([]));
     }
 
     [Fact]
-    public void Crear_TipoPreparacionRepetido_LanzaArgumentException()
+    public void Crear_TipoPreparacionRepetido_LanzaDatoInvalidoException()
     {
         var p1 = ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, 0.5m);
         var p2 = ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, 0.5m);
 
-        Assert.Throws<ArgumentException>(() => DistribucionTiposPreparacion.Crear([p1, p2]));
+        Assert.Throws<DatoInvalidoException>(() => DistribucionTiposPreparacion.Crear([p1, p2]));
     }
 
     [Theory]
@@ -84,12 +85,12 @@ public sealed class DistribucionTiposPreparacionTests
     [InlineData(0.6, 0.5)]  // suma 1.1
     [InlineData(0.5, 0.49)] // suma 0.99
     [InlineData(0.51, 0.5)] // suma 1.01
-    public void Crear_ProporcionesQueNoSumanUno_LanzaArgumentException(decimal primera, decimal segunda)
+    public void Crear_ProporcionesQueNoSumanUno_LanzaDatoInvalidoException(decimal primera, decimal segunda)
     {
         var p1 = ProporcionTipoPreparacion.Crear(TipoPreparacion.Entrante.Id, primera);
         var p2 = ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, segunda);
 
-        Assert.Throws<ArgumentException>(() => DistribucionTiposPreparacion.Crear([p1, p2]));
+        Assert.Throws<DatoInvalidoException>(() => DistribucionTiposPreparacion.Crear([p1, p2]));
     }
 
     [Fact]
@@ -107,18 +108,18 @@ public sealed class DistribucionTiposPreparacionTests
     }
 
     [Fact]
-    public void CrearDesdeTuplas_TipoInexistente_LanzaArgumentException()
+    public void CrearDesdeTuplas_TipoInexistente_LanzaDatoInvalidoException()
     {
-        Assert.Throws<ArgumentException>(() => DistribucionTiposPreparacion.CrearDesdeTuplas([(Guid.NewGuid(), 1m)]));
+        Assert.Throws<DatoInvalidoException>(() => DistribucionTiposPreparacion.CrearDesdeTuplas([(Guid.NewGuid(), 1m)]));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(-0.5)]
     [InlineData(1.5)]
-    public void CrearDesdeTuplas_ProporcionFueraDeRango_LanzaArgumentOutOfRangeException(decimal proporcion)
+    public void CrearDesdeTuplas_ProporcionFueraDeRango_LanzaDatoInvalidoException(decimal proporcion)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        Assert.Throws<DatoInvalidoException>(() =>
             DistribucionTiposPreparacion.CrearDesdeTuplas([(TipoPreparacion.PlatoFuerte.Id, proporcion), (TipoPreparacion.Bebida.Id, 1m - proporcion)]));
     }
 

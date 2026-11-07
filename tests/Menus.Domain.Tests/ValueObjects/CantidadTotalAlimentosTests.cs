@@ -1,3 +1,4 @@
+using Menus.Domain.Excepciones;
 using Menus.Domain.ValueObjects;
 
 namespace Menus.Domain.Tests.ValueObjects;
@@ -27,9 +28,9 @@ public sealed class CantidadTotalAlimentosTests
     [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-10)]
-    public void Crear_ValorNoPositivo_LanzaArgumentOutOfRangeException(int valor)
+    public void Crear_ValorNoPositivo_LanzaDatoInvalidoException(int valor)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => CantidadTotalAlimentos.Crear(valor));
+        Assert.Throws<DatoInvalidoException>(() => CantidadTotalAlimentos.Crear(valor));
     }
 
     [Fact]

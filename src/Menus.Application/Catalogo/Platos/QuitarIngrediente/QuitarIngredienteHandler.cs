@@ -5,11 +5,15 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Platos.QuitarIngrediente;
 
-/// <summary>Quita el ingrediente en nombre del actor, que tiene que ser quien describió el plato.</summary>
+/// <summary>
+/// Quita el ingrediente en nombre del actor, que tiene que ser quien describió el plato, y después lo quita del
+/// desglose de la ficha del plato (R8-06).
+/// </summary>
 internal sealed class QuitarIngredienteHandler(
     IPlatoRepository platos,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<QuitarIngredienteCommand, Unidad>
+    IActorActual actor,
+    IFichasNutricionales fichas) : IHandler<QuitarIngredienteCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el plato no existe, o si el alimento no está en su composición.</exception>
     /// <exception cref="ReglaDeNegocioException">
@@ -31,6 +35,7 @@ internal sealed class QuitarIngredienteHandler(
 
         plato.QuitarIngrediente(solicitud.AlimentoId);
         await unidadDeTrabajo.CommitAsync(ct);
+        await fichas.QuitarIngredienteAsync(plato.Id, solicitud.AlimentoId);
 
         return Unidad.Valor;
     }

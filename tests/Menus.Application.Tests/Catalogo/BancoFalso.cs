@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -26,6 +27,10 @@ internal sealed class BancoFalso
     public HashSet<Guid> EnMenus { get; } = [];
 
     public UnidadDeTrabajoFalsa UnidadDeTrabajo { get; } = new();
+
+    public FichasFalsas Fichas { get; }
+
+    public BancoFalso() => Fichas = new FichasFalsas(UnidadDeTrabajo);
 
     public ItemsFalsos ItemsRepo => new(this);
 
@@ -185,6 +190,27 @@ internal sealed class UnidadDeTrabajoFalsa : IUnitOfWork
     {
         Confirmaciones++;
         return Task.FromResult(1);
+    }
+}
+
+/// <summary>
+/// Registra cada operación sobre las fichas y cuántas confirmaciones había hecho la unidad de trabajo en ese momento,
+/// para comprobar que se llama después de confirmar (ADR-010, §5).
+/// </summary>
+internal sealed class FichasFalsas(UnidadDeTrabajoFalsa unidadDeTrabajo) : IFichasNutricionales
+{
+    public List<(string Operacion, Guid ItemId, Guid? AlimentoId, int ConfirmacionesPrevias)> Llamadas { get; } = [];
+
+    public Task EliminarAsync(ItemAlimentario item) => Registrar("Eliminar", item.Id, null);
+
+    public Task AgregarIngredienteAsync(Guid platoId, Alimento alimento) => Registrar("Agregar", platoId, alimento.Id);
+
+    public Task QuitarIngredienteAsync(Guid platoId, Guid alimentoId) => Registrar("Quitar", platoId, alimentoId);
+
+    private Task Registrar(string operacion, Guid itemId, Guid? alimentoId)
+    {
+        Llamadas.Add((operacion, itemId, alimentoId, unidadDeTrabajo.Confirmaciones));
+        return Task.CompletedTask;
     }
 }
 

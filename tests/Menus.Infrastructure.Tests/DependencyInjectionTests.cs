@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
@@ -91,5 +92,33 @@ public sealed class DependencyInjectionTests
 
         Assert.Throws<InvalidOperationException>(
             () => scope.ServiceProvider.GetRequiredService<IFichaNutricionalStore>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConMongo_LosCasosDeUsoMantienenLasFichasEnMongo()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(mongo: "mongodb://localhost:27017/menus_prueba"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<FichasNutricionalesEnMongo>(scope.ServiceProvider.GetRequiredService<IFichasNutricionales>());
+        Assert.IsType<FichaNutricionalStore>(scope.ServiceProvider.GetRequiredService<IDesgloseDeIngredientes>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_SinMongo_LosCasosDeUsoNoTienenFichasQueMantener()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<SinFichasNutricionales>(scope.ServiceProvider.GetRequiredService<IFichasNutricionales>());
     }
 }

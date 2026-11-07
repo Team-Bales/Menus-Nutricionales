@@ -20,7 +20,7 @@ public sealed class ManejadoresDeAlimentosTests
     private ActualizarAlimentoHandler Actualizar(Guid? actor = null) => new(
         _banco.AlimentosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor));
 
-    private EliminarAlimentoHandler Eliminar() => new(_banco.ItemsRepo, _banco.AlimentosRepo, _banco.UnidadDeTrabajo);
+    private EliminarAlimentoHandler Eliminar() => new(_banco.ItemsRepo, _banco.AlimentosRepo, _banco.UnidadDeTrabajo, _banco.Fichas);
 
     // ---- Registrar ----
 
@@ -103,6 +103,7 @@ public sealed class ManejadoresDeAlimentosTests
 
         Assert.Empty(_banco.Items);
         Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Equal([("Eliminar", alimento.Id, (Guid?)null, 1)], _banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -125,6 +126,7 @@ public sealed class ManejadoresDeAlimentosTests
         Assert.Contains("Avena", ex.Message);
         Assert.Single(_banco.Items);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Empty(_banco.Fichas.Llamadas);
     }
 
     [Fact]

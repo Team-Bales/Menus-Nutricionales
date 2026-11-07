@@ -91,6 +91,18 @@ public sealed class ManejadoresDeNomencladoresTests
     // ---- Restricciones alimentarias ----
 
     [Fact]
+    public async Task RegistrarRestriccion_guarda_la_restriccion_y_confirma_una_vez()
+    {
+        var creada = await new RegistrarRestriccionAlimentariaHandler(_banco.RestriccionesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new RegistrarRestriccionAlimentariaCommand("  Sin gluten  "), CancellationToken.None);
+
+        var restriccion = Assert.Single(_banco.Restricciones);
+        Assert.Equal(creada.Id, restriccion.Id);
+        Assert.Equal("Sin gluten", restriccion.Nombre);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
     public async Task RegistrarRestriccion_con_un_nombre_que_ya_existe_lanza_RD08_sin_confirmar()
     {
         _banco.AgregarRestriccion("Sin gluten");
@@ -101,6 +113,25 @@ public sealed class ManejadoresDeNomencladoresTests
 
         Assert.Equal("RD-08", ex.Regla);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarRestriccion_sin_uso_la_quita_y_confirma()
+    {
+        var restriccion = _banco.AgregarRestriccion("Sin gluten");
+
+        await new EliminarRestriccionAlimentariaHandler(_banco.RestriccionesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarRestriccionAlimentariaCommand(restriccion.Id), CancellationToken.None);
+
+        Assert.Empty(_banco.Restricciones);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarRestriccion_que_no_existe_lanza_NoEncontrado()
+    {
+        await Assert.ThrowsAsync<NoEncontradoException>(() => new EliminarRestriccionAlimentariaHandler(_banco.RestriccionesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarRestriccionAlimentariaCommand(Guid.NewGuid()), CancellationToken.None));
     }
 
     [Fact]
@@ -131,6 +162,18 @@ public sealed class ManejadoresDeNomencladoresTests
     // ---- Programas de atención ----
 
     [Fact]
+    public async Task RegistrarPrograma_guarda_el_programa_y_confirma_una_vez()
+    {
+        var creado = await new RegistrarProgramaAtencionHandler(_banco.ProgramasRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new RegistrarProgramaAtencionCommand("  Oncología  "), CancellationToken.None);
+
+        var programa = Assert.Single(_banco.Programas);
+        Assert.Equal(creado.Id, programa.Id);
+        Assert.Equal("Oncología", programa.Nombre);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
     public async Task RegistrarPrograma_con_un_nombre_que_ya_existe_lanza_RD08_sin_confirmar()
     {
         _banco.AgregarPrograma("Oncología");
@@ -141,6 +184,25 @@ public sealed class ManejadoresDeNomencladoresTests
 
         Assert.Equal("RD-08", ex.Regla);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarPrograma_sin_uso_lo_quita_y_confirma()
+    {
+        var programa = _banco.AgregarPrograma("Oncología");
+
+        await new EliminarProgramaAtencionHandler(_banco.ProgramasRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarProgramaAtencionCommand(programa.Id), CancellationToken.None);
+
+        Assert.Empty(_banco.Programas);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarPrograma_que_no_existe_lanza_NoEncontrado()
+    {
+        await Assert.ThrowsAsync<NoEncontradoException>(() => new EliminarProgramaAtencionHandler(_banco.ProgramasRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarProgramaAtencionCommand(Guid.NewGuid()), CancellationToken.None));
     }
 
     [Fact]
@@ -172,6 +234,18 @@ public sealed class ManejadoresDeNomencladoresTests
     // ---- Especialidades ----
 
     [Fact]
+    public async Task RegistrarEspecialidad_guarda_la_especialidad_y_confirma_una_vez()
+    {
+        var creada = await new RegistrarEspecialidadHandler(_banco.EspecialidadesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new RegistrarEspecialidadCommand("  Nutrición Clínica  "), CancellationToken.None);
+
+        var especialidad = Assert.Single(_banco.Especialidades);
+        Assert.Equal(creada.Id, especialidad.Id);
+        Assert.Equal("Nutrición Clínica", especialidad.Nombre);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
     public async Task RegistrarEspecialidad_con_un_nombre_que_ya_existe_lanza_RD08_sin_confirmar()
     {
         _banco.AgregarEspecialidad("Nutrición Clínica");
@@ -182,6 +256,25 @@ public sealed class ManejadoresDeNomencladoresTests
 
         Assert.Equal("RD-08", ex.Regla);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarEspecialidad_sin_uso_la_quita_y_confirma()
+    {
+        var especialidad = _banco.AgregarEspecialidad("Nutrición Clínica");
+
+        await new EliminarEspecialidadHandler(_banco.EspecialidadesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarEspecialidadCommand(especialidad.Id), CancellationToken.None);
+
+        Assert.Empty(_banco.Especialidades);
+        Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task EliminarEspecialidad_que_no_existe_lanza_NoEncontrado()
+    {
+        await Assert.ThrowsAsync<NoEncontradoException>(() => new EliminarEspecialidadHandler(_banco.EspecialidadesRepo, _banco.UnidadDeTrabajo)
+            .HandleAsync(new EliminarEspecialidadCommand(Guid.NewGuid()), CancellationToken.None));
     }
 
     [Fact]

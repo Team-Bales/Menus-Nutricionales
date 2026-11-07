@@ -71,7 +71,7 @@ public sealed class AlimentosControllerTests
         var id = Guid.NewGuid();
         _despachador.Resultado = Unidad.Valor;
 
-        var respuesta = await Controlador.Actualizar(id, new ClasificacionDeAlimento(Grupo, Tipo, Nivel), CancellationToken.None);
+        var respuesta = await Controlador.Actualizar(id, new ClasificacionDeItem(Grupo, Tipo, Nivel), CancellationToken.None);
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new ActualizarAlimentoCommand(id, Grupo, Tipo, Nivel), _despachador.Recibida);
@@ -87,19 +87,5 @@ public sealed class AlimentosControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new EliminarAlimentoCommand(id), _despachador.Recibida);
-    }
-
-    /// <summary>Guarda la solicitud recibida y devuelve el resultado preparado.</summary>
-    private sealed class DespachadorFalso : IDespachador
-    {
-        public object? Resultado { get; set; }
-
-        public object? Recibida { get; private set; }
-
-        public Task<TResultado> EnviarAsync<TResultado>(ISolicitud<TResultado> solicitud, CancellationToken ct = default)
-        {
-            Recibida = solicitud;
-            return Task.FromResult((TResultado)Resultado!);
-        }
     }
 }

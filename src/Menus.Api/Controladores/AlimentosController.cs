@@ -72,7 +72,7 @@ public sealed class AlimentosController(IDespachador despachador) : ControllerBa
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Actualizar(Guid id, ClasificacionDeAlimento cuerpo, CancellationToken ct)
+    public async Task<IActionResult> Actualizar(Guid id, ClasificacionDeItem cuerpo, CancellationToken ct)
     {
         await despachador.EnviarAsync(
             new ActualizarAlimentoCommand(id, cuerpo.GrupoNutricionalId, cuerpo.TipoPreparacionId, cuerpo.NivelCaloricoId),

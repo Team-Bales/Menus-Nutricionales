@@ -20,6 +20,7 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 public sealed class ComposicionDePlatosTests : IAsyncLifetime
 {
     private static readonly Guid GrupoCereales = Guid.Parse("11111111-0000-0000-0000-000000000001");
+    private static readonly Guid GrupoFrutas = Guid.Parse("11111111-0000-0000-0000-000000000004");
 
     private readonly PostgresFixture _fixture;
     private NpgsqlConnection _conexion = null!;
@@ -119,6 +120,29 @@ public sealed class ComposicionDePlatosTests : IAsyncLifetime
         Assert.Single(segunda);
         Assert.NotEqual(primera[0].Id, segunda[0].Id);
         Assert.Empty(primera[0].Ingredientes);
+    }
+
+    [Fact]
+    public async Task BuscarAsync_de_platos_filtra_por_grupo_y_por_tipo_de_preparacion()
+    {
+        var alimento = await _s.AlimentoConAsync();
+        var entrante = await _s.PlatoConAsync(TipoPreparacion.Entrante.Id, null, alimento);
+        await _s.PlatoConAsync(TipoPreparacion.Postre.Id, null, alimento);
+
+        await using var ctx = _fixture.CrearContexto();
+        var repositorio = new PlatoRepository(ctx);
+
+        // El sembrador pone los platos en el grupo Cereales.
+        var (deCereales, totalCereales) = await repositorio.BuscarAsync(GrupoCereales, null, null, 1, 10);
+        var (deFrutas, totalFrutas) = await repositorio.BuscarAsync(GrupoFrutas, null, null, 1, 10);
+        var (entrantes, totalEntrantes) = await repositorio.BuscarAsync(GrupoCereales, TipoPreparacion.Entrante.Id, null, 1, 10);
+
+        Assert.Equal(2, totalCereales);
+        Assert.Equal(2, deCereales.Count);
+        Assert.Equal(0, totalFrutas);
+        Assert.Empty(deFrutas);
+        Assert.Equal(1, totalEntrantes);
+        Assert.Equal(entrante, Assert.Single(entrantes).Id);
     }
 
     [Fact]

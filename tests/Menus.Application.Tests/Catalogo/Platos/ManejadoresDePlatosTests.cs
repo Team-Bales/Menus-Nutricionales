@@ -261,13 +261,22 @@ public sealed class ManejadoresDePlatosTests
         var lechuga = _banco.Agregar("Lechuga");
         _banco.AgregarPlato("Ensalada", lechuga);
         _banco.AgregarPlato("Sopa", lechuga);
-        _banco.AgregarPlato("Tortilla", lechuga);
+        var tortilla = _banco.AgregarPlato("Tortilla", lechuga);
 
         var resultado = await new ListarPlatosHandler(_banco.PlatosRepo)
             .HandleAsync(new ListarPlatosQuery(Page: 2, Size: 2), CancellationToken.None);
 
         Assert.Equal(3, resultado.Total);
-        Assert.Equal("Tortilla", Assert.Single(resultado.Data).Nombre);
+        Assert.Equal(2, resultado.Page);
+        Assert.Equal(2, resultado.Size);
+        // Se leen las propiedades una por una: la igualdad de un record compara sus campos y no llega a ellas.
+        var dto = Assert.Single(resultado.Data);
+        Assert.Equal(tortilla.Id, dto.Id);
+        Assert.Equal("Tortilla", dto.Nombre);
+        Assert.Equal(BancoFalso.GrupoCereales, dto.GrupoNutricionalId);
+        Assert.Equal(TipoPreparacion.PlatoFuerte.Id, dto.TipoPreparacionId);
+        Assert.Equal(NivelCalorico.Medio.Id, dto.NivelCaloricoId);
+        Assert.Equal(BancoFalso.Descriptor, dto.NutricionistaId);
     }
 
     [Fact]
@@ -280,11 +289,15 @@ public sealed class ManejadoresDePlatosTests
         var dto = await new ObtenerPlatoHandler(_banco.PlatosRepo, _banco.AlimentosRepo)
             .HandleAsync(new ObtenerPlatoQuery(plato.Id), CancellationToken.None);
 
+        Assert.Equal(plato.Id, dto.Id);
         Assert.Equal("Ensalada", dto.Nombre);
+        Assert.Equal(BancoFalso.GrupoCereales, dto.GrupoNutricionalId);
+        Assert.Equal(TipoPreparacion.PlatoFuerte.Id, dto.TipoPreparacionId);
+        Assert.Equal(NivelCalorico.Medio.Id, dto.NivelCaloricoId);
         Assert.Equal(BancoFalso.Descriptor, dto.NutricionistaId);
+        Assert.Equal([lechuga.Id, tomate.Id], dto.Ingredientes.Select(i => i.AlimentoId));
         Assert.Equal(["Lechuga", "Tomate"], dto.Ingredientes.Select(i => i.Nombre));
         Assert.All(dto.Ingredientes, i => Assert.Equal(100m, i.Cantidad));
-        Assert.Equal(lechuga.Id, dto.Ingredientes[0].AlimentoId);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Threading.Tasks;
 using Menus.Infrastructure.IntegrationTests.Datos;
 using Menus.Infrastructure.IntegrationTests.Fixtures;
@@ -57,14 +58,25 @@ public sealed class IndicesUnicosDietasTests : IAsyncLifetime
     [Fact]
     public async Task IX_programas_atencion_nombre_acepta_nombre_nuevo()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO programas_atencion (id, nombre)
-            VALUES (@id, 'Nuevo Programa')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO programas_atencion (id, nombre)
+                VALUES (@id, 'Nuevo Programa')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // IX_restricciones_alimentarias_nombre (InitialCreate.cs:818) - "Vegana" ya sembrada
@@ -87,14 +99,25 @@ public sealed class IndicesUnicosDietasTests : IAsyncLifetime
     [Fact]
     public async Task IX_restricciones_alimentarias_nombre_acepta_nombre_nuevo()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO restricciones_alimentarias (id, nombre)
-            VALUES (@id, 'Nueva Restricción')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO restricciones_alimentarias (id, nombre)
+                VALUES (@id, 'Nueva Restricción')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // IX_especialidades_nombre (InitialCreate.cs:723) - "Nutrición Deportiva" ya sembrada
@@ -117,14 +140,25 @@ public sealed class IndicesUnicosDietasTests : IAsyncLifetime
     [Fact]
     public async Task IX_especialidades_nombre_acepta_nombre_nuevo()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO especialidades (id, nombre)
-            VALUES (@id, 'Nueva Especialidad')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO especialidades (id, nombre)
+                VALUES (@id, 'Nueva Especialidad')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // Control del informe §4.5 (línea 461): dos dietas, dos nutricionistas, dos pacientes y dos salas

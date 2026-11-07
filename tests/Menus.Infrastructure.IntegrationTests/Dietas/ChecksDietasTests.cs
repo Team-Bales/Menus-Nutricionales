@@ -57,14 +57,25 @@ public sealed class ChecksDietasTests : IAsyncLifetime
     [Fact]
     public async Task Ck_programas_atencion_r6_15_nombre_acepta_nombre_valido()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO programas_atencion (id, nombre)
-            VALUES (@id, 'Programa Válido')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO programas_atencion (id, nombre)
+                VALUES (@id, 'Programa Válido')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // ck_restricciones_alimentarias_r6_15_nombre (InitialCreate.cs:79)
@@ -86,14 +97,25 @@ public sealed class ChecksDietasTests : IAsyncLifetime
     [Fact]
     public async Task Ck_restricciones_alimentarias_r6_15_nombre_acepta_nombre_valido()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO restricciones_alimentarias (id, nombre)
-            VALUES (@id, 'Restricción Válida')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO restricciones_alimentarias (id, nombre)
+                VALUES (@id, 'Restricción Válida')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // ck_especialidades_r6_15_nombre (InitialCreate.cs:27)
@@ -115,14 +137,25 @@ public sealed class ChecksDietasTests : IAsyncLifetime
     [Fact]
     public async Task Ck_especialidades_r6_15_nombre_acepta_nombre_valido()
     {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO especialidades (id, nombre)
-            VALUES (@id, 'Especialidad Válida')
-            """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO especialidades (id, nombre)
+                VALUES (@id, 'Especialidad Válida')
+                """;
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
 
-        await cmd.ExecuteNonQueryAsync();
+            await cmd.ExecuteNonQueryAsync();
+            await tx.RollbackAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     // ck_salas_r6_15_nombre (InitialCreate.cs:107)

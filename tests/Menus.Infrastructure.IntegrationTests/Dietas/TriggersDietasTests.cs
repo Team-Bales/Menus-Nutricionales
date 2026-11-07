@@ -324,7 +324,8 @@ public sealed class TriggersDietasTests : IAsyncLifetime
         }
         catch
         {
-            await tx.RollbackAsync();
+            // La transacción ya fue completada (commit o rollback) en el bloque interno;
+            // no volvemos a llamar RollbackAsync para evitar error de Npgsql.
             throw;
         }
     }

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -37,7 +38,7 @@ public sealed class Revalorizacion : Entity<Guid>
     {
         if (fechaSolicitud.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante de solicitud debe estar en UTC (DateTimeKind.Utc).", nameof(fechaSolicitud));
+            throw new DatoInvalidoException(nameof(fechaSolicitud), "El instante de solicitud debe estar en UTC (DateTimeKind.Utc).");
         }
 
         FechaSolicitud = fechaSolicitud;
@@ -62,12 +63,12 @@ public sealed class Revalorizacion : Entity<Guid>
 
     /// <summary>Registra la valoración nutricional generada al completar la revalorización.</summary>
     /// <param name="valoracionGeneradaId">Identificador de la valoración generada.</param>
-    /// <exception cref="InvalidOperationException">Si la revalorización ya generó una valoración.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si la revalorización ya generó una valoración.</exception>
     public void RegistrarValoracionGenerada(Guid valoracionGeneradaId)
     {
         if (ValoracionGeneradaId is not null)
         {
-            throw new InvalidOperationException("La revalorización ya tiene una valoración generada.");
+            throw new ReglaDeNegocioException("La revalorización ya tiene una valoración generada.");
         }
 
         ValoracionGeneradaId = valoracionGeneradaId;

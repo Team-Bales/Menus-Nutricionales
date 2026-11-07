@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -25,9 +26,9 @@ public sealed class NutricionistaTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Nutricionista(Guid.NewGuid(), nombre, _especialidadId));
+        Assert.Throws<DatoInvalidoException>(() => new Nutricionista(Guid.NewGuid(), nombre, _especialidadId));
     }
 
     [Fact]
@@ -43,12 +44,12 @@ public sealed class NutricionistaTests
     }
 
     [Fact]
-    public void AutorizarDieta_DietaDuplicada_LanzaInvalidOperationException()
+    public void AutorizarDieta_DietaDuplicada_LanzaReglaDeNegocioException()
     {
         var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
         nutricionista.AutorizarDieta(_dietaId1);
 
-        Assert.Throws<InvalidOperationException>(() => nutricionista.AutorizarDieta(_dietaId1));
+        Assert.Throws<ReglaDeNegocioException>(() => nutricionista.AutorizarDieta(_dietaId1));
     }
 
     [Fact]
@@ -142,12 +143,12 @@ public sealed class NutricionistaTests
     }
 
     [Fact]
-    public void RevocarDieta_NoAutorizada_LanzaInvalidOperationException()
+    public void RevocarDieta_NoAutorizada_LanzaReglaDeNegocioException()
     {
         var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
         nutricionista.AutorizarDieta(_dietaId1);
 
-        Assert.Throws<InvalidOperationException>(() => nutricionista.RevocarDieta(_dietaId2));
+        Assert.Throws<ReglaDeNegocioException>(() => nutricionista.RevocarDieta(_dietaId2));
         Assert.Single(nutricionista.DietasAutorizadas);
     }
 

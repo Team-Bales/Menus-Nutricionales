@@ -296,10 +296,9 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     [Fact]
     public async Task ReiniciarAsync_deja_vacio_lo_sembrado_y_conserva_los_catalogos()
     {
-        // Usa la base principal del fixture (ya migrada y con catálogos)
-        // Limpia primero para aislar de otras pruebas de la colección
+// Usa la base principal del fixture (ya migrada y con catálogos). La limpia primero: la comparte con el
+        // resto de las pruebas de la colección "PostgreSQL", así que no puede asumir que ya está vacía.
         await _fixture.ReiniciarAsync();
-
         await using var conn = await _fixture.AbrirAsync();
 
         // Captura conteos de catálogos ANTES de sembrar (independiente del orden de pruebas)

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -80,13 +81,10 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </param>
     /// <param name="gruposNutricionalesIds">Grupos nutricionales que cubre el menú: al menos uno (RK-09) y sin repetidos (RC-15).</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="distribucion"/> o <paramref name="gruposNutricionalesIds"/> es nulo.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Si <paramref name="fechaCreacion"/> es futura, si <paramref name="cantidadTotalAlimentos"/> no es positiva
-    /// o si alguna proporción está fuera de (0, 1].
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Si <paramref name="fechaCreacion"/> no está en UTC, si la distribución o los grupos están vacíos
-    /// o tienen repetidos, o si las proporciones no suman 1.
+    /// <exception cref="DatoInvalidoException">
+    /// Si <paramref name="fechaCreacion"/> no está en UTC o es futura, si <paramref name="cantidadTotalAlimentos"/>
+    /// no es positiva, si la distribución o los grupos están vacíos o tienen repetidos, si alguna proporción está
+    /// fuera de (0, 1] o si las proporciones no suman 1.
     /// </exception>
     public Menu(
         Guid id,
@@ -120,17 +118,17 @@ public sealed class Menu : AggregateRoot<Guid>
     {
         if (fechaCreacion.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante de creación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaCreacion));
+            throw new DatoInvalidoException(nameof(fechaCreacion), "El instante de creación debe estar en UTC (DateTimeKind.Utc).");
         }
 
         if (fechaCreacion > DateTime.UtcNow)
         {
-            throw new ArgumentOutOfRangeException(nameof(fechaCreacion), "El instante de creación no puede ser futuro.");
+            throw new DatoInvalidoException(nameof(fechaCreacion), "El instante de creación no puede ser futuro.");
         }
 
         if (cantidadTotalAlimentos <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(cantidadTotalAlimentos), "La cantidad total de alimentos debe ser estrictamente positiva.");
+            throw new DatoInvalidoException(nameof(cantidadTotalAlimentos), "La cantidad total de alimentos debe ser estrictamente positiva.");
         }
 
         DietaId = dietaId;
@@ -199,7 +197,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Incluye un alimento o un plato en el menú (relación <c>Incluye(Menú, ItemAlimentario)</c>).</summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
     /// <returns>La inclusión registrada.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú ya tiene dictamen o si el ítem ya está incluido en el menú (RC-15).
     /// </exception>
     public MenuItem AgregarItem(Guid itemId)
@@ -208,7 +206,7 @@ public sealed class Menu : AggregateRoot<Guid>
 
         if (_items.Any(i => i.ItemId == itemId))
         {
-            throw new InvalidOperationException($"El ítem {itemId} ya está incluido en este menú.");
+            throw new ReglaDeNegocioException($"El ítem {itemId} ya está incluido en este menú.");
         }
 
         var item = new MenuItem(Id, itemId);
@@ -221,13 +219,13 @@ public sealed class Menu : AggregateRoot<Guid>
     /// generado mientras espera revisión; los parámetros de generación no se modifican (RS-07).
     /// </summary>
     /// <param name="itemId">Identificador del alimento o plato.</param>
-    /// <exception cref="InvalidOperationException">Si el menú ya tiene dictamen o si el ítem no está incluido.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el menú ya tiene dictamen o si el ítem no está incluido.</exception>
     public void QuitarItem(Guid itemId)
     {
         ExigirPendiente();
 
         var item = _items.SingleOrDefault(i => i.ItemId == itemId)
-            ?? throw new InvalidOperationException($"El ítem {itemId} no está incluido en este menú.");
+            ?? throw new ReglaDeNegocioException($"El ítem {itemId} no está incluido en este menú.");
 
         _items.Remove(item);
     }
@@ -235,7 +233,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <summary>Asigna el menú a un paciente (agregación <c>Asignación</c>).</summary>
     /// <param name="pacienteId">Identificador del paciente que recibe el menú.</param>
     /// <returns>La asignación registrada.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú no es final (solo se asignan menús aprobados, RS-16; un menú pendiente o rechazado no) o si ya
     /// está asignado a ese paciente (RC-13).
     /// </exception>
@@ -243,12 +241,12 @@ public sealed class Menu : AggregateRoot<Guid>
     {
         if (!EsFinal)
         {
-            throw new InvalidOperationException("Solo se asigna un menú final (aprobado).");
+            throw new ReglaDeNegocioException("Solo se asigna un menú final (aprobado).");
         }
 
         if (_asignaciones.Any(a => a.PacienteId == pacienteId))
         {
-            throw new InvalidOperationException($"El menú ya está asignado al paciente {pacienteId}.");
+            throw new ReglaDeNegocioException($"El menú ya está asignado al paciente {pacienteId}.");
         }
 
         var asignacion = new Asignacion(Id, pacienteId);
@@ -263,27 +261,27 @@ public sealed class Menu : AggregateRoot<Guid>
     /// menú (RS-14).
     /// </param>
     /// <returns>El servicio registrado.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú no es final, si no está asignado al paciente o si ya se le sirvió ese día.
     /// </exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si el día es futuro o anterior al de la aprobación del menú.</exception>
+    /// <exception cref="DatoInvalidoException">Si el día es futuro o anterior al de la aprobación del menú.</exception>
     public Servicio RegistrarServicio(Guid pacienteId, DateOnly fechaServicio)
     {
         if (Validacion is not { Aprobado: true } aprobacion)
         {
-            throw new InvalidOperationException("Solo se sirve un menú final (aprobado).");
+            throw new ReglaDeNegocioException("Solo se sirve un menú final (aprobado).");
         }
 
         var asignacion = BuscarAsignacion(pacienteId);
 
         if (fechaServicio > DateOnly.FromDateTime(DateTime.UtcNow))
         {
-            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El día del servicio no puede ser futuro.");
+            throw new DatoInvalidoException(nameof(fechaServicio), "El día del servicio no puede ser futuro.");
         }
 
         if (fechaServicio < DateOnly.FromDateTime(aprobacion.FechaValidacion))
         {
-            throw new ArgumentOutOfRangeException(nameof(fechaServicio), "El menú no puede servirse antes de su aprobación.");
+            throw new DatoInvalidoException(nameof(fechaServicio), "El menú no puede servirse antes de su aprobación.");
         }
 
         return asignacion.RegistrarServicio(fechaServicio);
@@ -298,7 +296,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="itemId">Identificador del alimento o plato consumido.</param>
     /// <param name="aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
     /// <returns>El consumo registrado.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú no está asignado al paciente, si no se le sirvió ese día, si el ítem no está incluido en el menú
     /// (RX-01) o si ya tiene un consumo registrado en ese servicio.
     /// </exception>
@@ -307,11 +305,11 @@ public sealed class Menu : AggregateRoot<Guid>
         var asignacion = BuscarAsignacion(pacienteId);
 
         var servicio = asignacion.Servicios.SingleOrDefault(s => s.FechaServicio == fechaServicio)
-            ?? throw new InvalidOperationException($"El menú no se le sirvió al paciente {pacienteId} el {fechaServicio:yyyy-MM-dd}.");
+            ?? throw new ReglaDeNegocioException($"El menú no se le sirvió al paciente {pacienteId} el {fechaServicio:yyyy-MM-dd}.");
 
         if (_items.All(i => i.ItemId != itemId))
         {
-            throw new InvalidOperationException($"El ítem {itemId} no está incluido en este menú: solo se consume lo que el menú incluye.");
+            throw new ReglaDeNegocioException($"El ítem {itemId} no está incluido en este menú: solo se consume lo que el menú incluye.");
         }
 
         return servicio.RegistrarConsumo(itemId, aceptacion);
@@ -322,11 +320,12 @@ public sealed class Menu : AggregateRoot<Guid>
     /// <param name="fechaValidacion">Instante de la aprobación, en UTC.</param>
     /// <param name="observaciones">Señalamientos del revisor, si existen.</param>
     /// <returns>La validación registrada.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (RS-05).
     /// </exception>
-    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (RS-06).</exception>
+    /// <exception cref="DatoInvalidoException">
+    /// Si la fecha no está en UTC o es anterior a la creación del menú (RS-06).
+    /// </exception>
     public Validacion Aprobar(Guid nutricionistaId, DateTime fechaValidacion, string? observaciones = null)
     {
         ComprobarDictamen(nutricionistaId, fechaValidacion);
@@ -347,11 +346,12 @@ public sealed class Menu : AggregateRoot<Guid>
     /// que lista la consulta 3.
     /// </param>
     /// <returns>La validación registrada, con <see cref="Validacion.Aprobado"/> en <see langword="false"/>.</returns>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si el menú ya tiene dictamen (el primero lo cierra) o si el revisor es quien creó el menú (RS-05).
     /// </exception>
-    /// <exception cref="ArgumentException">Si la fecha no está en UTC.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Si la fecha es anterior a la creación del menú (RS-06).</exception>
+    /// <exception cref="DatoInvalidoException">
+    /// Si la fecha no está en UTC o es anterior a la creación del menú (RS-06).
+    /// </exception>
     public Validacion Rechazar(Guid nutricionistaId, DateTime fechaRechazo, string? observaciones = null)
     {
         ComprobarDictamen(nutricionistaId, fechaRechazo);
@@ -372,7 +372,7 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </remarks>
     /// <param name="menuRechazado">El menú rechazado al que este reemplaza.</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="menuRechazado"/> es nulo.</exception>
-    /// <exception cref="InvalidOperationException">
+    /// <exception cref="ReglaDeNegocioException">
     /// Si este menú ya tiene dictamen o ya reemplaza a otro, si se indica a sí mismo (RS-19), si el otro menú no fue
     /// rechazado (RS-17) o si es de otra dieta (RS-18).
     /// </exception>
@@ -383,22 +383,22 @@ public sealed class Menu : AggregateRoot<Guid>
 
         if (ValidacionOrigenId is not null)
         {
-            throw new InvalidOperationException("Este menú ya está registrado como reemplazo de otro.");
+            throw new ReglaDeNegocioException("Este menú ya está registrado como reemplazo de otro.");
         }
 
         if (menuRechazado.Id == Id)
         {
-            throw new InvalidOperationException("Un menú no puede ser reemplazo de sí mismo.");
+            throw new ReglaDeNegocioException("Un menú no puede ser reemplazo de sí mismo.");
         }
 
         if (!menuRechazado.EsRechazado)
         {
-            throw new InvalidOperationException("Solo un menú rechazado origina un menú de reemplazo.");
+            throw new ReglaDeNegocioException("Solo un menú rechazado origina un menú de reemplazo.");
         }
 
         if (menuRechazado.DietaId != DietaId)
         {
-            throw new InvalidOperationException("El menú de reemplazo tiene que ser de la misma dieta que el rechazado.");
+            throw new ReglaDeNegocioException("El menú de reemplazo tiene que ser de la misma dieta que el rechazado.");
         }
 
         ValidacionOrigenId = menuRechazado.Id;
@@ -411,18 +411,18 @@ public sealed class Menu : AggregateRoot<Guid>
 
         if (nutricionistaId == NutricionistaCreadorId)
         {
-            throw new InvalidOperationException("El nutricionista que creó el menú no puede dictaminarlo.");
+            throw new ReglaDeNegocioException("El nutricionista que creó el menú no puede dictaminarlo.");
         }
 
         // Antes de comparar con FechaCreacion (UTC): una fecha local daría una comparación sin sentido.
         if (fecha.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante del dictamen debe estar en UTC (DateTimeKind.Utc).", nameof(fecha));
+            throw new DatoInvalidoException(nameof(fecha), "El instante del dictamen debe estar en UTC (DateTimeKind.Utc).");
         }
 
         if (fecha < FechaCreacion)
         {
-            throw new ArgumentOutOfRangeException(nameof(fecha), "El dictamen no puede ser anterior a la creación del menú.");
+            throw new DatoInvalidoException(nameof(fecha), "El dictamen no puede ser anterior a la creación del menú.");
         }
     }
 
@@ -431,13 +431,13 @@ public sealed class Menu : AggregateRoot<Guid>
     {
         if (!EsPendiente)
         {
-            throw new InvalidOperationException("El menú ya tiene dictamen: solo se modifica o se dictamina mientras está pendiente.");
+            throw new ReglaDeNegocioException("El menú ya tiene dictamen: solo se modifica o se dictamina mientras está pendiente.");
         }
     }
 
     private Asignacion BuscarAsignacion(Guid pacienteId)
         => _asignaciones.SingleOrDefault(a => a.PacienteId == pacienteId)
-            ?? throw new InvalidOperationException($"El menú no está asignado al paciente {pacienteId}.");
+            ?? throw new ReglaDeNegocioException($"El menú no está asignado al paciente {pacienteId}.");
 
     private void FijarDistribucion(IEnumerable<(Guid TipoPreparacionId, decimal Proporcion)> distribucion)
     {
@@ -445,7 +445,7 @@ public sealed class Menu : AggregateRoot<Guid>
         {
             if (_distribuciones.Any(d => d.TipoPreparacionId == tipoPreparacionId))
             {
-                throw new ArgumentException($"El tipo de preparación {tipoPreparacionId} aparece más de una vez en la distribución.", nameof(distribucion));
+                throw new DatoInvalidoException(nameof(distribucion), $"El tipo de preparación {tipoPreparacionId} aparece más de una vez en la distribución.");
             }
 
             _distribuciones.Add(new MenuDistribucion(Id, tipoPreparacionId, proporcion));
@@ -453,12 +453,12 @@ public sealed class Menu : AggregateRoot<Guid>
 
         if (_distribuciones.Count == 0)
         {
-            throw new ArgumentException("El menú debe tener al menos una proporción por tipo de preparación.", nameof(distribucion));
+            throw new DatoInvalidoException(nameof(distribucion), "El menú debe tener al menos una proporción por tipo de preparación.");
         }
 
         if (Math.Abs(_distribuciones.Sum(d => d.Proporcion) - 1m) >= ToleranciaSumaProporciones)
         {
-            throw new ArgumentException("Las proporciones de la distribución deben sumar 1.", nameof(distribucion));
+            throw new DatoInvalidoException(nameof(distribucion), "Las proporciones de la distribución deben sumar 1.");
         }
     }
 
@@ -468,7 +468,7 @@ public sealed class Menu : AggregateRoot<Guid>
         {
             if (_gruposNutricionales.Any(g => g.GrupoNutricionalId == grupoNutricionalId))
             {
-                throw new ArgumentException($"El grupo nutricional {grupoNutricionalId} aparece más de una vez.", nameof(gruposNutricionalesIds));
+                throw new DatoInvalidoException(nameof(gruposNutricionalesIds), $"El grupo nutricional {grupoNutricionalId} aparece más de una vez.");
             }
 
             _gruposNutricionales.Add(new MenuGrupoNutricional(Id, grupoNutricionalId));
@@ -476,7 +476,7 @@ public sealed class Menu : AggregateRoot<Guid>
 
         if (_gruposNutricionales.Count == 0)
         {
-            throw new ArgumentException("El menú debe cubrir al menos un grupo nutricional.", nameof(gruposNutricionalesIds));
+            throw new DatoInvalidoException(nameof(gruposNutricionalesIds), "El menú debe cubrir al menos un grupo nutricional.");
         }
     }
 }

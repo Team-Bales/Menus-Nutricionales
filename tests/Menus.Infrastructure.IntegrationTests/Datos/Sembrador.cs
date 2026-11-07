@@ -233,6 +233,8 @@ public sealed partial class Sembrador(NpgsqlConnection conexion)
     {
         var id = Guid.NewGuid();
         var nombreFinal = nombre ?? NombreUnico("Alimento Test");
+        var nutricionistaId = await NutricionistaAsync(); // crea uno nuevo; fuera de la transacción del alimento,
+                                                          // porque Npgsql no soporta transacciones anidadas en la misma conexión
 
         await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
         try
@@ -248,7 +250,7 @@ public sealed partial class Sembrador(NpgsqlConnection conexion)
             cmd.Parameters.AddWithValue("grupo_nutricional_id", GrupoCereales);
             cmd.Parameters.AddWithValue("tipo_preparacion_id", TipoPlatoFuerte); // temporal, se puede cambiar
             cmd.Parameters.AddWithValue("nivel_calorico_id", NivelMedio);
-            cmd.Parameters.AddWithValue("nutricionista_id", await NutricionistaAsync()); // crea uno nuevo
+            cmd.Parameters.AddWithValue("nutricionista_id", nutricionistaId);
             await cmd.ExecuteNonQueryAsync();
             await tx.CommitAsync();
         }
@@ -273,6 +275,8 @@ public sealed partial class Sembrador(NpgsqlConnection conexion)
         }
 
         var id = Guid.NewGuid();
+        var nutricionistaId = await NutricionistaAsync(); // crea uno nuevo; fuera de la transacción del plato,
+                                                          // porque Npgsql no soporta transacciones anidadas en la misma conexión
 
         await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
         try
@@ -288,7 +292,7 @@ public sealed partial class Sembrador(NpgsqlConnection conexion)
             cmd.Parameters.AddWithValue("grupo_nutricional_id", GrupoCereales);
             cmd.Parameters.AddWithValue("tipo_preparacion_id", TipoPlatoFuerte);
             cmd.Parameters.AddWithValue("nivel_calorico_id", NivelMedio);
-            cmd.Parameters.AddWithValue("nutricionista_id", await NutricionistaAsync()); // crea uno nuevo
+            cmd.Parameters.AddWithValue("nutricionista_id", nutricionistaId);
             await cmd.ExecuteNonQueryAsync();
 
             foreach (var alimentoId in alimentos)

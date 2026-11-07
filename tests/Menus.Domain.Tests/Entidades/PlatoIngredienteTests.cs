@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -21,9 +22,9 @@ public sealed class PlatoIngredienteTests
     [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-0.5)]
-    public void Constructor_CantidadNoPositiva_LanzaArgumentOutOfRangeException(decimal cantidad)
+    public void Constructor_CantidadNoPositiva_LanzaDatoInvalidoException(decimal cantidad)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PlatoIngrediente(Guid.NewGuid(), Guid.NewGuid(), cantidad));
+        Assert.Throws<DatoInvalidoException>(() => new PlatoIngrediente(Guid.NewGuid(), Guid.NewGuid(), cantidad));
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -20,10 +21,10 @@ public sealed class Nutricionista : Entity<Guid>
     /// <param name="id">Identificador único del nutricionista.</param>
     /// <param name="nombre">Nombre del nutricionista (no puede estar vacío).</param>
     /// <param name="especialidadId">Especialidad del nutricionista.</param>
-    /// <exception cref="ArgumentException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
     public Nutricionista(Guid id, string nombre, Guid especialidadId) : base(id)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        DatoInvalidoException.SiVacio(nombre);
         Nombre = nombre;
         EspecialidadId = especialidadId;
     }
@@ -53,12 +54,12 @@ public sealed class Nutricionista : Entity<Guid>
     /// </summary>
     /// <param name="dietaId">Identificador de la dieta a autorizar.</param>
     /// <returns>La autorización creada.</returns>
-    /// <exception cref="InvalidOperationException">Si la dieta ya estaba autorizada.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si la dieta ya estaba autorizada.</exception>
     public NutricionistasDieta AutorizarDieta(Guid dietaId)
     {
         if (_dietasAutorizadas.Any(a => a.DietaId == dietaId))
         {
-            throw new InvalidOperationException($"La dieta {dietaId} ya está autorizada para este nutricionista.");
+            throw new ReglaDeNegocioException($"La dieta {dietaId} ya está autorizada para este nutricionista.");
         }
 
         var autorizacion = new NutricionistasDieta(Id, dietaId);
@@ -72,11 +73,11 @@ public sealed class Nutricionista : Entity<Guid>
     /// al registrar el dictamen (RS-03), no después.
     /// </remarks>
     /// <param name="dietaId">Identificador de la dieta cuya autorización se revoca.</param>
-    /// <exception cref="InvalidOperationException">Si el nutricionista no está autorizado para esa dieta.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si el nutricionista no está autorizado para esa dieta.</exception>
     public void RevocarDieta(Guid dietaId)
     {
         var autorizacion = _dietasAutorizadas.SingleOrDefault(a => a.DietaId == dietaId)
-            ?? throw new InvalidOperationException($"El nutricionista no está autorizado para la dieta {dietaId}.");
+            ?? throw new ReglaDeNegocioException($"El nutricionista no está autorizado para la dieta {dietaId}.");
 
         _dietasAutorizadas.Remove(autorizacion);
     }

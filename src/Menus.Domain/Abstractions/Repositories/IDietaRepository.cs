@@ -23,4 +23,16 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
     /// <param name="programaAtencionId">Identificador del programa de atención.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Dieta>> GetByProgramaAtencionAsync(Guid programaAtencionId, CancellationToken cancellationToken = default);
+
+    /// <summary>Busca dietas por página, ordenadas por nombre, con filtro opcional por programa de atención (#63).</summary>
+    /// <param name="programaAtencionId">Si no es nulo, solo las de ese programa.</param>
+    /// <param name="pagina">Número de página, desde 1.</param>
+    /// <param name="tamano">Tamaño de página.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>La página pedida y el total de dietas que cumplen el filtro, sin paginar.</returns>
+    Task<(IReadOnlyList<Dieta> Dietas, int Total)> BuscarAsync(
+        Guid? programaAtencionId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default);
 }

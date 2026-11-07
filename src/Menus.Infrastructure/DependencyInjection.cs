@@ -34,6 +34,11 @@ public static class DependencyInjection
         services.AddScoped<IPacienteRepository, PacienteRepository>();
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
+        services.AddScoped<IItemAlimentarioRepository, ItemAlimentarioRepository>();
+        services.AddScoped<IAlimentoRepository, AlimentoRepository>();
+        services.AddScoped<IPlatoRepository, PlatoRepository>();
+        services.AddScoped<IDietaRepository, DietaRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         JwtBearerConfiguration.Validate(jwtOptions);
@@ -60,6 +65,10 @@ public static class DependencyInjection
                 sp.GetRequiredService<IMongoClient>(),
                 url.DatabaseName ?? throw new InvalidOperationException(
                     "La cadena de conexión de MongoDB (ConnectionStrings:Mongo) no indica la base de datos.")));
+
+            // Baja coordinada de alimentos y platos (RM-09): solo tiene sentido si hay ficha que borrar.
+            services.AddScoped<IFichaNutricionalStore, FichaNutricionalStore>();
+            services.AddScoped<BajaCoordinadaDeItems>();
         }
 
         return services;

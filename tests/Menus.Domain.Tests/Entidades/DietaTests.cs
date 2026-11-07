@@ -1,4 +1,5 @@
 using Menus.Domain.Entidades;
+using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Domain.Tests.Entidades;
@@ -24,9 +25,9 @@ public sealed class DietaTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_NombreVacio_LanzaArgumentException(string nombre)
+    public void Constructor_NombreVacio_LanzaDatoInvalidoException(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => new Dieta(Guid.NewGuid(), nombre, _programaId));
+        Assert.Throws<DatoInvalidoException>(() => new Dieta(Guid.NewGuid(), nombre, _programaId));
     }
 
     [Fact]
@@ -56,13 +57,13 @@ public sealed class DietaTests
     }
 
     [Fact]
-    public void AgregarGrupo_GrupoDuplicado_LanzaInvalidOperationException()
+    public void AgregarGrupo_GrupoDuplicado_LanzaReglaDeNegocioException()
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         var grupoId = Guid.NewGuid();
         dieta.AgregarGrupo(grupoId, TipoCobertura.Requerido);
 
-        Assert.Throws<InvalidOperationException>(() => dieta.AgregarGrupo(grupoId, TipoCobertura.Restringido));
+        Assert.Throws<ReglaDeNegocioException>(() => dieta.AgregarGrupo(grupoId, TipoCobertura.Restringido));
     }
 
     [Fact]
@@ -91,13 +92,13 @@ public sealed class DietaTests
     }
 
     [Fact]
-    public void AgregarRestriccion_RestriccionDuplicada_LanzaInvalidOperationException()
+    public void AgregarRestriccion_RestriccionDuplicada_LanzaReglaDeNegocioException()
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Sin Gluten", _programaId);
         var restriccionId = Guid.NewGuid();
         dieta.AgregarRestriccion(restriccionId);
 
-        Assert.Throws<InvalidOperationException>(() => dieta.AgregarRestriccion(restriccionId));
+        Assert.Throws<ReglaDeNegocioException>(() => dieta.AgregarRestriccion(restriccionId));
     }
 
     [Fact]
@@ -146,7 +147,7 @@ public sealed class DietaTests
     }
 
     [Fact]
-    public void QuitarGrupo_UnicoRequerido_LanzaInvalidOperationExceptionYLoConserva()
+    public void QuitarGrupo_UnicoRequerido_LanzaReglaDeNegocioExceptionYLoConserva()
     {
         // RK-07: toda dieta exige cubrir al menos un grupo nutricional; un restringido no cuenta.
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
@@ -154,17 +155,17 @@ public sealed class DietaTests
         dieta.AgregarGrupo(requerido, TipoCobertura.Requerido);
         dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Restringido);
 
-        Assert.Throws<InvalidOperationException>(() => dieta.QuitarGrupo(requerido));
+        Assert.Throws<ReglaDeNegocioException>(() => dieta.QuitarGrupo(requerido));
         Assert.Equal(2, dieta.GruposNutricionales.Count);
     }
 
     [Fact]
-    public void QuitarGrupo_GrupoQueNoCubre_LanzaInvalidOperationException()
+    public void QuitarGrupo_GrupoQueNoCubre_LanzaReglaDeNegocioException()
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Blanda", _programaId);
         dieta.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
 
-        Assert.Throws<InvalidOperationException>(() => dieta.QuitarGrupo(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => dieta.QuitarGrupo(Guid.NewGuid()));
     }
 
     [Fact]
@@ -180,12 +181,12 @@ public sealed class DietaTests
     }
 
     [Fact]
-    public void QuitarRestriccion_QueNoTiene_LanzaInvalidOperationException()
+    public void QuitarRestriccion_QueNoTiene_LanzaReglaDeNegocioException()
     {
         var dieta = new Dieta(Guid.NewGuid(), "Dieta Renal", _programaId);
         dieta.AgregarRestriccion(Guid.NewGuid());
 
-        Assert.Throws<InvalidOperationException>(() => dieta.QuitarRestriccion(Guid.NewGuid()));
+        Assert.Throws<ReglaDeNegocioException>(() => dieta.QuitarRestriccion(Guid.NewGuid()));
         Assert.Single(dieta.Restricciones);
     }
 }

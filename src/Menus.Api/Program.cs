@@ -1,14 +1,29 @@
+using Menus.Api.Actor;
+using Menus.Api.Errores;
+using Menus.Application;
+using Menus.Application.Comun;
 using Menus.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Add services to the container.
+// Capa de aplicación (ADR-010): controladores, errores como ProblemDetails y quién actúa.
+// Sin el [Required] implícito de los tipos no anulables, un campo vacío o ausente llega a FluentValidation y
+// responde 422 con el formato del ADR-010 (§3), en lugar de un 400 de MVC con otro formato.
+builder.Services.AddControllers(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ManejadorDeExcepciones>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IActorActual, ActorDesdeCabecera>();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -18,28 +33,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Entidades;
 
@@ -51,7 +52,7 @@ public sealed class Validacion : Entity<Guid>
     {
         if (fechaValidacion.Kind != DateTimeKind.Utc)
         {
-            throw new ArgumentException("El instante de validación debe estar en UTC (DateTimeKind.Utc).", nameof(fechaValidacion));
+            throw new DatoInvalidoException(nameof(fechaValidacion), "El instante de validación debe estar en UTC (DateTimeKind.Utc).");
         }
 
         NutricionistaId = nutricionistaId;

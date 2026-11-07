@@ -1,4 +1,5 @@
 using Menus.Domain.Abstractions;
+using Menus.Domain.Excepciones;
 
 namespace Menus.Domain.Nomenclators;
 
@@ -48,10 +49,10 @@ public sealed class ResultadoNutricional : Entity<Guid>
     /// <summary>Devuelve la categoría que corresponde a un valor.</summary>
     /// <param name="valor">Valor de la categoría, de 1 a 5.</param>
     /// <returns>La categoría con ese valor.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="valor"/> no está entre 1 y 5.</exception>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="valor"/> no está entre 1 y 5.</exception>
     public static ResultadoNutricional DesdeValor(int valor) =>
         Todos.SingleOrDefault(r => r.Valor == valor)
-        ?? throw new ArgumentOutOfRangeException(nameof(valor), "El resultado nutricional debe tener un valor entre 1 y 5.");
+        ?? throw new DatoInvalidoException(nameof(valor), "El resultado nutricional debe tener un valor entre 1 y 5.");
 
     /// <summary>Indica si el identificador corresponde a una de las cinco categorías del catálogo (RD-14); toda valoración referencia una de ellas (RR-17).</summary>
     /// <param name="id">Identificador que se quiere comprobar.</param>

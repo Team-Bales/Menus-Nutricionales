@@ -1,6 +1,7 @@
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Persistence.Repositories;
@@ -38,6 +39,10 @@ public static class DependencyInjection
         services.AddScoped<IAlimentoRepository, AlimentoRepository>();
         services.AddScoped<IPlatoRepository, PlatoRepository>();
         services.AddScoped<IDietaRepository, DietaRepository>();
+        services.AddScoped<INomencladorRepository<GrupoNutricional>, GrupoNutricionalRepository>();
+        services.AddScoped<INomencladorRepository<RestriccionAlimentaria>, RestriccionAlimentariaRepository>();
+        services.AddScoped<INomencladorRepository<ProgramaAtencion>, ProgramaAtencionRepository>();
+        services.AddScoped<INomencladorRepository<Especialidad>, EspecialidadRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();

@@ -1,7 +1,7 @@
+using Menus.Domain.Abstractions.Security;
 using BCryptNet = BCrypt.Net.BCrypt;
 using HashType = BCrypt.Net.HashType;
 using SaltParseException = BCrypt.Net.SaltParseException;
-using Menus.Domain.Abstractions.Security;
 
 namespace Menus.Infrastructure.Security;
 

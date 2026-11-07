@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Menus.Application.Auth;
 using Menus.Application.Auth.Perfil;
 using Menus.Application.Comun;
+using Menus.Domain;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
-using Menus.Domain;
 
 namespace Menus.Application.Tests.Auth;
 

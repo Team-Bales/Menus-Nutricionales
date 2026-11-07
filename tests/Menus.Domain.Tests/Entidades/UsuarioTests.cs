@@ -1,6 +1,6 @@
+using Menus.Domain;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
-using Menus.Domain;
 
 namespace Menus.Domain.Tests.Entidades;
 

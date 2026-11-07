@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using Menus.Application.Comun;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 
 namespace Menus.Api.Auth;
 

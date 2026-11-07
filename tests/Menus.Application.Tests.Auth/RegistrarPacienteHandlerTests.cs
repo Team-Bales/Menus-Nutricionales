@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 using Menus.Application.Auth;
 using Menus.Application.Auth.RegistroPaciente;
 using Menus.Application.Comun;
+using Menus.Domain;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
-using Menus.Domain;
 
 namespace Menus.Application.Tests.Auth;
 
@@ -91,7 +91,11 @@ public sealed class RegistrarPacienteHandlerTests
         public Task<Usuario?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(Usuarios.Values.FirstOrDefault(u => u.Id == id));
 
-        public Task AddAsync(Usuario entity, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AddAsync(Usuario entity, CancellationToken cancellationToken)
+        {
+            Usuarios[entity.Email] = entity;
+            return Task.CompletedTask;
+        }
         public void Remove(Usuario entity) { }
         public Task<IReadOnlyList<Usuario>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Usuario>>(Usuarios.Values.ToList());
@@ -104,7 +108,11 @@ public sealed class RegistrarPacienteHandlerTests
         public Task<Paciente?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(Pacientes.GetValueOrDefault(id));
 
-        public Task AddAsync(Paciente entity, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AddAsync(Paciente entity, CancellationToken cancellationToken)
+        {
+            Pacientes[entity.Id] = entity;
+            return Task.CompletedTask;
+        }
         public void Remove(Paciente entity) { }
         public Task<IReadOnlyList<Paciente>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Paciente>>(Pacientes.Values.ToList());

@@ -3,13 +3,13 @@ using System.Threading.Tasks;
 using Menus.Application.Auth;
 using Menus.Application.Auth.RegistroNutricionista;
 using Menus.Application.Comun;
+using Menus.Domain;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
-using Menus.Domain;
 
 namespace Menus.Application.Tests.Auth;
 
@@ -92,7 +92,11 @@ public sealed class RegistrarNutricionistaHandlerTests
         public Task<Usuario?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(Usuarios.Values.FirstOrDefault(u => u.Id == id));
 
-        public Task AddAsync(Usuario entity, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AddAsync(Usuario entity, CancellationToken cancellationToken)
+        {
+            Usuarios[entity.Email] = entity;
+            return Task.CompletedTask;
+        }
         public void Remove(Usuario entity) { }
         public Task<IReadOnlyList<Usuario>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Usuario>>(Usuarios.Values.ToList());
@@ -105,7 +109,11 @@ public sealed class RegistrarNutricionistaHandlerTests
         public Task<Nutricionista?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(Nutricionistas.GetValueOrDefault(id));
 
-        public Task AddAsync(Nutricionista entity, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AddAsync(Nutricionista entity, CancellationToken cancellationToken)
+        {
+            Nutricionistas[entity.Id] = entity;
+            return Task.CompletedTask;
+        }
         public void Remove(Nutricionista entity) { }
         public Task<IReadOnlyList<Nutricionista>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Nutricionista>>(Nutricionistas.Values.ToList());

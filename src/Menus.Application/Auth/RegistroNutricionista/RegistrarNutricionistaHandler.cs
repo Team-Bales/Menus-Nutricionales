@@ -1,12 +1,12 @@
 using Menus.Application.Auth;
 using Menus.Application.Comun;
+using Menus.Domain;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
-using Menus.Domain;
 
 namespace Menus.Application.Auth.RegistroNutricionista;
 

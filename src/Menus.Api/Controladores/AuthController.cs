@@ -1,8 +1,8 @@
 using Menus.Application.Auth;
 using Menus.Application.Auth.Login;
+using Menus.Application.Auth.Perfil;
 using Menus.Application.Auth.RegistroNutricionista;
 using Menus.Application.Auth.RegistroPaciente;
-using Menus.Application.Auth.Perfil;
 using Menus.Application.Comun;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +30,7 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
         => despachador.EnviarAsync(comando, ct);
 
     /// <summary>Registra un nuevo nutricionista (solo Admin).</summary>
-    /// <response code="201">Nutricionista creado; <c>Location</c> apunta al recurso.</response>
+    /// <response code="201">Nutricionista creado; devuelve el ID en el cuerpo.</response>
     /// <response code="401">No autenticado.</response>
     /// <response code="403">No es administrador.</response>
     /// <response code="409">Ya existe un usuario con ese email.</response>
@@ -46,11 +46,11 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
         RegistrarNutricionistaCommand comando, CancellationToken ct)
     {
         var creado = await despachador.EnviarAsync(comando, ct);
-        return CreatedAtAction(nameof(RegistrarNutricionista), new { id = creado.Id }, creado);
+        return StatusCode(StatusCodes.Status201Created, creado);
     }
 
     /// <summary>Registra un nuevo paciente (solo Admin).</summary>
-    /// <response code="201">Paciente creado; <c>Location</c> apunta al recurso.</response>
+    /// <response code="201">Paciente creado; devuelve el ID en el cuerpo.</response>
     /// <response code="401">No autenticado.</response>
     /// <response code="403">No es administrador.</response>
     /// <response code="409">Ya existe un usuario con ese email.</response>
@@ -66,7 +66,7 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
         RegistrarPacienteCommand comando, CancellationToken ct)
     {
         var creado = await despachador.EnviarAsync(comando, ct);
-        return CreatedAtAction(nameof(RegistrarPaciente), new { id = creado.Id }, creado);
+        return StatusCode(StatusCodes.Status201Created, creado);
     }
 
     /// <summary>Obtiene el perfil del usuario autenticado.</summary>

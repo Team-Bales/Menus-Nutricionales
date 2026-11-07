@@ -1,8 +1,8 @@
+using Menus.Domain;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
-using Menus.Domain;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -81,7 +81,7 @@ public sealed class AuthBootstrapService : IHostedService
         await usuarioRepository.AddAsync(admin, cancellationToken);
         await unitOfWork.CommitAsync(cancellationToken);
 
-        _logger.LogInformation("Usuario administrador inicial creado con email '{Email}'.", emailNormalizado);
+        _logger.LogInformation("Usuario administrador inicial creado.");
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using Menus.Application.Auth;
 
@@ -19,9 +20,16 @@ public sealed class RegistrarNutricionistaValidator : AbstractValidator<Registra
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("La contraseña es obligatoria.")
-            .MaximumLength(100).WithMessage("La contraseña no puede exceder 100 caracteres.");
+            .MaximumLength(100).WithMessage("La contraseña no puede exceder 100 caracteres.")
+            .Must(ValidarLongitudBytesBcrypt).WithMessage("La contraseña no puede exceder 72 bytes (límite de BCrypt).");
 
         RuleFor(x => x.EspecialidadId)
             .NotEmpty().WithMessage("La especialidad es obligatoria.");
+    }
+
+    private static bool ValidarLongitudBytesBcrypt(string password)
+    {
+        // BCrypt trunca a 72 bytes. Validamos que la codificación UTF-8 no exceda ese límite.
+        return Encoding.UTF8.GetByteCount(password) <= 72;
     }
 }

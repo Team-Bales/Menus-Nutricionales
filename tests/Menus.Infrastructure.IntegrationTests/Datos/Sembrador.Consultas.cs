@@ -6,8 +6,8 @@ using Npgsql;
 namespace Menus.Infrastructure.IntegrationTests.Datos;
 
 /// <summary>
-/// Helpers de siembra para las pruebas de las consultas informacionales 2 a 6 (#217): ítems con nivel calórico y
-/// grupo elegidos, validaciones, menús de reemplazo, asignaciones, servicios, consumos, valoraciones y
+/// Helpers de siembra para las pruebas de las consultas informacionales 1 a 6 (#102, #217): ítems con nivel
+/// calórico y grupo elegidos, validaciones, menús de reemplazo, asignaciones, servicios, consumos, valoraciones y
 /// revalorizaciones. No toca <see cref="Sembrador"/>: es un archivo <c>partial</c> propio, como indica su
 /// comentario.
 /// </summary>
@@ -392,5 +392,72 @@ public sealed partial class Sembrador
             try { await tx.RollbackAsync(); } catch { /* no tapar la excepción original */ }
             throw;
         }
+    }
+
+    /// <summary>
+    /// Inserta un menú con la parametrización indicada (distribución por tipo de preparación y grupos cubiertos),
+    /// para las pruebas de la consulta 1. A diferencia de <see cref="MenuAsync"/>, permite elegir la fecha de
+    /// creación, si es automático y una distribución/cobertura con más de una fila.
+    /// </summary>
+    public async Task<Guid> MenuConParametrosAsync(
+        Guid dietaId,
+        Guid creadorId,
+        DateTime fechaCreacion,
+        int cantidadTotalAlimentos,
+        bool esAutomatico,
+        (Guid TipoPreparacionId, decimal Proporcion)[] distribucion,
+        Guid[] grupos)
+    {
+        var id = Guid.NewGuid();
+        await using var tx = await _conexion.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        try
+        {
+            await using var cmd = _conexion.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = """
+                INSERT INTO menus (id, dieta_id, nutricionista_creador_id, fecha_creacion, cantidad_total_alimentos, es_automatico, validacion_origen_id)
+                VALUES (@id, @dieta_id, @nutricionista_creador_id, @fecha_creacion, @cantidad_total_alimentos, @es_automatico, NULL)
+                """;
+            cmd.Parameters.AddWithValue("id", id);
+            cmd.Parameters.AddWithValue("dieta_id", dietaId);
+            cmd.Parameters.AddWithValue("nutricionista_creador_id", creadorId);
+            cmd.Parameters.AddWithValue("fecha_creacion", fechaCreacion.ToUniversalTime());
+            cmd.Parameters.AddWithValue("cantidad_total_alimentos", cantidadTotalAlimentos);
+            cmd.Parameters.AddWithValue("es_automatico", esAutomatico);
+            await cmd.ExecuteNonQueryAsync();
+
+            foreach (var (tipoPreparacionId, proporcion) in distribucion)
+            {
+                cmd.CommandText = """
+                    INSERT INTO menu_distribucion (menu_id, tipo_preparacion_id, proporcion)
+                    VALUES (@menu_id, @tipo_preparacion_id, @proporcion)
+                    """;
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("menu_id", id);
+                cmd.Parameters.AddWithValue("tipo_preparacion_id", tipoPreparacionId);
+                cmd.Parameters.AddWithValue("proporcion", proporcion);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            foreach (var grupoId in grupos)
+            {
+                cmd.CommandText = """
+                    INSERT INTO menu_grupo_nutricional (menu_id, grupo_nutricional_id)
+                    VALUES (@menu_id, @grupo_nutricional_id)
+                    """;
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("menu_id", id);
+                cmd.Parameters.AddWithValue("grupo_nutricional_id", grupoId);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            try { await tx.RollbackAsync(); } catch { /* no tapar la excepción original */ }
+            throw;
+        }
+        return id;
     }
 }

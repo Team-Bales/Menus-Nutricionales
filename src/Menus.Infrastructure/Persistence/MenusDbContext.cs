@@ -103,6 +103,9 @@ public sealed class MenusDbContext(DbContextOptions<MenusDbContext> options)
     /// <summary>Revalorizaciones solicitadas.</summary>
     public DbSet<Revalorizacion> Revalorizaciones => Set<Revalorizacion>();
 
+    /// <summary>Usuarios para autenticación y autorización.</summary>
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
         => modelBuilder.ApplyConfigurationsFromAssembly(typeof(MenusDbContext).Assembly);

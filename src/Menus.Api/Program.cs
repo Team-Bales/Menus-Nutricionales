@@ -1,4 +1,5 @@
 using Menus.Api.Actor;
+using Menus.Api.Auth;
 using Menus.Api.Errores;
 using Menus.Application;
 using Menus.Application.Comun;
@@ -17,6 +18,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorDeExcepciones>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IActorActual, ActorDesdeCabecera>();
+builder.Services.AddScoped<IIdentidadAutenticada, IdentidadAutenticada>();
+builder.Services.AddHostedService<AuthBootstrapService>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

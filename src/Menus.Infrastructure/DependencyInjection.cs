@@ -1,5 +1,6 @@
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
+using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Mongo;
@@ -33,6 +34,7 @@ public static class DependencyInjection
 
         services.AddScoped<INutricionistaRepository, NutricionistaRepository>();
         services.AddScoped<IPacienteRepository, PacienteRepository>();
+        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
         services.AddScoped<IItemAlimentarioRepository, ItemAlimentarioRepository>();
@@ -44,6 +46,10 @@ public static class DependencyInjection
         services.AddScoped<INomencladorRepository<ProgramaAtencion>, ProgramaAtencionRepository>();
         services.AddScoped<INomencladorRepository<Especialidad>, EspecialidadRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Seguridad: hash de contraseñas y emisión de tokens
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<ITokenEmitter, JwtTokenService>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         JwtBearerConfiguration.Validate(jwtOptions);

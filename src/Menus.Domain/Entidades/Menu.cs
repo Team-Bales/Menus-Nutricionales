@@ -1,5 +1,6 @@
 using Menus.Domain.Abstractions;
 using Menus.Domain.Excepciones;
+using Menus.Domain.ValueObjects;
 
 namespace Menus.Domain.Entidades;
 
@@ -64,7 +65,51 @@ public sealed class Menu : AggregateRoot<Guid>
     /// </remarks>
     public static readonly decimal ToleranciaSumaProporciones = 0.001m;
 
-    /// <summary>Crea un menú con sus parámetros de generación.</summary>
+    /// <summary>Crea un menú con sus parámetros de generación como value objects.</summary>
+    /// <param name="id">Identificador único del menú.</param>
+    /// <param name="dietaId">Dieta a la que pertenece el menú (relación <c>Pertenece</c>).</param>
+    /// <param name="nutricionistaCreadorId">Nutricionista que creó el menú (relación <c>Crea</c>).</param>
+    /// <param name="fechaCreacion">
+    /// Instante de creación del menú. Debe estar en UTC (<see cref="DateTimeKind.Utc"/>), porque así se
+    /// persiste, y no puede ser posterior al instante actual.
+    /// </param>
+    /// <param name="cantidadTotalAlimentos">Cantidad total de alimentos del menú (> 0, RD-10).</param>
+    /// <param name="esAutomatico">Indica si el menú fue generado automáticamente (consulta 1, §7-A).</param>
+    /// <param name="distribucion">Distribución de alimentos por tipo de preparación (value object).</param>
+    /// <param name="coberturaGrupos">Grupos nutricionales que cubre el menú (value object).</param>
+    /// <exception cref="ArgumentNullException">Si <paramref name="distribucion"/> o <paramref name="coberturaGrupos"/> es nulo.</exception>
+    /// <exception cref="DatoInvalidoException">
+    /// Si <paramref name="fechaCreacion"/> no está en UTC o es futura.
+    /// </exception>
+    public Menu(
+        Guid id,
+        Guid dietaId,
+        Guid nutricionistaCreadorId,
+        DateTime fechaCreacion,
+        CantidadTotalAlimentos cantidadTotalAlimentos,
+        bool esAutomatico,
+        DistribucionTiposPreparacion distribucion,
+        CoberturaGruposNutricionales coberturaGrupos)
+        : this(id, dietaId, nutricionistaCreadorId, fechaCreacion, (int)cantidadTotalAlimentos, esAutomatico)
+    {
+        ArgumentNullException.ThrowIfNull(distribucion);
+        ArgumentNullException.ThrowIfNull(coberturaGrupos);
+
+        Distribucion = distribucion;
+        CoberturaGrupos = coberturaGrupos;
+
+        // Persistencia: crear las entidades internas a partir de los value objects
+        foreach (var p in distribucion.Proporciones)
+        {
+            _distribuciones.Add(new MenuDistribucion(Id, p.TipoPreparacionId, p.Valor));
+        }
+        foreach (var grupoId in coberturaGrupos.GrupoIds)
+        {
+            _gruposNutricionales.Add(new MenuGrupoNutricional(Id, grupoId));
+        }
+    }
+
+    /// <summary>Crea un menú con sus parámetros de generación (compatibilidad hacia atrás).</summary>
     /// <param name="id">Identificador único del menú.</param>
     /// <param name="dietaId">Dieta a la que pertenece el menú (relación <c>Pertenece</c>).</param>
     /// <param name="nutricionistaCreadorId">Nutricionista que creó el menú (relación <c>Crea</c>).</param>
@@ -155,6 +200,49 @@ public sealed class Menu : AggregateRoot<Guid>
 
     /// <summary>Indica si el menú fue generado automáticamente. Parámetro de generación.</summary>
     public bool EsAutomatico { get; }
+
+    /// <summary>Cantidad total de alimentos del menú (> 0). Parámetro de generación como value object.</summary>
+    public CantidadTotalAlimentos CantidadTotalAlimentosVO => new(CantidadTotalAlimentos);
+
+    /// <summary>Distribución de alimentos por tipo de preparación. Parámetro de generación como value object.</summary>
+    public DistribucionTiposPreparacion Distribucion
+    {
+        get
+        {
+            if (_distribucion is not null)
+            {
+                return _distribucion;
+            }
+            if (_distribuciones.Count == 0)
+            {
+                throw new InvalidOperationException("La distribución no se ha inicializado.");
+            }
+            _distribucion = DistribucionTiposPreparacion.Crear(_distribuciones.Select(d => new ProporcionTipoPreparacion(d.TipoPreparacionId, d.Proporcion)));
+            return _distribucion;
+        }
+        private set => _distribucion = value;
+    }
+    private DistribucionTiposPreparacion? _distribucion;
+
+    /// <summary>Grupos nutricionales que cubre el menú. Parámetro de generación como value object.</summary>
+    public CoberturaGruposNutricionales CoberturaGrupos
+    {
+        get
+        {
+            if (_coberturaGrupos is not null)
+            {
+                return _coberturaGrupos;
+            }
+            if (_gruposNutricionales.Count == 0)
+            {
+                throw new InvalidOperationException("La cobertura de grupos nutricionales no se ha inicializado.");
+            }
+            _coberturaGrupos = CoberturaGruposNutricionales.Crear(_gruposNutricionales.Select(g => g.GrupoNutricionalId));
+            return _coberturaGrupos;
+        }
+        private set => _coberturaGrupos = value;
+    }
+    private CoberturaGruposNutricionales? _coberturaGrupos;
 
     /// <summary>Ítems del banco, alimentos y platos, incluidos en el menú (solo lectura).</summary>
     public IReadOnlyCollection<MenuItem> Items => _items.AsReadOnly();

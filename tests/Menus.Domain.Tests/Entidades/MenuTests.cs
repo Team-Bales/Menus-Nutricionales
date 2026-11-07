@@ -1,6 +1,7 @@
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
+using Menus.Domain.ValueObjects;
 
 namespace Menus.Domain.Tests.Entidades;
 
@@ -730,5 +731,83 @@ public sealed class MenuTests
         Assert.False(menu.Items is ICollection<MenuItem> { IsReadOnly: false });
         Assert.False(menu.Distribuciones is ICollection<MenuDistribucion> { IsReadOnly: false });
         Assert.False(menu.GruposNutricionales is ICollection<MenuGrupoNutricional> { IsReadOnly: false });
+    }
+
+    [Fact]
+    public void ConstructorConValueObjects_ValidArgs_RegistraLaParametrizacionYExponeLosValueObjects()
+    {
+        var id = Guid.NewGuid();
+        var fecha = _ahora.AddDays(-3);
+        var cantidad = CantidadTotalAlimentos.Crear(8);
+        var distribucion = DistribucionTiposPreparacion.Crear(
+        [
+            ProporcionTipoPreparacion.Crear(TipoPreparacion.Entrante.Id, 0.25m),
+            ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, 0.5m),
+            ProporcionTipoPreparacion.Crear(TipoPreparacion.Postre.Id, 0.25m),
+        ]);
+        var cobertura = CoberturaGruposNutricionales.Crear([_grupoId1, _grupoId2]);
+
+        var menu = new Menu(id, _dietaId, _nutricionistaId, fecha, cantidad, false, distribucion, cobertura);
+
+        Assert.Equal(id, menu.Id);
+        Assert.Equal(8, menu.CantidadTotalAlimentos);
+        Assert.False(menu.EsAutomatico);
+        Assert.Same(distribucion, menu.Distribucion);
+        Assert.Same(cobertura, menu.CoberturaGrupos);
+        Assert.Equal(3, menu.Distribuciones.Count);
+        Assert.Equal(2, menu.GruposNutricionales.Count);
+        Assert.Contains(menu.Distribuciones, d => d.TipoPreparacionId == TipoPreparacion.PlatoFuerte.Id && d.Proporcion == 0.5m);
+        Assert.Contains(menu.GruposNutricionales, g => g.GrupoNutricionalId == _grupoId2);
+    }
+
+    [Fact]
+    public void ConstructorConValueObjects_DistribucionNula_LanzaArgumentNullException()
+    {
+        var cobertura = CoberturaGruposNutricionales.Crear([_grupoId1]);
+
+        Assert.Throws<ArgumentNullException>(() =>
+            new Menu(Guid.NewGuid(), _dietaId, _nutricionistaId, _ahora, CantidadTotalAlimentos.Crear(6), true, null!, cobertura));
+    }
+
+    [Fact]
+    public void ConstructorConValueObjects_CoberturaNula_LanzaArgumentNullException()
+    {
+        var distribucion = DistribucionTiposPreparacion.Crear([ProporcionTipoPreparacion.Crear(TipoPreparacion.PlatoFuerte.Id, 1m)]);
+
+        Assert.Throws<ArgumentNullException>(() =>
+            new Menu(Guid.NewGuid(), _dietaId, _nutricionistaId, _ahora, CantidadTotalAlimentos.Crear(6), true, distribucion, null!));
+    }
+
+    [Fact]
+    public void CantidadTotalAlimentosVO_ReflejaLaCantidad()
+    {
+        var menu = CrearMenu(cantidadTotalAlimentos: 7);
+
+        Assert.Equal(7, menu.CantidadTotalAlimentosVO.Valor);
+    }
+
+    [Fact]
+    public void Distribucion_TrasConstruirConTuplas_ReconstruyeElValueObject()
+    {
+        var menu = CrearMenu();
+
+        var distribucion = menu.Distribucion;
+
+        Assert.Equal(3, distribucion.Proporciones.Length);
+        Assert.Contains(distribucion.Proporciones,
+            p => p.TipoPreparacionId == TipoPreparacion.PlatoFuerte.Id && p.Valor == 0.5m);
+        Assert.Same(distribucion, menu.Distribucion);
+    }
+
+    [Fact]
+    public void CoberturaGrupos_TrasConstruirConTuplas_ReconstruyeElValueObject()
+    {
+        var menu = CrearMenu();
+
+        var cobertura = menu.CoberturaGrupos;
+
+        Assert.Equal(2, cobertura.GrupoIds.Length);
+        Assert.Contains(_grupoId2, cobertura.GrupoIds);
+        Assert.Same(cobertura, menu.CoberturaGrupos);
     }
 }

@@ -93,5 +93,10 @@ internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
         builder.HasIndex(m => m.ValidacionOrigenId)
             .IsUnique()
             .HasDatabaseName("ux_menus_r7_38_validacion_origen");
+
+        // Ignorar value objects: no se persisten directamente, se reconstruyen desde las entidades
+        builder.Ignore(m => m.CantidadTotalAlimentosVO);
+        builder.Ignore(m => m.Distribucion);
+        builder.Ignore(m => m.CoberturaGrupos);
     }
 }

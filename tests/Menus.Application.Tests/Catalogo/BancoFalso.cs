@@ -4,10 +4,10 @@ using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 
-namespace Menus.Application.Tests.Catalogo.Alimentos;
+namespace Menus.Application.Tests.Catalogo;
 
 /// <summary>
-/// Banco de alimentos en memoria para probar los manejadores sin EF Core (ADR-010, §9). Los repositorios falsos
+/// Banco de alimentos y platos en memoria para probar los manejadores sin EF Core (ADR-010, §9). Los repositorios falsos
 /// comparten estas listas, como los de verdad comparten el contexto.
 /// </summary>
 internal sealed class BancoFalso
@@ -17,7 +17,9 @@ internal sealed class BancoFalso
 
     public List<ItemAlimentario> Items { get; } = [];
 
-    /// <summary>Alimentos que son ingrediente de algún plato.</summary>
+    /// <summary>
+    /// Alimentos que son ingrediente de algún plato, además de los que figuran en los platos de <see cref="Items"/>.
+    /// </summary>
     public HashSet<Guid> EnPlatos { get; } = [];
 
     /// <summary>Ítems que figuran en algún menú.</summary>
@@ -28,6 +30,8 @@ internal sealed class BancoFalso
     public ItemsFalsos ItemsRepo => new(this);
 
     public AlimentosFalsos AlimentosRepo => new(this);
+
+    public PlatosFalsos PlatosRepo => new(this);
 
     public Alimento Agregar(string nombre, Guid? nivel = null, Guid? tipo = null, Guid? grupo = null)
     {
@@ -40,6 +44,20 @@ internal sealed class BancoFalso
             Descriptor);
         Items.Add(alimento);
         return alimento;
+    }
+
+    /// <summary>Agrega un plato descrito por <see cref="Descriptor"/> con esos ingredientes (100 de cada uno).</summary>
+    public Plato AgregarPlato(string nombre, params Alimento[] ingredientes)
+    {
+        var plato = new Plato(
+            Guid.NewGuid(), nombre, GrupoCereales, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, Descriptor);
+        foreach (var alimento in ingredientes)
+        {
+            plato.AgregarIngrediente(alimento.Id, 100m);
+        }
+
+        Items.Add(plato);
+        return plato;
     }
 }
 
@@ -111,7 +129,52 @@ internal sealed class AlimentosFalsos(BancoFalso banco) : IAlimentoRepository
     }
 
     public Task<bool> FormaParteDeAlgunPlatoAsync(Guid alimentoId, CancellationToken cancellationToken = default)
-        => Task.FromResult(banco.EnPlatos.Contains(alimentoId));
+        => Task.FromResult(banco.EnPlatos.Contains(alimentoId)
+            || banco.Items.OfType<Plato>().Any(p => p.Ingredientes.Any(i => i.AlimentoId == alimentoId)));
+
+    public Task<IReadOnlyList<Alimento>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Alimento>>([.. Alimentos.Where(a => ids.Contains(a.Id))]);
+}
+
+internal sealed class PlatosFalsos(BancoFalso banco) : IPlatoRepository
+{
+    private IEnumerable<Plato> Platos => banco.Items.OfType<Plato>();
+
+    public Task<Plato?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromResult(Platos.FirstOrDefault(p => p.Id == id));
+
+    public Task<Plato?> GetConIngredientesAsync(Guid id, CancellationToken cancellationToken = default)
+        => GetByIdAsync(id, cancellationToken);
+
+    public Task<IReadOnlyList<Plato>> ListAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Plato>>([.. Platos]);
+
+    public Task AddAsync(Plato entity, CancellationToken cancellationToken = default)
+    {
+        banco.Items.Add(entity);
+        return Task.CompletedTask;
+    }
+
+    public void Remove(Plato entity) => banco.Items.Remove(entity);
+
+    public Task<(IReadOnlyList<Plato> Platos, int Total)> BuscarAsync(
+        Guid? grupoNutricionalId,
+        Guid? tipoPreparacionId,
+        Guid? nivelCaloricoId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = Platos
+            .Where(p => grupoNutricionalId is null || p.GrupoNutricionalId == grupoNutricionalId)
+            .Where(p => tipoPreparacionId is null || p.TipoPreparacionId == tipoPreparacionId)
+            .Where(p => nivelCaloricoId is null || p.NivelCaloricoId == nivelCaloricoId)
+            .OrderBy(p => p.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        IReadOnlyList<Plato> enPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enPagina, filtrados.Count));
+    }
 }
 
 internal sealed class UnidadDeTrabajoFalsa : IUnitOfWork

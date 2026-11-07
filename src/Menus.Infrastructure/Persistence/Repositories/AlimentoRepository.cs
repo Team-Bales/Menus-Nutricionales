@@ -73,4 +73,13 @@ public sealed class AlimentoRepository : Repository<Alimento, Guid>, IAlimentoRe
     /// <inheritdoc/>
     public Task<bool> FormaParteDeAlgunPlatoAsync(Guid alimentoId, CancellationToken cancellationToken = default)
         => Context.PlatosIngredientes.AnyAsync(i => i.AlimentoId == alimentoId, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Alimento>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+        => await Context.Alimentos
+            .AsNoTracking()
+            .Where(a => ids.Contains(a.Id))
+            .ToListAsync(cancellationToken);
 }

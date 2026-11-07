@@ -1,4 +1,5 @@
 using FluentValidation;
+using Menus.Application.Catalogo;
 using Menus.Application.Catalogo.Alimentos.ActualizarAlimento;
 using Menus.Application.Catalogo.Alimentos.ListarAlimentos;
 using Menus.Application.Catalogo.Alimentos.RegistrarAlimento;
@@ -31,7 +32,7 @@ public sealed class ValidadoresDeAlimentosTests
     [Fact]
     public void Registrar_con_un_nombre_demasiado_largo_falla_en_Nombre()
     {
-        var nombre = new string('a', RegistrarAlimentoValidator.LargoMaximoDelNombre + 1);
+        var nombre = new string('a', ReglasDeClasificacion.LargoMaximoDelNombre + 1);
 
         Assert.Equal(["Nombre"], Campos(new RegistrarAlimentoValidator(), new RegistrarAlimentoCommand(nombre, Grupo, Tipo, Nivel)));
     }

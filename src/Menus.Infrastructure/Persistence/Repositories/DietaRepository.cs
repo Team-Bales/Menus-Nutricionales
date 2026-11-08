@@ -54,4 +54,13 @@ public sealed class DietaRepository : Repository<Dieta, Guid>, IDietaRepository
 
         return (dietas, total);
     }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Dieta>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+        => await Context.Dietas
+            .AsNoTracking()
+            .Where(d => ids.Contains(d.Id))
+            .ToListAsync(cancellationToken);
 }

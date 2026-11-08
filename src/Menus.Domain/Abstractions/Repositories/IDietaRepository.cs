@@ -35,4 +35,12 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
         int pagina,
         int tamano,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Devuelve, sin rastrear y sin sus grupos ni restricciones, las dietas de esos identificadores que existen.
+    /// </summary>
+    /// <remarks>Lo usa el detalle del paciente (#73), para mostrar el nombre de sus dietas inscritas.</remarks>
+    /// <param name="ids">Identificadores buscados.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
 }

@@ -20,11 +20,7 @@ public sealed class Paciente : Entity<Guid>
     /// </exception>
     public Paciente(Guid id, string nombre, int edad, Guid salaId) : base(id)
     {
-        DatoInvalidoException.SiVacio(nombre);
-        if (edad < 0)
-        {
-            throw new DatoInvalidoException(nameof(edad), "La edad no puede ser negativa.");
-        }
+        ExigirDatos(nombre, edad);
 
         Nombre = nombre;
         Edad = edad;
@@ -32,10 +28,10 @@ public sealed class Paciente : Entity<Guid>
     }
 
     /// <summary>Nombre del paciente (no vacío).</summary>
-    public string Nombre { get; }
+    public string Nombre { get; private set; }
 
     /// <summary>Edad en años enteros (&gt;= 0).</summary>
-    public int Edad { get; }
+    public int Edad { get; private set; }
 
     /// <summary>FK → Sala de hospitalización a la que pertenece.</summary>
     public Guid SalaId { get; private set; }
@@ -86,5 +82,32 @@ public sealed class Paciente : Entity<Guid>
     public void TrasladarASala(Guid salaId)
     {
         SalaId = salaId;
+    }
+
+    /// <summary>
+    /// Cambia el nombre y la edad del paciente (issue #73), con las mismas reglas que al registrarlo. Como el
+    /// traslado, actualiza la fila sin dejar historial.
+    /// </summary>
+    /// <param name="nombre">Nuevo nombre (no vacío).</param>
+    /// <param name="edad">Nueva edad en años enteros, mayor o igual que cero (RD-06).</param>
+    /// <exception cref="DatoInvalidoException">
+    /// Si <paramref name="nombre"/> es nulo o solo espacios, o si <paramref name="edad"/> es negativa. En ese caso el
+    /// paciente no cambia.
+    /// </exception>
+    public void ActualizarDatos(string nombre, int edad)
+    {
+        ExigirDatos(nombre, edad);
+
+        Nombre = nombre;
+        Edad = edad;
+    }
+
+    private static void ExigirDatos(string nombre, int edad)
+    {
+        DatoInvalidoException.SiVacio(nombre);
+        if (edad < 0)
+        {
+            throw new DatoInvalidoException(nameof(edad), "La edad no puede ser negativa.");
+        }
     }
 }

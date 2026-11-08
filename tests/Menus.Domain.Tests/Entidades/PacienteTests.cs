@@ -172,4 +172,44 @@ public sealed class PacienteTests
 
         Assert.Single(paciente.Dietas);
     }
+
+    [Fact]
+    public void ActualizarDatos_ValidArgs_CambiaNombreYEdadSinTocarLoDemas()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
+        var dieta = Guid.NewGuid();
+        paciente.InscribirDieta(dieta);
+
+        paciente.ActualizarDatos("Ana María López", 26);
+
+        Assert.Equal("Ana María López", paciente.Nombre);
+        Assert.Equal(26, paciente.Edad);
+        Assert.Equal(_salaId, paciente.SalaId);
+        Assert.Equal([dieta], paciente.Dietas.Select(d => d.DietaId));
+    }
+
+    [Fact]
+    public void ActualizarDatos_EdadCero_SeAcepta()
+    {
+        // RD-06: la edad es mayor o igual que cero.
+        var paciente = new Paciente(Guid.NewGuid(), "Recién nacido", 1, _salaId);
+
+        paciente.ActualizarDatos("Recién nacido", 0);
+
+        Assert.Equal(0, paciente.Edad);
+    }
+
+    [Theory]
+    [InlineData("", 25)]
+    [InlineData("   ", 25)]
+    [InlineData("Ana López", -1)]
+    public void ActualizarDatos_DatoInvalido_LanzaYNoCambiaNada(string nombre, int edad)
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana López", 25, _salaId);
+
+        Assert.Throws<DatoInvalidoException>(() => paciente.ActualizarDatos(nombre, edad));
+
+        Assert.Equal("Ana López", paciente.Nombre);
+        Assert.Equal(25, paciente.Edad);
+    }
 }

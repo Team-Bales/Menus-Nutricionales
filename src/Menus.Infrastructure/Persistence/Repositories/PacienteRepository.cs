@@ -36,4 +36,37 @@ public sealed class PacienteRepository : Repository<Paciente, Guid>, IPacienteRe
             .AsNoTracking()
             .Where(p => p.Dietas.Any(d => d.DietaId == dietaId))
             .ToListAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+        Guid? salaId,
+        Guid? dietaId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var consulta = Context.Pacientes.AsNoTracking();
+
+        if (salaId is { } sala)
+        {
+            consulta = consulta.Where(p => p.SalaId == sala);
+        }
+
+        if (dietaId is { } dieta)
+        {
+            consulta = consulta.Where(p => p.Dietas.Any(d => d.DietaId == dieta));
+        }
+
+        var total = await consulta.CountAsync(cancellationToken);
+
+        // El Id desempata los nombres iguales, para que la paginación sea estable.
+        var pacientes = await consulta
+            .OrderBy(p => p.Nombre)
+            .ThenBy(p => p.Id)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
+            .ToListAsync(cancellationToken);
+
+        return (pacientes, total);
+    }
 }

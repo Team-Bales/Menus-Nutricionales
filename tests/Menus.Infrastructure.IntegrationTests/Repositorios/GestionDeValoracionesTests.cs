@@ -47,6 +47,7 @@ public sealed class GestionDeValoracionesTests : IAsyncLifetime
         await _s.AutorizarAsync(revisorId, dietaId);
         await _s.ValidarAsync(menuId, revisorId, aprobado: true);
         var pacienteId = await _s.PacienteAsync();
+        await _s.InscribirAsync(pacienteId, dietaId);
         await _s.AsignarAsync(menuId, pacienteId);
 
         return (dietaId, menuId, pacienteId, revisorId);
@@ -76,7 +77,8 @@ public sealed class GestionDeValoracionesTests : IAsyncLifetime
     public async Task GetByPacienteAsync_devuelve_las_de_todas_sus_dietas_de_la_mas_reciente_a_la_mas_antigua()
     {
         var (_, menu1, paciente, nutricionista) = await AsignacionAsync();
-        var (_, menu2, _, _) = await AsignacionAsync();
+        var (dieta2, menu2, _, _) = await AsignacionAsync();
+        await _s.InscribirAsync(paciente, dieta2);
         await _s.AsignarAsync(menu2, paciente);
 
         var antigua = await _s.ValorarAsync(menu1, paciente, nutricionista, DateTime.UtcNow.AddHours(-2));
@@ -93,6 +95,7 @@ public sealed class GestionDeValoracionesTests : IAsyncLifetime
     {
         var (dietaId, menuId, pacienteA, nutricionista) = await AsignacionAsync();
         var pacienteB = await _s.PacienteAsync();
+        await _s.InscribirAsync(pacienteB, dietaId);
         await _s.AsignarAsync(menuId, pacienteB);
         var (_, menuDeOtraDieta, pacienteDeOtraDieta, _) = await AsignacionAsync();
 
@@ -110,7 +113,8 @@ public sealed class GestionDeValoracionesTests : IAsyncLifetime
     public async Task GetByPacienteYDietaAsync_filtra_por_los_dos_a_la_vez()
     {
         var (dietaRenal, menuRenal, paciente, nutricionista) = await AsignacionAsync();
-        var (_, menuBlanda, _, _) = await AsignacionAsync();
+        var (dietaBlanda, menuBlanda, _, _) = await AsignacionAsync();
+        await _s.InscribirAsync(paciente, dietaBlanda);
         await _s.AsignarAsync(menuBlanda, paciente);
 
         var deRenal = await _s.ValorarAsync(menuRenal, paciente, nutricionista);

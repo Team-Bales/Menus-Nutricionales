@@ -95,6 +95,9 @@ internal sealed class DietasFalsas(BancoDeDietasFalso banco) : IDietaRepository
         IReadOnlyList<Dieta> enPagina = [.. filtradas.Skip((pagina - 1) * tamano).Take(tamano)];
         return Task.FromResult((enPagina, filtradas.Count));
     }
+
+    public Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Dieta>>([.. banco.Dietas.Where(d => ids.Contains(d.Id))]);
 }
 
 internal sealed class PacientesFalsos(BancoDeDietasFalso banco) : IPacienteRepository
@@ -118,6 +121,23 @@ internal sealed class PacientesFalsos(BancoDeDietasFalso banco) : IPacienteRepos
 
     public Task<IReadOnlyList<Paciente>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Paciente>>([.. banco.Pacientes.Where(p => p.Dietas.Any(d => d.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+        Guid? salaId,
+        Guid? dietaId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Pacientes
+            .Where(p => salaId is null || p.SalaId == salaId)
+            .Where(p => dietaId is null || p.Dietas.Any(d => d.DietaId == dietaId))
+            .OrderBy(p => p.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        IReadOnlyList<Paciente> enPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enPagina, filtrados.Count));
+    }
 }
 
 internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository

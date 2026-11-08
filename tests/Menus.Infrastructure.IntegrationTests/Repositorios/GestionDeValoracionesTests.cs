@@ -43,7 +43,7 @@ public sealed class GestionDeValoracionesTests : IAsyncLifetime
         var creadorId = await _s.NutricionistaAsync();
         await _s.AutorizarAsync(creadorId, dietaId);
         var menuId = await _s.MenuAsync(dietaId, creadorId);
-        var revisorId = await _s.NutricionistaAsync();
+        var revisorId = await _s.NutricionistaAsync(esJefe: true);
         await _s.ValidarAsync(menuId, revisorId, aprobado: true);
         var pacienteId = await _s.PacienteAsync();
         await _s.AsignarAsync(menuId, pacienteId);

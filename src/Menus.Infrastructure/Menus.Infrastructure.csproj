@@ -8,11 +8,11 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
     <!-- Explícita para que la 10.0.13 llegue a quien referencia este proyecto. Sin ella, Design (privado) la usa solo
          aquí y la API recibe la 10.0.4 de Npgsql: en ejecución falla la carga del ensamblado. -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

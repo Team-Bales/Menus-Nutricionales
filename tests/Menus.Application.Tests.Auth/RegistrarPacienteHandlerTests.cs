@@ -117,9 +117,41 @@ public sealed class RegistrarPacienteHandlerTests
         public Task<IReadOnlyList<Paciente>> ListAsync(CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Paciente>>(Pacientes.Values.ToList());
         public Task<IReadOnlyList<Paciente>> GetBySalaAsync(Guid salaId, CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<Paciente>>([]);
+            => Task.FromResult<IReadOnlyList<Paciente>>([.. Pacientes.Values.Where(p => p.SalaId == salaId)]);
         public Task<IReadOnlyList<Paciente>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<Paciente>>([]);
+            => Task.FromResult<IReadOnlyList<Paciente>>([.. Pacientes.Values.Where(p => p.Dietas.Any(d => d.DietaId == dietaId))]);
+
+        public Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+            Guid? salaId,
+            Guid? dietaId,
+            int pagina,
+            int tamano,
+            CancellationToken cancellationToken = default)
+        {
+            var filtrados = Pacientes.Values.AsQueryable();
+
+            if (salaId.HasValue)
+            {
+                filtrados = filtrados.Where(p => p.SalaId == salaId.Value);
+            }
+
+            if (dietaId.HasValue)
+            {
+                filtrados = filtrados.Where(p => p.Dietas.Any(d => d.DietaId == dietaId.Value));
+            }
+
+            var ordenados = filtrados
+                .OrderBy(p => p.Nombre, StringComparer.Ordinal)
+                .ToList();
+
+            var total = ordenados.Count;
+            var enPagina = ordenados
+                .Skip((pagina - 1) * tamano)
+                .Take(tamano)
+                .ToList();
+
+            return Task.FromResult<(IReadOnlyList<Paciente> Pacientes, int Total)>((enPagina, total));
+        }
     }
 
     private sealed class FakeSalaRepository : IRepository<Sala, Guid>

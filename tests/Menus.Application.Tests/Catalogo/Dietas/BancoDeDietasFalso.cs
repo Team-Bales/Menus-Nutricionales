@@ -118,6 +118,38 @@ internal sealed class PacientesFalsos(BancoDeDietasFalso banco) : IPacienteRepos
 
     public Task<IReadOnlyList<Paciente>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Paciente>>([.. banco.Pacientes.Where(p => p.Dietas.Any(d => d.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+        Guid? salaId,
+        Guid? dietaId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Pacientes.AsQueryable();
+
+        if (salaId.HasValue)
+        {
+            filtrados = filtrados.Where(p => p.SalaId == salaId.Value);
+        }
+
+        if (dietaId.HasValue)
+        {
+            filtrados = filtrados.Where(p => p.Dietas.Any(d => d.DietaId == dietaId.Value));
+        }
+
+        var ordenados = filtrados
+            .OrderBy(p => p.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        var total = ordenados.Count;
+        var enPagina = ordenados
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
+            .ToList();
+
+        return Task.FromResult<(IReadOnlyList<Paciente> Pacientes, int Total)>((enPagina, total));
+    }
 }
 
 internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository

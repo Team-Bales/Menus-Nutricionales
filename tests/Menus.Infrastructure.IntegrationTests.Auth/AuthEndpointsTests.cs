@@ -39,6 +39,11 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
     private WebApplicationFactory<Program> _factory = null!;
     private HttpClient _client = null!;
 
+    // Configuración JWT de prueba (clave de 32+ bytes para HS256)
+    private const string TestJwtKey = "clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256";
+    private const string TestJwtIssuer = "Menus.Test";
+    private const string TestJwtExpiresMinutes = "60";
+
     public AuthEndpointsTests(PostgresFixture fixture)
     {
         _fixture = fixture;
@@ -51,6 +56,13 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                // Configurar JWT ANTES de que Program ejecute AddInfrastructure.
+                // UseSetting establece valores en la configuración del host que WebApplication.CreateBuilder recoge.
+                builder.UseSetting("Jwt:Key", TestJwtKey);
+                builder.UseSetting("Jwt:Issuer", TestJwtIssuer);
+                builder.UseSetting("Jwt:ExpiresMinutes", TestJwtExpiresMinutes);
+                // No configurar AuthBootstrap para que no interfiera
+
                 builder.ConfigureTestServices(services =>
                 {
                     // Sobrescribir la configuración de BD para usar la del fixture
@@ -62,25 +74,6 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
                     services.AddDbContext<MenusDbContext>(options =>
                         options.UseNpgsql(_fixture.CadenaDeConexion));
-
-                    // Configurar JWT con valores de test
-                    services.Configure<JwtOptions>(options =>
-                    {
-                        options.Key = "clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256";
-                        options.Issuer = "Menus.Test";
-                        options.ExpiresMinutes = 60;
-                    });
-                });
-
-                builder.ConfigureAppConfiguration((context, config) =>
-                {
-                    config.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["Jwt:Key"] = "clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256",
-                        ["Jwt:Issuer"] = "Menus.Test",
-                        ["Jwt:ExpiresMinutes"] = "60",
-                        // No configurar AuthBootstrap para que no interfiera
-                    });
                 });
             });
 
@@ -95,7 +88,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
     private static string GenerarTokenAdmin(Guid usuarioId, Guid? entidadId = null)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestJwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var claims = new List<Claim>
         {
@@ -107,7 +100,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
             claims.Add(new Claim(JwtClaimTypes.EntidadId, entidadId.Value.ToString()));
         }
         var token = new JwtSecurityToken(
-            issuer: "Menus.Test",
+            issuer: TestJwtIssuer,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddHours(1),
@@ -117,7 +110,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
     private static string GenerarTokenNutricionista(Guid usuarioId, Guid entidadId)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestJwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var claims = new List<Claim>
         {
@@ -126,7 +119,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
             new(JwtClaimTypes.EntidadId, entidadId.ToString()),
         };
         var token = new JwtSecurityToken(
-            issuer: "Menus.Test",
+            issuer: TestJwtIssuer,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddHours(1),

@@ -68,6 +68,13 @@ jobs:
             --results-directory ./coverage \
             --logger "trx;LogFileName=integration-results.trx"
 
+          dotnet test tests/Menus.Infrastructure.IntegrationTests.Auth \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage;Format=opencover" \
+            --results-directory ./coverage \
+            --logger "trx;LogFileName=auth-integration-results.trx"
+
       - name: Verificar si hay archivos de cobertura
         id: check-coverage
         if: always()

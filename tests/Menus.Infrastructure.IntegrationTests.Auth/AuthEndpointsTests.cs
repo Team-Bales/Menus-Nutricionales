@@ -127,6 +127,17 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    private static async Task AssertCredencialesInvalidasAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal(StatusCodes.Status401Unauthorized, problem.Status);
+        Assert.Equal("Unauthorized", problem.Title);
+        Assert.Equal("Credenciales inválidas.", problem.Detail);
+    }
+
     [Fact]
     public async Task Login_EmailInexistente_Devuelve401Indistinguible()
     {
@@ -134,11 +145,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
         var response = await _client.PostAsJsonAsync("/api/auth/login", request);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal(401, problem.Status);
-        Assert.Equal("Credenciales inválidas.", problem.Title);
+        await AssertCredencialesInvalidasAsync(response);
     }
 
     [Fact]
@@ -160,11 +167,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
         var response = await _client.PostAsJsonAsync("/api/auth/login", request);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-        Assert.NotNull(problem);
-        Assert.Equal(401, problem.Status);
-        Assert.Equal("Credenciales inválidas.", problem.Title);
+        await AssertCredencialesInvalidasAsync(response);
     }
 
     [Fact]
@@ -228,7 +231,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         var especialidadId = Guid.NewGuid();
         await using (var ctx = _fixture.CrearContexto())
         {
-            var especialidad = new Especialidad(especialidadId, "Nutrición Clínica");
+            var especialidad = new Especialidad(especialidadId, $"Especialidad Auth {especialidadId:N}");
             ctx.Especialidades.Add(especialidad);
             await ctx.SaveChangesAsync();
         }
@@ -322,35 +325,56 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
             })
             .Build();
 
-        await using var ctx = _fixture.CrearContexto();
+        await using var provider = CrearBootstrapServiceProvider(config);
+
+        // scope1: primera ejecución del bootstrap
+        using (var scope1 = provider.CreateScope())
+        {
+            var bootstrap1 = scope1.ServiceProvider.GetRequiredService<Menus.Api.Auth.AuthBootstrapService>();
+            await bootstrap1.StartAsync(CancellationToken.None);
+        }
+
+        // scope2 NUEVO: leer Admin con contexto fresco
+        Guid adminId1;
+        using (var scope2 = provider.CreateScope())
+        {
+            var ctx = scope2.ServiceProvider.GetRequiredService<MenusDbContext>();
+            var admin1 = await ctx.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolesUsuario.Admin);
+            Assert.NotNull(admin1);
+            Assert.Equal("bootstrap@test.com", admin1.Email);
+            adminId1 = admin1.Id;
+        }
+
+        // scope3 NUEVO: segunda ejecución del bootstrap
+        using (var scope3 = provider.CreateScope())
+        {
+            var bootstrap2 = scope3.ServiceProvider.GetRequiredService<Menus.Api.Auth.AuthBootstrapService>();
+            await bootstrap2.StartAsync(CancellationToken.None);
+        }
+
+        // scope4 NUEVO: verificar idempotencia con contexto fresco
+        using (var scope4 = provider.CreateScope())
+        {
+            var ctx = scope4.ServiceProvider.GetRequiredService<MenusDbContext>();
+            var adminCount = await ctx.Usuarios.CountAsync(u => u.Rol == RolesUsuario.Admin);
+            Assert.Equal(1, adminCount);
+
+            var admin2 = await ctx.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolesUsuario.Admin);
+            Assert.NotNull(admin2);
+            Assert.Equal(adminId1, admin2.Id);
+        }
+    }
+
+    private ServiceProvider CrearBootstrapServiceProvider(IConfiguration config)
+    {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton(config);
-        services.AddScoped(_ => ctx);
-        services.AddScoped<Menus.Domain.Abstractions.Repositories.IUsuarioRepository, Menus.Infrastructure.Persistence.Repositories.UsuarioRepository>();
-        services.AddScoped<Menus.Domain.Abstractions.IUnitOfWork, Menus.Infrastructure.Persistence.Repositories.UnitOfWork>();
-        services.AddScoped<Menus.Domain.Abstractions.Security.IPasswordHasher, Menus.Infrastructure.Security.BCryptPasswordHasher>();
+        services.AddSingleton<IConfiguration>(config);
+        services.AddDbContext<MenusDbContext>(options => options.UseNpgsql(_fixture.CadenaDeConexion));
+        services.AddScoped<Menus.Domain.Abstractions.Repositories.IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<Menus.Domain.Abstractions.IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<Menus.Api.Auth.AuthBootstrapService>();
-
-        var provider = services.BuildServiceProvider();
-
-        // Primera ejecución
-        var bootstrap1 = provider.GetRequiredService<Menus.Api.Auth.AuthBootstrapService>();
-        await bootstrap1.StartAsync(CancellationToken.None);
-
-        var admin1 = await ctx.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolesUsuario.Admin);
-        Assert.NotNull(admin1);
-        Assert.Equal("bootstrap@test.com", admin1.Email);
-        var adminId1 = admin1.Id;
-
-        // Segunda ejecución
-        var bootstrap2 = provider.GetRequiredService<Menus.Api.Auth.AuthBootstrapService>();
-        await bootstrap2.StartAsync(CancellationToken.None);
-
-        var adminCount = await ctx.Usuarios.CountAsync(u => u.Rol == RolesUsuario.Admin);
-        Assert.Equal(1, adminCount);
-
-        var admin2 = await ctx.Usuarios.FirstOrDefaultAsync(u => u.Rol == RolesUsuario.Admin);
-        Assert.Equal(adminId1, admin2?.Id);
+        return services.BuildServiceProvider();
     }
 }

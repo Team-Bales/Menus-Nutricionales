@@ -206,7 +206,7 @@ public sealed class UsuarioMigrationTests : IAsyncLifetime
         var especialidadId = Guid.NewGuid();
         await using (var ctx = _fixture.CrearContexto())
         {
-            var especialidad = new Especialidad(especialidadId, "Nutrición Clínica");
+            var especialidad = new Especialidad(especialidadId, $"Especialidad Auth {especialidadId:N}");
             ctx.Especialidades.Add(especialidad);
 
             var nutricionistaId = Guid.NewGuid();

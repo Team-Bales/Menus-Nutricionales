@@ -6,6 +6,8 @@ using Menus.Application.Catalogo.Platos.ObtenerPlato;
 using Menus.Application.Catalogo.Platos.QuitarIngrediente;
 using Menus.Application.Catalogo.Platos.RegistrarPlato;
 using Menus.Application.Comun;
+using Menus.Application.Tests.Catalogo.Dietas;
+using Menus.Application.Tests.Comun;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
@@ -18,9 +20,12 @@ public sealed class ManejadoresDePlatosTests
     private static readonly Guid Otro = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
 
     private readonly BancoFalso _banco = new();
+    private readonly BancoDeDietasFalso _dietas = new();
+    private readonly CacheFalsa _cache = new();
 
     private RegistrarPlatoHandler Registrar() => new(
-        _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor));
+        _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo,
+        new ActorFalso(BancoFalso.Descriptor), _cache);
 
     private AgregarIngredienteHandler Agregar(Guid? actor = null) => new(
         _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor), _banco.Fichas);
@@ -202,7 +207,7 @@ public sealed class ManejadoresDePlatosTests
     public async Task Actualizar_reclasifica_el_plato()
     {
         var plato = _banco.AgregarPlato("Ensalada", _banco.Agregar("Lechuga"));
-        var handler = new ActualizarPlatoHandler(_banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor));
+        var handler = new ActualizarPlatoHandler(_banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor), _cache);
 
         await handler.HandleAsync(
             new ActualizarPlatoCommand(plato.Id, BancoFalso.GrupoCereales, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id),
@@ -216,7 +221,7 @@ public sealed class ManejadoresDePlatosTests
     [Fact]
     public async Task Actualizar_un_plato_inexistente_lanza_NoEncontrado()
     {
-        var handler = new ActualizarPlatoHandler(_banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor));
+        var handler = new ActualizarPlatoHandler(_banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor), _cache);
 
         await Assert.ThrowsAsync<NoEncontradoException>(() => handler.HandleAsync(
             new ActualizarPlatoCommand(Guid.NewGuid(), BancoFalso.GrupoCereales, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id),
@@ -228,7 +233,7 @@ public sealed class ManejadoresDePlatosTests
     {
         var plato = _banco.AgregarPlato("Ensalada", _banco.Agregar("Lechuga"));
 
-        await new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
+        await new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, _banco.Fichas, _cache)
             .HandleAsync(new EliminarPlatoCommand(plato.Id), CancellationToken.None);
 
         Assert.DoesNotContain(plato, _banco.Items);
@@ -243,7 +248,7 @@ public sealed class ManejadoresDePlatosTests
         _banco.EnMenus.Add(plato.Id);
 
         var ex = await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
+            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, _banco.Fichas, _cache)
                 .HandleAsync(new EliminarPlatoCommand(plato.Id), CancellationToken.None));
 
         Assert.Equal("RR-22", ex.Regla);
@@ -255,7 +260,7 @@ public sealed class ManejadoresDePlatosTests
     public async Task Eliminar_un_plato_inexistente_lanza_NoEncontrado()
     {
         await Assert.ThrowsAsync<NoEncontradoException>(
-            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
+            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, _banco.Fichas, _cache)
                 .HandleAsync(new EliminarPlatoCommand(Guid.NewGuid()), CancellationToken.None));
     }
 

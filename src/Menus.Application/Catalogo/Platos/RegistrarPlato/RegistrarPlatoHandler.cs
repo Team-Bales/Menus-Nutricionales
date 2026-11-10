@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -9,14 +10,17 @@ namespace Menus.Application.Catalogo.Platos.RegistrarPlato;
 /// <summary>Registra el plato con su composición en una sola transacción y devuelve su identificador.</summary>
 /// <remarks>
 /// El plato y sus ingredientes se confirman juntos: RK-03 es un trigger diferido que rechaza un plato sin alimentos al
-/// confirmar (ADR-010, §5).
+/// confirmar (ADR-010, §5). También invalida la disponibilidad calórica de todas las dietas (informe, «Consultas
+/// recurrentes»; #101): un plato nuevo puede ser compatible con cualquiera.
 /// </remarks>
 internal sealed class RegistrarPlatoHandler(
     IItemAlimentarioRepository items,
     IAlimentoRepository alimentos,
     IPlatoRepository platos,
+    IDietaRepository dietas,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<RegistrarPlatoCommand, IdCreadoDto>
+    IActorActual actor,
+    ICache cache) : IHandler<RegistrarPlatoCommand, IdCreadoDto>
 {
     /// <exception cref="ReglaDeNegocioException">
     /// Si ya hay un ítem con ese nombre (RC-01), o si un ingrediente no existe (RR-02) o es un plato (RS-12).
@@ -49,6 +53,8 @@ internal sealed class RegistrarPlatoHandler(
 
         await platos.AddAsync(plato, ct);
         await unidadDeTrabajo.CommitAsync(ct);
+
+        await CacheDeDisponibilidadCalorica.InvalidarTodasAsync(dietas, cache, ct);
 
         return new IdCreadoDto(plato.Id);
     }

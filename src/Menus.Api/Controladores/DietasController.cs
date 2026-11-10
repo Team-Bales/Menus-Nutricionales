@@ -2,6 +2,7 @@ using Menus.Application.Catalogo.Dietas;
 using Menus.Application.Catalogo.Dietas.ActualizarDieta;
 using Menus.Application.Catalogo.Dietas.AgregarGrupoDieta;
 using Menus.Application.Catalogo.Dietas.AgregarRestriccionDieta;
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Catalogo.Dietas.EliminarDieta;
 using Menus.Application.Catalogo.Dietas.ListarDietas;
 using Menus.Application.Catalogo.Dietas.ObtenerDieta;
@@ -142,4 +143,17 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
         await despachador.EnviarAsync(new QuitarRestriccionDietaCommand(id, restriccionId), ct);
         return NoContent();
     }
+
+    /// <summary>
+    /// Disponibilidad calórica de la dieta (informe, «R1»): por cada nivel calórico, cuántos ítems del banco son
+    /// compatibles con la dieta y cómo se distribuyen los ítems de sus menús finales. Servida desde Redis cuando
+    /// está disponible (#101).
+    /// </summary>
+    /// <response code="200">La disponibilidad calórica.</response>
+    /// <response code="404">La dieta no existe.</response>
+    [HttpGet("{id:guid}/disponibilidad-calorica")]
+    [ProducesResponseType<DisponibilidadCaloricaDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<DisponibilidadCaloricaDto> ObtenerDisponibilidadCalorica(Guid id, CancellationToken ct)
+        => despachador.EnviarAsync(new DisponibilidadCaloricaQuery(id), ct);
 }

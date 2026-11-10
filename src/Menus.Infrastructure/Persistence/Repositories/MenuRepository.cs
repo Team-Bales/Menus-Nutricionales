@@ -66,6 +66,22 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
             .Where(m => m.DietaId == dietaId && m.Validacion == null)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyDictionary<Guid, int>> ContarItemsFinalesPorNivelCaloricoAsync(
+        Guid dietaId,
+        CancellationToken cancellationToken = default)
+    {
+        var conteos = await (
+            from mi in dbContext.MenuItems.AsNoTracking()
+            join m in dbContext.Menus.AsNoTracking() on mi.MenuId equals m.Id
+            join it in dbContext.ItemsAlimentarios.AsNoTracking() on mi.ItemId equals it.Id
+            where m.DietaId == dietaId && m.Validacion != null && m.Validacion.Aprobado
+            group it by it.NivelCaloricoId into g
+            select new { NivelCaloricoId = g.Key, Total = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return conteos.ToDictionary(c => c.NivelCaloricoId, c => c.Total);
+    }
+
     /// <summary>Menús de solo lectura con su parametrización (el dictamen llega por AutoInclude).</summary>
     private IQueryable<Menu> Listado()
         => dbContext.Menus

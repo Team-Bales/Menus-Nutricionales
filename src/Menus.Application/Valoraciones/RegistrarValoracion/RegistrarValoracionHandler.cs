@@ -5,12 +5,16 @@ using Menus.Domain.Entidades;
 
 namespace Menus.Application.Valoraciones.RegistrarValoracion;
 
-/// <summary>Registra la valoración, emitida por el nutricionista actual, sobre la asignación evaluada.</summary>
+/// <summary>
+/// Registra la valoración, emitida por el nutricionista actual, sobre la asignación evaluada, e invalida la
+/// caché de sus valoraciones más recientes (informe, «R2»; #101).
+/// </summary>
 internal sealed class RegistrarValoracionHandler(
     IMenuRepository menus,
     IValoracionRepository valoraciones,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<RegistrarValoracionCommand, IdCreadoDto>
+    IActorActual actor,
+    ICache cache) : IHandler<RegistrarValoracionCommand, IdCreadoDto>
 {
     /// <exception cref="NoEncontradoException">
     /// Si el menú no existe, o si el paciente no tiene ese menú asignado (no hay nada que evaluar).
@@ -35,6 +39,8 @@ internal sealed class RegistrarValoracionHandler(
 
         await valoraciones.AddAsync(valoracion, ct);
         await unidadDeTrabajo.CommitAsync(ct);
+
+        await cache.InvalidarAsync(CacheDeValoracionesRecientes.Clave(solicitud.PacienteId), ct);
 
         return new IdCreadoDto(valoracion.Id);
     }

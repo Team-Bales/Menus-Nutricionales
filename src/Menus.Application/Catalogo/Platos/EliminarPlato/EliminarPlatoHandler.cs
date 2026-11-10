@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -11,13 +12,17 @@ namespace Menus.Application.Catalogo.Platos.EliminarPlato;
 /// </summary>
 /// <remarks>
 /// El uso se comprueba antes para dar un mensaje claro; la clave foránea en <c>RESTRICT</c> sigue siendo la última
-/// barrera (ADR-010, §3). La ficha se borra después de confirmar (ADR-010, §5).
+/// barrera (ADR-010, §3). La ficha se borra después de confirmar (ADR-010, §5). También invalida la
+/// disponibilidad calórica de todas las dietas (informe, «Consultas recurrentes»; #101): la baja de un ítem del
+/// banco cambia con qué cuentan.
 /// </remarks>
 internal sealed class EliminarPlatoHandler(
     IItemAlimentarioRepository items,
     IPlatoRepository platos,
+    IDietaRepository dietas,
     IUnitOfWork unidadDeTrabajo,
-    IFichasNutricionales fichas) : IHandler<EliminarPlatoCommand, Unidad>
+    IFichasNutricionales fichas,
+    ICache cache) : IHandler<EliminarPlatoCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el plato no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">Si figura en algún menú (RR-22).</exception>
@@ -36,6 +41,8 @@ internal sealed class EliminarPlatoHandler(
         platos.Remove(plato);
         await unidadDeTrabajo.CommitAsync(ct);
         await fichas.EliminarAsync(plato);
+
+        await CacheDeDisponibilidadCalorica.InvalidarTodasAsync(dietas, cache, ct);
 
         return Unidad.Valor;
     }

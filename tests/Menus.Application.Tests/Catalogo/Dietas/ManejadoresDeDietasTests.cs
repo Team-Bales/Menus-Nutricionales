@@ -1,6 +1,7 @@
 using Menus.Application.Catalogo.Dietas.ActualizarDieta;
 using Menus.Application.Catalogo.Dietas.AgregarGrupoDieta;
 using Menus.Application.Catalogo.Dietas.AgregarRestriccionDieta;
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Catalogo.Dietas.EliminarDieta;
 using Menus.Application.Catalogo.Dietas.ListarDietas;
 using Menus.Application.Catalogo.Dietas.ObtenerDieta;
@@ -8,6 +9,7 @@ using Menus.Application.Catalogo.Dietas.QuitarGrupoDieta;
 using Menus.Application.Catalogo.Dietas.QuitarRestriccionDieta;
 using Menus.Application.Catalogo.Dietas.RegistrarDieta;
 using Menus.Application.Comun;
+using Menus.Application.Tests.Comun;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
@@ -17,18 +19,19 @@ namespace Menus.Application.Tests.Catalogo.Dietas;
 public sealed class ManejadoresDeDietasTests
 {
     private readonly BancoDeDietasFalso _banco = new();
+    private readonly CacheFalsa _cache = new();
 
     private RegistrarDietaHandler Registrar() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
 
     private ActualizarDietaHandler Actualizar() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
 
-    private AgregarGrupoDietaHandler AgregarGrupo() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
+    private AgregarGrupoDietaHandler AgregarGrupo() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo, _cache);
 
-    private QuitarGrupoDietaHandler QuitarGrupo() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
+    private QuitarGrupoDietaHandler QuitarGrupo() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo, _cache);
 
-    private AgregarRestriccionDietaHandler AgregarRestriccion() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
+    private AgregarRestriccionDietaHandler AgregarRestriccion() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo, _cache);
 
-    private QuitarRestriccionDietaHandler QuitarRestriccion() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo);
+    private QuitarRestriccionDietaHandler QuitarRestriccion() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo, _cache);
 
     private EliminarDietaHandler Eliminar() => new(_banco.DietasRepo, _banco.PacientesRepo, _banco.MenusRepo, _banco.UnidadDeTrabajo);
 
@@ -291,5 +294,50 @@ public sealed class ManejadoresDeDietasTests
             .HandleAsync(new ObtenerDietaQuery(Guid.NewGuid()), CancellationToken.None));
 
         Assert.Equal("dieta", ex.Recurso);
+    }
+
+    // ---- Invalidación de la disponibilidad calórica (#101) ----
+
+    [Fact]
+    public async Task AgregarGrupo_invalida_la_disponibilidad_calorica_de_la_dieta()
+    {
+        var dieta = _banco.Agregar("Dieta");
+        var clave = CacheDeDisponibilidadCalorica.Clave(dieta.Id);
+        await _cache.GuardarAsync(clave, "valor-viejo", TimeSpan.FromHours(1));
+
+        await AgregarGrupo().HandleAsync(
+            new AgregarGrupoDietaCommand(dieta.Id, BancoDeDietasFalso.GrupoFrutas, TipoCobertura.Restringido),
+            CancellationToken.None);
+
+        Assert.Null(await _cache.ObtenerAsync<string>(clave, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task AgregarGrupo_ya_cubierto_no_invalida_nada_porque_no_cambia()
+    {
+        var dieta = _banco.Agregar("Dieta");
+        var clave = CacheDeDisponibilidadCalorica.Clave(dieta.Id);
+        await _cache.GuardarAsync(clave, "valor-vigente", TimeSpan.FromHours(1));
+
+        await AgregarGrupo().HandleAsync(
+            new AgregarGrupoDietaCommand(dieta.Id, BancoDeDietasFalso.GrupoCereales, TipoCobertura.Requerido),
+            CancellationToken.None);
+
+        Assert.Equal("valor-vigente", await _cache.ObtenerAsync<string>(clave, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task QuitarRestriccion_invalida_la_disponibilidad_calorica_de_la_dieta()
+    {
+        var dieta = _banco.Agregar("Dieta");
+        dieta.AgregarRestriccion(BancoDeDietasFalso.RestriccionSinGluten);
+        var clave = CacheDeDisponibilidadCalorica.Clave(dieta.Id);
+        await _cache.GuardarAsync(clave, "valor-viejo", TimeSpan.FromHours(1));
+
+        await QuitarRestriccion().HandleAsync(
+            new QuitarRestriccionDietaCommand(dieta.Id, BancoDeDietasFalso.RestriccionSinGluten),
+            CancellationToken.None);
+
+        Assert.Null(await _cache.ObtenerAsync<string>(clave, CancellationToken.None));
     }
 }

@@ -2,8 +2,10 @@ using Menus.Api.Controladores;
 using Menus.Application.Catalogo.Nomencladores;
 using Menus.Application.Catalogo.Nomencladores.Especialidades;
 using Menus.Application.Catalogo.Nomencladores.GruposNutricionales;
+using Menus.Application.Catalogo.Nomencladores.NivelesCaloricos;
 using Menus.Application.Catalogo.Nomencladores.ProgramasAtencion;
 using Menus.Application.Catalogo.Nomencladores.RestriccionesAlimentarias;
+using Menus.Application.Catalogo.Nomencladores.TiposPreparacion;
 using Menus.Application.Comun;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +20,32 @@ public sealed class NomencladoresControllerTests
     private readonly DespachadorFalso _despachador = new();
 
     private NomencladoresController Controlador => new(_despachador);
+
+    // ---- Catálogos cerrados ----
+
+    [Fact]
+    public async Task ListarTiposPreparacion_envia_la_consulta()
+    {
+        var lista = new List<NomencladorDto> { new(Guid.NewGuid(), "Entrante") };
+        _despachador.Resultado = lista;
+
+        var respuesta = await Controlador.ListarTiposPreparacion(CancellationToken.None);
+
+        Assert.Same(lista, respuesta);
+        Assert.Equal(new ListarTiposPreparacionQuery(), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task ListarNivelesCaloricos_envia_la_consulta()
+    {
+        var lista = new List<NomencladorDto> { new(Guid.NewGuid(), "Bajo") };
+        _despachador.Resultado = lista;
+
+        var respuesta = await Controlador.ListarNivelesCaloricos(CancellationToken.None);
+
+        Assert.Same(lista, respuesta);
+        Assert.Equal(new ListarNivelesCaloricosQuery(), _despachador.Recibida);
+    }
 
     // ---- Grupos nutricionales ----
 

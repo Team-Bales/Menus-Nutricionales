@@ -1,8 +1,10 @@
 using Menus.Application.Catalogo.Nomencladores;
 using Menus.Application.Catalogo.Nomencladores.Especialidades;
 using Menus.Application.Catalogo.Nomencladores.GruposNutricionales;
+using Menus.Application.Catalogo.Nomencladores.NivelesCaloricos;
 using Menus.Application.Catalogo.Nomencladores.ProgramasAtencion;
 using Menus.Application.Catalogo.Nomencladores.RestriccionesAlimentarias;
+using Menus.Application.Catalogo.Nomencladores.TiposPreparacion;
 using Menus.Application.Comun;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,9 +12,9 @@ namespace Menus.Api.Controladores;
 
 /// <summary>
 /// Administración de los 4 nomencladores institucionales abiertos (#64): grupos nutricionales, restricciones
-/// alimentarias, programas de atención y especialidades. Los enums cerrados (TipoPreparacion, NivelCalorico) no
-/// tienen endpoints: su catálogo es fijo. Cada acción arma el comando o la consulta y lo envía al despachador
-/// (ADR-010, §8); los errores los traduce el manejador global.
+/// alimentarias, programas de atención y especialidades. Los catálogos cerrados (tipos de preparación y niveles
+/// calóricos) son fijos: solo se consultan, para que el cliente cargue sus selectores desde la API (#65). Cada acción
+/// arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los traduce el manejador global.
 /// </summary>
 /// <remarks>
 /// En esta versión no hay autenticación todavía: los 4 nomencladores son accesibles sin restricción (el control
@@ -24,6 +26,22 @@ namespace Menus.Api.Controladores;
 [Produces("application/json")]
 public sealed class NomencladoresController(IDespachador despachador) : ControllerBase
 {
+    // ---- Catálogos cerrados (solo lectura) ----
+
+    /// <summary>Los tipos de preparación del catálogo cerrado (RD-01).</summary>
+    /// <response code="200">La lista, en el orden del catálogo.</response>
+    [HttpGet("tipos-preparacion")]
+    [ProducesResponseType<IReadOnlyList<NomencladorDto>>(StatusCodes.Status200OK)]
+    public Task<IReadOnlyList<NomencladorDto>> ListarTiposPreparacion(CancellationToken ct)
+        => despachador.EnviarAsync(new ListarTiposPreparacionQuery(), ct);
+
+    /// <summary>Los niveles calóricos del catálogo cerrado (RD-02).</summary>
+    /// <response code="200">La lista, en el orden del catálogo.</response>
+    [HttpGet("niveles-caloricos")]
+    [ProducesResponseType<IReadOnlyList<NomencladorDto>>(StatusCodes.Status200OK)]
+    public Task<IReadOnlyList<NomencladorDto>> ListarNivelesCaloricos(CancellationToken ct)
+        => despachador.EnviarAsync(new ListarNivelesCaloricosQuery(), ct);
+
     // ---- Grupos nutricionales ----
 
     /// <summary>Lista completa de los grupos nutricionales.</summary>

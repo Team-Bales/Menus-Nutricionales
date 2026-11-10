@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
@@ -74,6 +75,15 @@ public static class DependencyInjection
             // Baja coordinada de alimentos y platos (RM-09): solo tiene sentido si hay ficha que borrar.
             services.AddScoped<IFichaNutricionalStore, FichaNutricionalStore>();
             services.AddScoped<BajaCoordinadaDeItems>();
+
+            // Lo que los casos de uso del catálogo mantienen de la ficha, después de confirmar (RM-09, R8-06).
+            services.AddScoped<IDesgloseDeIngredientes, FichaNutricionalStore>();
+            services.AddScoped<IFichasNutricionales, FichasNutricionalesEnMongo>();
+        }
+        else
+        {
+            // Sin MongoDB no hay fichas: los casos de uso siguen funcionando, sin nada que mantener.
+            services.AddScoped<IFichasNutricionales, SinFichasNutricionales>();
         }
 
         return services;

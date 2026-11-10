@@ -5,15 +5,19 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Platos.EliminarPlato;
 
-/// <summary>Elimina el plato si no está en uso; su composición se borra en cascada (RX-02).</summary>
+/// <summary>
+/// Elimina el plato si no está en uso; su composición se borra en cascada (RX-02), y después su ficha nutricional
+/// (RM-09).
+/// </summary>
 /// <remarks>
 /// El uso se comprueba antes para dar un mensaje claro; la clave foránea en <c>RESTRICT</c> sigue siendo la última
-/// barrera (ADR-010, §3).
+/// barrera (ADR-010, §3). La ficha se borra después de confirmar (ADR-010, §5).
 /// </remarks>
 internal sealed class EliminarPlatoHandler(
     IItemAlimentarioRepository items,
     IPlatoRepository platos,
-    IUnitOfWork unidadDeTrabajo) : IHandler<EliminarPlatoCommand, Unidad>
+    IUnitOfWork unidadDeTrabajo,
+    IFichasNutricionales fichas) : IHandler<EliminarPlatoCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el plato no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">Si figura en algún menú (RR-22).</exception>
@@ -31,6 +35,7 @@ internal sealed class EliminarPlatoHandler(
 
         platos.Remove(plato);
         await unidadDeTrabajo.CommitAsync(ct);
+        await fichas.EliminarAsync(plato);
 
         return Unidad.Valor;
     }

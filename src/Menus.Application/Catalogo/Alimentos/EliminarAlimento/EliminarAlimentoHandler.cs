@@ -5,15 +5,16 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Alimentos.EliminarAlimento;
 
-/// <summary>Elimina el alimento si no está en uso.</summary>
+/// <summary>Elimina el alimento si no está en uso, y después su ficha nutricional (RM-09).</summary>
 /// <remarks>
 /// El uso se comprueba antes para dar un mensaje claro; las claves foráneas en <c>RESTRICT</c> siguen siendo la
-/// última barrera (ADR-010, §3).
+/// última barrera (ADR-010, §3). La ficha se borra después de confirmar (ADR-010, §5).
 /// </remarks>
 internal sealed class EliminarAlimentoHandler(
     IItemAlimentarioRepository items,
     IAlimentoRepository alimentos,
-    IUnitOfWork unidadDeTrabajo) : IHandler<EliminarAlimentoCommand, Unidad>
+    IUnitOfWork unidadDeTrabajo,
+    IFichasNutricionales fichas) : IHandler<EliminarAlimentoCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el alimento no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">Si es ingrediente de un plato (RR-04) o figura en un menú (RR-22).</exception>
@@ -38,6 +39,7 @@ internal sealed class EliminarAlimentoHandler(
 
         alimentos.Remove(alimento);
         await unidadDeTrabajo.CommitAsync(ct);
+        await fichas.EliminarAsync(alimento);
 
         return Unidad.Valor;
     }

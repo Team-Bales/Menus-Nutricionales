@@ -23,10 +23,10 @@ public sealed class ManejadoresDePlatosTests
         _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(BancoFalso.Descriptor));
 
     private AgregarIngredienteHandler Agregar(Guid? actor = null) => new(
-        _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor));
+        _banco.ItemsRepo, _banco.AlimentosRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor), _banco.Fichas);
 
     private QuitarIngredienteHandler Quitar(Guid? actor = null) => new(
-        _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor));
+        _banco.PlatosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor), _banco.Fichas);
 
     private static RegistrarPlatoCommand Comando(string nombre, params IngredienteDelPlato[] ingredientes) => new(
         nombre, BancoFalso.GrupoCereales, TipoPreparacion.PlatoFuerte.Id, NivelCalorico.Medio.Id, ingredientes);
@@ -96,6 +96,7 @@ public sealed class ManejadoresDePlatosTests
 
         Assert.Contains(plato.Ingredientes, i => i.AlimentoId == tomate.Id && i.Cantidad == 80m);
         Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Equal([("Agregar", plato.Id, (Guid?)tomate.Id, 1)], _banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -109,6 +110,7 @@ public sealed class ManejadoresDePlatosTests
 
         Assert.Equal("RS-02", ex.Regla);
         Assert.Single(plato.Ingredientes);
+        Assert.Empty(_banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -144,6 +146,7 @@ public sealed class ManejadoresDePlatosTests
 
         Assert.Equal([lechuga.Id], plato.Ingredientes.Select(i => i.AlimentoId));
         Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Equal([("Quitar", plato.Id, (Guid?)tomate.Id, 1)], _banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -157,6 +160,7 @@ public sealed class ManejadoresDePlatosTests
 
         Assert.Equal("RK-03", ex.Regla);
         Assert.Single(plato.Ingredientes);
+        Assert.Empty(_banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -224,11 +228,12 @@ public sealed class ManejadoresDePlatosTests
     {
         var plato = _banco.AgregarPlato("Ensalada", _banco.Agregar("Lechuga"));
 
-        await new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo)
+        await new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
             .HandleAsync(new EliminarPlatoCommand(plato.Id), CancellationToken.None);
 
         Assert.DoesNotContain(plato, _banco.Items);
         Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Equal([("Eliminar", plato.Id, (Guid?)null, 1)], _banco.Fichas.Llamadas);
     }
 
     [Fact]
@@ -238,18 +243,19 @@ public sealed class ManejadoresDePlatosTests
         _banco.EnMenus.Add(plato.Id);
 
         var ex = await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo)
+            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
                 .HandleAsync(new EliminarPlatoCommand(plato.Id), CancellationToken.None));
 
         Assert.Equal("RR-22", ex.Regla);
         Assert.Contains(plato, _banco.Items);
+        Assert.Empty(_banco.Fichas.Llamadas);
     }
 
     [Fact]
     public async Task Eliminar_un_plato_inexistente_lanza_NoEncontrado()
     {
         await Assert.ThrowsAsync<NoEncontradoException>(
-            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo)
+            () => new EliminarPlatoHandler(_banco.ItemsRepo, _banco.PlatosRepo, _banco.UnidadDeTrabajo, _banco.Fichas)
                 .HandleAsync(new EliminarPlatoCommand(Guid.NewGuid()), CancellationToken.None));
     }
 

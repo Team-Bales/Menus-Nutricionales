@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Cors.Infrastructure;
+
 namespace Menus.Api.Cors;
 
 /// <summary>
@@ -24,6 +26,8 @@ public static class CorsDelCliente
         var origenes = configuracion.GetSection(Seccion).Get<string[]>() ?? [];
 
         // Cualquier cabecera: el cliente manda X-Actor-Id, y desde el #74 mandará Authorization.
-        return services.AddCors(o => o.AddPolicy(Politica, p => p.WithOrigins(origenes).AllowAnyHeader().AllowAnyMethod()));
+        var politica = new CorsPolicyBuilder(origenes).AllowAnyHeader().AllowAnyMethod().Build();
+
+        return services.AddCors(o => o.AddPolicy(Politica, politica));
     }
 }

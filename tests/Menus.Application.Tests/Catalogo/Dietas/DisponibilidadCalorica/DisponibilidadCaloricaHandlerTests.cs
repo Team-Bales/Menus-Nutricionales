@@ -112,6 +112,17 @@ public sealed class DisponibilidadCaloricaHandlerTests
         Assert.All(resultado.PorNivel, p => Assert.Equal(0, p.ItemsDelBanco));
     }
 
+    [Fact]
+    public void Los_DTO_tienen_igualdad_estructural()
+    {
+        var dietaId = Guid.NewGuid();
+        var porNivel = new DisponibilidadPorNivelDto(NivelCalorico.Bajo.Id, "Bajo", 3, 1);
+        IReadOnlyList<DisponibilidadPorNivelDto> lista = [porNivel];
+
+        Assert.Equal(new DisponibilidadCaloricaDto(dietaId, lista), new DisponibilidadCaloricaDto(dietaId, lista));
+        Assert.Equal(porNivel, porNivel with { });
+    }
+
     private Menus.Domain.Entidades.Menu CrearMenuPendiente(Guid dietaId, Guid creadorId)
     {
         var menu = new Menus.Domain.Entidades.Menu(

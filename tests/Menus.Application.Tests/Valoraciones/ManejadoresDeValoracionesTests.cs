@@ -1,6 +1,7 @@
 using Menus.Application.Comun;
 using Menus.Application.Tests.Catalogo;
 using Menus.Application.Tests.Catalogo.Dietas;
+using Menus.Application.Tests.Comun;
 using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Application.Valoraciones.ObtenerValoracion;
@@ -15,17 +16,18 @@ public sealed class ManejadoresDeValoracionesTests
 {
     private readonly BancoDeDietasFalso _banco = new();
     private readonly ValoracionesFalsas _valoraciones;
+    private readonly CacheFalsa _cache = new();
 
     public ManejadoresDeValoracionesTests() => _valoraciones = new ValoracionesFalsas(_banco);
 
     private RegistrarValoracionHandler Registrar(Guid nutricionistaId)
-        => new(_banco.MenusRepo, _valoraciones, _banco.UnidadDeTrabajo, new ActorFalso(nutricionistaId));
+        => new(_banco.MenusRepo, _valoraciones, _banco.UnidadDeTrabajo, new ActorFalso(nutricionistaId), _cache);
 
     private ObtenerValoracionHandler Obtener() => new(_valoraciones);
 
     private ListarValoracionesPorDietaHandler ListarPorDieta() => new(_banco.DietasRepo, _valoraciones);
 
-    private ListarValoracionesPorPacienteHandler ListarPorPaciente() => new(_banco.PacientesRepo, _valoraciones);
+    private ListarValoracionesPorPacienteHandler ListarPorPaciente() => new(_banco.PacientesRepo, _valoraciones, _cache);
 
     /// <summary>Un menú final de la dieta, ya asignado al paciente (la asignación que evalúa la valoración).</summary>
     private Menu NuevoMenuAsignado(Guid dietaId, Guid pacienteId, DateTime? fechaCreacion = null)
@@ -211,5 +213,52 @@ public sealed class ManejadoresDeValoracionesTests
 
         Assert.Equal("paciente", error.Recurso);
         Assert.Equal(id, error.Id);
+    }
+
+    // ---- Caché (#101) ----
+
+    [Fact]
+    public async Task ListarPorPaciente_guarda_el_resultado_en_cache()
+    {
+        var paciente = new Paciente(Guid.NewGuid(), "Ana", 30, Guid.NewGuid());
+        _banco.Pacientes.Add(paciente);
+
+        await ListarPorPaciente().HandleAsync(new ListarValoracionesPorPacienteQuery(paciente.Id), CancellationToken.None);
+
+        Assert.Equal(1, _cache.Escrituras);
+    }
+
+    [Fact]
+    public async Task ListarPorPaciente_devuelve_el_valor_cacheado_sin_tocar_los_repositorios()
+    {
+        var pacienteId = Guid.NewGuid();
+        var cacheada = new List<Menus.Application.Valoraciones.ValoracionDto>
+        {
+            new(Guid.NewGuid(), Guid.NewGuid(), pacienteId, Guid.NewGuid(),
+                new Menus.Application.Valoraciones.ResultadoNutricionalDto(ResultadoNutricional.Buena.Id, "Buena", 4), DateTime.UtcNow),
+        };
+        await _cache.GuardarAsync(
+            Menus.Application.Valoraciones.CacheDeValoracionesRecientes.Clave(pacienteId), cacheada, TimeSpan.FromHours(1));
+
+        var resultado = await ListarPorPaciente().HandleAsync(
+            new ListarValoracionesPorPacienteQuery(pacienteId), CancellationToken.None);
+
+        Assert.Same(cacheada, resultado);
+    }
+
+    [Fact]
+    public async Task Registrar_invalida_la_cache_de_valoraciones_recientes_del_paciente()
+    {
+        var dieta = _banco.Agregar("Dieta renal");
+        var paciente = new Paciente(Guid.NewGuid(), "Ana", 30, Guid.NewGuid());
+        _banco.Pacientes.Add(paciente);
+        var menu = NuevoMenuAsignado(dieta.Id, paciente.Id);
+        var clave = Menus.Application.Valoraciones.CacheDeValoracionesRecientes.Clave(paciente.Id);
+        await _cache.GuardarAsync(clave, new List<Menus.Application.Valoraciones.ValoracionDto>(), TimeSpan.FromHours(1));
+
+        await Registrar(Guid.NewGuid()).HandleAsync(
+            new RegistrarValoracionCommand(menu.Id, paciente.Id, ResultadoNutricional.Buena.Id), CancellationToken.None);
+
+        Assert.Null(await _cache.ObtenerAsync<List<Menus.Application.Valoraciones.ValoracionDto>>(clave, CancellationToken.None));
     }
 }

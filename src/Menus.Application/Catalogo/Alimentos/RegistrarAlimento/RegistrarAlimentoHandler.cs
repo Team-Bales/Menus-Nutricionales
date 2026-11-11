@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -6,12 +7,17 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Alimentos.RegistrarAlimento;
 
-/// <summary>Registra el alimento y devuelve su identificador.</summary>
+/// <summary>
+/// Registra el alimento, devuelve su identificador e invalida la disponibilidad calórica de todas las dietas
+/// (informe, «Consultas recurrentes»; #101): un alimento nuevo puede ser compatible con cualquiera.
+/// </summary>
 internal sealed class RegistrarAlimentoHandler(
     IItemAlimentarioRepository items,
     IAlimentoRepository alimentos,
+    IDietaRepository dietas,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<RegistrarAlimentoCommand, IdCreadoDto>
+    IActorActual actor,
+    ICache cache) : IHandler<RegistrarAlimentoCommand, IdCreadoDto>
 {
     /// <exception cref="ReglaDeNegocioException">Si ya hay un alimento o un plato con ese nombre (RC-01).</exception>
     public async Task<IdCreadoDto> HandleAsync(RegistrarAlimentoCommand solicitud, CancellationToken ct)
@@ -36,6 +42,8 @@ internal sealed class RegistrarAlimentoHandler(
 
         await alimentos.AddAsync(alimento, ct);
         await unidadDeTrabajo.CommitAsync(ct);
+
+        await CacheDeDisponibilidadCalorica.InvalidarTodasAsync(dietas, cache, ct);
 
         return new IdCreadoDto(alimento.Id);
     }

@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -8,13 +9,16 @@ namespace Menus.Application.Catalogo.Dietas.EliminarDieta;
 /// <summary>Elimina la dieta si no está en uso.</summary>
 /// <remarks>
 /// El uso se comprueba antes para dar un mensaje claro; las claves foráneas en <c>RESTRICT</c> de <c>Inscribe</c>
-/// y de <c>Menú → Dieta</c> siguen siendo la última barrera (ADR-010, §3).
+/// y de <c>Menú → Dieta</c> siguen siendo la última barrera (ADR-010, §3). También invalida su disponibilidad
+/// calórica (informe, «Consultas recurrentes»; #101): sin esto, la clave sobrevive hasta su tiempo de vida y
+/// `GET .../disponibilidad-calorica` de una dieta borrada devolvería 200 con el valor cacheado en vez de 404.
 /// </remarks>
 internal sealed class EliminarDietaHandler(
     IDietaRepository dietas,
     IPacienteRepository pacientes,
     IMenuRepository menus,
-    IUnitOfWork unidadDeTrabajo) : IHandler<EliminarDietaCommand, Unidad>
+    IUnitOfWork unidadDeTrabajo,
+    ICache cache) : IHandler<EliminarDietaCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si la dieta no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">Si tiene pacientes inscritos (RR-12) o algún menú (RR-13).</exception>
@@ -37,6 +41,8 @@ internal sealed class EliminarDietaHandler(
 
         dietas.Remove(dieta);
         await unidadDeTrabajo.CommitAsync(ct);
+
+        await CacheDeDisponibilidadCalorica.InvalidarAsync(cache, dieta.Id, ct);
 
         return Unidad.Valor;
     }

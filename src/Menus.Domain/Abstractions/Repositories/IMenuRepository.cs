@@ -56,4 +56,13 @@ public interface IMenuRepository : IRepository<Menu, Guid>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Menu>> GetPendientesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cuenta, por nivel calórico, los ítems incluidos en los menús finales (aprobados) de una dieta
+    /// (informe, «R1 — Disponibilidad calórica», #101). Un ítem cuenta una vez por cada menú final que lo incluye.
+    /// </summary>
+    /// <param name="dietaId">Identificador de la dieta.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>El conteo por nivel calórico; un nivel sin ítems en esos menús no aparece.</returns>
+    Task<IReadOnlyDictionary<Guid, int>> ContarItemsFinalesPorNivelCaloricoAsync(Guid dietaId, CancellationToken cancellationToken = default);
 }

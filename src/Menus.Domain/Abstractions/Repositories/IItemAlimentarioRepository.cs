@@ -31,4 +31,15 @@ public interface IItemAlimentarioRepository : IRepository<ItemAlimentario, Guid>
     /// <param name="itemId">Identificador del alimento o el plato.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<bool> FiguraEnAlgunMenuAsync(Guid itemId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cuenta los ítems del banco por nivel calórico, excluyendo los que pertenecen a alguno de los grupos
+    /// prohibidos (informe, «R1 — Disponibilidad calórica», #101).
+    /// </summary>
+    /// <param name="gruposProhibidos">Grupos nutricionales que no cuentan (<see cref="IDietaRepository.GetGruposProhibidosAsync"/>).</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>El conteo por nivel calórico; un nivel sin ítems compatibles no aparece.</returns>
+    Task<IReadOnlyDictionary<Guid, int>> ContarPorNivelCaloricoAsync(
+        IReadOnlyCollection<Guid> gruposProhibidos,
+        CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,8 @@ using Menus.Application.Catalogo.Alimentos.ListarAlimentos;
 using Menus.Application.Catalogo.Alimentos.ObtenerAlimento;
 using Menus.Application.Catalogo.Alimentos.RegistrarAlimento;
 using Menus.Application.Comun;
+using Menus.Application.Tests.Catalogo.Dietas;
+using Menus.Application.Tests.Comun;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
 
@@ -13,14 +15,19 @@ namespace Menus.Application.Tests.Catalogo.Alimentos;
 public sealed class ManejadoresDeAlimentosTests
 {
     private readonly BancoFalso _banco = new();
+    private readonly BancoDeDietasFalso _dietas = new();
+    private readonly CacheFalsa _cache = new();
 
     private RegistrarAlimentoHandler Registrar(Guid? actor = null) => new(
-        _banco.ItemsRepo, _banco.AlimentosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor));
+        _banco.ItemsRepo, _banco.AlimentosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo,
+        new ActorFalso(actor ?? BancoFalso.Descriptor), _cache);
 
     private ActualizarAlimentoHandler Actualizar(Guid? actor = null) => new(
-        _banco.AlimentosRepo, _banco.UnidadDeTrabajo, new ActorFalso(actor ?? BancoFalso.Descriptor));
+        _banco.AlimentosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo,
+        new ActorFalso(actor ?? BancoFalso.Descriptor), _cache);
 
-    private EliminarAlimentoHandler Eliminar() => new(_banco.ItemsRepo, _banco.AlimentosRepo, _banco.UnidadDeTrabajo, _banco.Fichas);
+    private EliminarAlimentoHandler Eliminar() => new(
+        _banco.ItemsRepo, _banco.AlimentosRepo, _dietas.DietasRepo, _banco.UnidadDeTrabajo, _banco.Fichas, _cache);
 
     // ---- Registrar ----
 
@@ -186,5 +193,29 @@ public sealed class ManejadoresDeAlimentosTests
             .HandleAsync(new ObtenerAlimentoQuery(Guid.NewGuid()), CancellationToken.None));
 
         Assert.Equal("alimento", ex.Recurso);
+    }
+
+    // ---- Invalidación de la disponibilidad calórica de todas las dietas (#101) ----
+
+    [Fact]
+    public async Task Registrar_invalida_la_disponibilidad_calorica_de_todas_las_dietas()
+    {
+        var dieta1 = _dietas.Agregar("Dieta 1");
+        var dieta2 = _dietas.Agregar("Dieta 2");
+        await _cache.GuardarAsync(
+            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta1.Id),
+            "x", TimeSpan.FromHours(1));
+        await _cache.GuardarAsync(
+            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta2.Id),
+            "x", TimeSpan.FromHours(1));
+
+        await Registrar().HandleAsync(
+            new RegistrarAlimentoCommand("Avena", BancoFalso.GrupoCereales, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id),
+            CancellationToken.None);
+
+        Assert.Null(await _cache.ObtenerAsync<string>(
+            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta1.Id), CancellationToken.None));
+        Assert.Null(await _cache.ObtenerAsync<string>(
+            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta2.Id), CancellationToken.None));
     }
 }

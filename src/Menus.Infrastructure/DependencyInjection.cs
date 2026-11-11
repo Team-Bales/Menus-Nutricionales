@@ -1,8 +1,10 @@
 using Menus.Application.Catalogo;
+using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
+using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Persistence.Repositories;
@@ -12,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace Menus.Infrastructure;
 
@@ -85,6 +88,21 @@ public static class DependencyInjection
         {
             // Sin MongoDB no hay fichas: los casos de uso siguen funcionando, sin nada que mantener.
             services.AddScoped<IFichasNutricionales, SinFichasNutricionales>();
+        }
+
+        // Redis (caché de disponibilidad calórica y valoraciones recientes, ADR-005), solo si hay cadena de
+        // conexión: sin ella, las dos consultas se calculan siempre contra PostgreSQL (CacheNula).
+        var cadenaRedis = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(cadenaRedis))
+        {
+            var opcionesRedis = ConfigurationOptions.Parse(cadenaRedis);
+            opcionesRedis.AbortOnConnectFail = false;
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(opcionesRedis));
+            services.AddSingleton<ICache, RedisCache>();
+        }
+        else
+        {
+            services.AddSingleton<ICache, CacheNula>();
         }
 
         return services;

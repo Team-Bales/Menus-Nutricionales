@@ -31,6 +31,11 @@ internal static class CacheDeDisponibilidadCalorica
     /// Invalida la disponibilidad calórica de todas las dietas: la usan los casos de uso que cambian el banco
     /// (alta, baja o reclasificación de un alimento o un plato), porque no se sabe de antemano a cuáles afecta.
     /// </summary>
+    /// <remarks>
+    /// Un viaje a Redis por dieta: aceptable a la escala actual del catálogo. Si el banco crece lo suficiente
+    /// para que esto pese, un índice de claves activas (un <c>SET</c> propio, o <c>SCAN</c> por patrón) lo deja
+    /// en O(1) sin cambiar la firma de este método.
+    /// </remarks>
     /// <param name="dietas">Repositorio de dietas, para enumerarlas.</param>
     /// <param name="cache">Caché a invalidar.</param>
     /// <param name="ct">Token de cancelación.</param>

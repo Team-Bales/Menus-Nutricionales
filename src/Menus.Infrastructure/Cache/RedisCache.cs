@@ -6,9 +6,11 @@ using StackExchange.Redis;
 namespace Menus.Infrastructure.Cache;
 
 /// <summary>
-/// <see cref="ICache"/> sobre Redis (ADR-005). Un fallo de conexión o de tiempo de espera nunca se propaga: se
-/// registra en el log y se trata como si la clave no estuviera, para que el llamador calcule el valor contra
-/// PostgreSQL (informe, «Consultas recurrentes»: se pierde latencia, no corrección).
+/// <see cref="ICache"/> sobre Redis (ADR-005). Un fallo de conexión, de tiempo de espera o de deserialización
+/// nunca se propaga: se registra en el log y se trata como si la clave no estuviera, para que el llamador calcule
+/// el valor contra PostgreSQL (informe, «Consultas recurrentes»: se pierde latencia, no corrección). Una
+/// deserialización fallida (p. ej. una clave escrita antes de un cambio de forma del DTO) se trata igual: no tiene
+/// sentido que una entrada vieja de la caché rompa la respuesta con un 500.
 /// </summary>
 /// <param name="conexion">Multiplexor de conexión a Redis, compartido por toda la aplicación.</param>
 /// <param name="logger">Log de los fallos de Redis.</param>
@@ -21,7 +23,7 @@ public sealed class RedisCache(IConnectionMultiplexer conexion, ILogger<RedisCac
             var valor = await conexion.GetDatabase().StringGetAsync(clave);
             return valor.IsNullOrEmpty ? null : JsonSerializer.Deserialize<T>((string)valor!);
         }
-        catch (Exception ex) when (ex is RedisException or RedisTimeoutException or TimeoutException)
+        catch (Exception ex) when (ex is RedisException or RedisTimeoutException or TimeoutException or JsonException)
         {
             logger.LogWarning(ex, "No se pudo leer Redis para la clave {Clave}; se calcula contra PostgreSQL.", clave);
             return null;

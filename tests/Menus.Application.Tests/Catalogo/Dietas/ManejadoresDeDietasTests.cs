@@ -33,7 +33,7 @@ public sealed class ManejadoresDeDietasTests
 
     private QuitarRestriccionDietaHandler QuitarRestriccion() => new(_banco.DietasRepo, _banco.UnidadDeTrabajo, _cache);
 
-    private EliminarDietaHandler Eliminar() => new(_banco.DietasRepo, _banco.PacientesRepo, _banco.MenusRepo, _banco.UnidadDeTrabajo);
+    private EliminarDietaHandler Eliminar() => new(_banco.DietasRepo, _banco.PacientesRepo, _banco.MenusRepo, _banco.UnidadDeTrabajo, _cache);
 
     // ---- Registrar ----
 
@@ -204,14 +204,17 @@ public sealed class ManejadoresDeDietasTests
     // ---- Eliminar ----
 
     [Fact]
-    public async Task Eliminar_una_dieta_sin_uso_la_quita_y_confirma()
+    public async Task Eliminar_una_dieta_sin_uso_la_quita_confirma_e_invalida_su_cache()
     {
         var dieta = _banco.Agregar("Dieta");
+        var clave = CacheDeDisponibilidadCalorica.Clave(dieta.Id);
+        await _cache.GuardarAsync(clave, "valor-viejo", TimeSpan.FromHours(1));
 
         await Eliminar().HandleAsync(new EliminarDietaCommand(dieta.Id), CancellationToken.None);
 
         Assert.Empty(_banco.Dietas);
         Assert.Equal(1, _banco.UnidadDeTrabajo.Confirmaciones);
+        Assert.Null(await _cache.ObtenerAsync<string>(clave, CancellationToken.None));
     }
 
     [Fact]

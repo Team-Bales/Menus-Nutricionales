@@ -56,4 +56,14 @@ public sealed class PlatoRepository : Repository<Plato, Guid>, IPlatoRepository
 
         return (platos, total);
     }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyDictionary<Guid, int>> ContarIngredientesAsync(
+        IReadOnlyCollection<Guid> platoIds,
+        CancellationToken cancellationToken = default)
+        => await Context.PlatosIngredientes
+            .Where(i => platoIds.Contains(i.PlatoId))
+            .GroupBy(i => i.PlatoId)
+            .Select(g => new { PlatoId = g.Key, Cantidad = g.Count() })
+            .ToDictionaryAsync(g => g.PlatoId, g => g.Cantidad, cancellationToken);
 }

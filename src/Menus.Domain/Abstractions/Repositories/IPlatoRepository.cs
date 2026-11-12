@@ -37,4 +37,18 @@ public interface IPlatoRepository : IRepository<Plato, Guid>
         int pagina,
         int tamano,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Cuenta los ingredientes de cada plato, con una sola consulta.</summary>
+    /// <remarks>
+    /// Lo usa el listado de platos (#65 pide la columna «número de ingredientes»), para que el cliente no tenga que
+    /// pedir el detalle de cada plato de la página.
+    /// </remarks>
+    /// <param name="platoIds">Identificadores de los platos.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>
+    /// La cantidad de ingredientes de cada plato que tiene alguno; por RK-03, todo plato existente tiene al menos uno.
+    /// </returns>
+    Task<IReadOnlyDictionary<Guid, int>> ContarIngredientesAsync(
+        IReadOnlyCollection<Guid> platoIds,
+        CancellationToken cancellationToken = default);
 }

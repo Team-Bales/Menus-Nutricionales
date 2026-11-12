@@ -3,7 +3,10 @@ using Menus.Domain.Abstractions.Repositories;
 
 namespace Menus.Application.Catalogo.Platos.ListarPlatos;
 
-/// <summary>Devuelve la página pedida en el sobre <c>{ data, total, page, size }</c> (ADR-010, §2).</summary>
+/// <summary>
+/// Devuelve la página pedida en el sobre <c>{ data, total, page, size }</c> (ADR-010, §2), con la cantidad de
+/// ingredientes de cada plato contada en una sola consulta.
+/// </summary>
 internal sealed class ListarPlatosHandler(IPlatoRepository platos)
     : IHandler<ListarPlatosQuery, ResultadoPaginado<PlatoDto>>
 {
@@ -17,8 +20,10 @@ internal sealed class ListarPlatosHandler(IPlatoRepository platos)
             solicitud.Size,
             ct);
 
+        var cantidades = await platos.ContarIngredientesAsync([.. pagina.Select(p => p.Id)], ct);
+
         return new ResultadoPaginado<PlatoDto>(
-            [.. pagina.Select(PlatoDto.Desde)],
+            [.. pagina.Select(p => PlatoDto.Desde(p, cantidades.GetValueOrDefault(p.Id)))],
             total,
             solicitud.Page,
             solicitud.Size);

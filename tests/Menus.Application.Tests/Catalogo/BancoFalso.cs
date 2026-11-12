@@ -191,6 +191,13 @@ internal sealed class PlatosFalsos(BancoFalso banco) : IPlatoRepository
         IReadOnlyList<Plato> enPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
         return Task.FromResult((enPagina, filtrados.Count));
     }
+
+    public Task<IReadOnlyDictionary<Guid, int>> ContarIngredientesAsync(
+        IReadOnlyCollection<Guid> platoIds,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyDictionary<Guid, int>>(Platos
+            .Where(p => platoIds.Contains(p.Id))
+            .ToDictionary(p => p.Id, p => p.Ingredientes.Count));
 }
 
 internal sealed class UnidadDeTrabajoFalsa : IUnitOfWork

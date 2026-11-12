@@ -270,9 +270,10 @@ public sealed class ManejadoresDePlatosTests
     public async Task Listar_devuelve_solo_platos_paginados()
     {
         var lechuga = _banco.Agregar("Lechuga");
+        var huevo = _banco.Agregar("Huevo");
         _banco.AgregarPlato("Ensalada", lechuga);
         _banco.AgregarPlato("Sopa", lechuga);
-        var tortilla = _banco.AgregarPlato("Tortilla", lechuga);
+        var tortilla = _banco.AgregarPlato("Tortilla", lechuga, huevo);
 
         var resultado = await new ListarPlatosHandler(_banco.PlatosRepo)
             .HandleAsync(new ListarPlatosQuery(Page: 2, Size: 2), CancellationToken.None);
@@ -288,6 +289,7 @@ public sealed class ManejadoresDePlatosTests
         Assert.Equal(TipoPreparacion.PlatoFuerte.Id, dto.TipoPreparacionId);
         Assert.Equal(NivelCalorico.Medio.Id, dto.NivelCaloricoId);
         Assert.Equal(BancoFalso.Descriptor, dto.NutricionistaId);
+        Assert.Equal(2, dto.CantidadDeIngredientes);
     }
 
     [Fact]

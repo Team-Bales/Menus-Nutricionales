@@ -2,6 +2,7 @@ using Menus.Application.Comun;
 using Menus.Application.Tests.Catalogo;
 using Menus.Application.Tests.Catalogo.Dietas;
 using Menus.Application.Tests.Comun;
+using Menus.Application.Valoraciones;
 using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Application.Valoraciones.ObtenerValoracion;
@@ -232,13 +233,13 @@ public sealed class ManejadoresDeValoracionesTests
     public async Task ListarPorPaciente_devuelve_el_valor_cacheado_sin_tocar_los_repositorios()
     {
         var pacienteId = Guid.NewGuid();
-        var cacheada = new List<Menus.Application.Valoraciones.ValoracionDto>
+        var cacheada = new List<ValoracionDto>
         {
             new(Guid.NewGuid(), Guid.NewGuid(), pacienteId, Guid.NewGuid(),
-                new Menus.Application.Valoraciones.ResultadoNutricionalDto(ResultadoNutricional.Buena.Id, "Buena", 4), DateTime.UtcNow),
+                new ResultadoNutricionalDto(ResultadoNutricional.Buena.Id, "Buena", 4), DateTime.UtcNow),
         };
         await _cache.GuardarAsync(
-            Menus.Application.Valoraciones.CacheDeValoracionesRecientes.Clave(pacienteId), cacheada, TimeSpan.FromHours(1));
+            CacheDeValoracionesRecientes.Clave(pacienteId), cacheada, TimeSpan.FromHours(1));
 
         var resultado = await ListarPorPaciente().HandleAsync(
             new ListarValoracionesPorPacienteQuery(pacienteId), CancellationToken.None);
@@ -253,12 +254,12 @@ public sealed class ManejadoresDeValoracionesTests
         var paciente = new Paciente(Guid.NewGuid(), "Ana", 30, Guid.NewGuid());
         _banco.Pacientes.Add(paciente);
         var menu = NuevoMenuAsignado(dieta.Id, paciente.Id);
-        var clave = Menus.Application.Valoraciones.CacheDeValoracionesRecientes.Clave(paciente.Id);
-        await _cache.GuardarAsync(clave, new List<Menus.Application.Valoraciones.ValoracionDto>(), TimeSpan.FromHours(1));
+        var clave = CacheDeValoracionesRecientes.Clave(paciente.Id);
+        await _cache.GuardarAsync(clave, new List<ValoracionDto>(), TimeSpan.FromHours(1));
 
         await Registrar(Guid.NewGuid()).HandleAsync(
             new RegistrarValoracionCommand(menu.Id, paciente.Id, ResultadoNutricional.Buena.Id), CancellationToken.None);
 
-        Assert.Null(await _cache.ObtenerAsync<List<Menus.Application.Valoraciones.ValoracionDto>>(clave, CancellationToken.None));
+        Assert.Null(await _cache.ObtenerAsync<List<ValoracionDto>>(clave, CancellationToken.None));
     }
 }

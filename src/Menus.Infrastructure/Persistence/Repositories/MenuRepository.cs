@@ -46,6 +46,37 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
             .Where(m => m.DietaId == dietaId)
             .ToListAsync(cancellationToken);
 
+    public async Task<(IReadOnlyList<Menu> Menus, int Total)> BuscarAsync(
+        Guid dietaId,
+        EstadoDeMenu? estado,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        // Sin Include: el listado muestra el dictamen, que llega por AutoInclude, y no la parametrización.
+        var consulta = dbContext.Menus.AsNoTracking().Where(m => m.DietaId == dietaId);
+
+        consulta = estado switch
+        {
+            EstadoDeMenu.Pendiente => consulta.Where(m => m.Validacion == null),
+            EstadoDeMenu.Final => consulta.Where(m => m.Validacion != null && m.Validacion.Aprobado),
+            EstadoDeMenu.Rechazado => consulta.Where(m => m.Validacion != null && !m.Validacion.Aprobado),
+            _ => consulta,
+        };
+
+        var total = await consulta.CountAsync(cancellationToken);
+
+        // El Id desempata los menús creados en el mismo instante, para que la paginación sea estable.
+        var menus = await consulta
+            .OrderByDescending(m => m.FechaCreacion)
+            .ThenBy(m => m.Id)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)
+            .ToListAsync(cancellationToken);
+
+        return (menus, total);
+    }
+
     public async Task<IReadOnlyList<Menu>> GetByNutricionistaCreadorAsync(Guid nutricionistaId, CancellationToken cancellationToken = default)
         => await Listado()
             .Where(m => m.NutricionistaCreadorId == nutricionistaId)

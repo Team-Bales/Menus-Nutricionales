@@ -150,6 +150,60 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
         Assert.Null(await new MenuRepository(ctx).GetByIdAsync(Guid.NewGuid()));
     }
 
+    [Theory]
+    [InlineData(EstadoDeMenu.Pendiente)]
+    [InlineData(EstadoDeMenu.Final)]
+    [InlineData(EstadoDeMenu.Rechazado)]
+    public async Task BuscarAsync_filtra_por_estado_en_SQL(EstadoDeMenu estado)
+    {
+        var esperado = estado switch
+        {
+            EstadoDeMenu.Pendiente => _e.PendienteId,
+            EstadoDeMenu.Final => _e.FinalId,
+            _ => _e.RechazadoId,
+        };
+        await using var ctx = _fixture.CrearContexto();
+
+        var (menus, total) = await new MenuRepository(ctx).BuscarAsync(_e.DietaId, estado, 1, 10);
+
+        Assert.Equal([esperado], menus.Select(m => m.Id));
+        Assert.Equal(1, total);
+    }
+
+    [Fact]
+    public async Task BuscarAsync_sin_estado_pagina_del_mas_reciente_al_mas_antiguo_con_el_dictamen()
+    {
+        var reciente = NuevoMenu(_e.DietaId, _e.CreadorId, _e.AlimentoId, DateTime.UtcNow.AddDays(-1));
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            await new MenuRepository(ctx).AddAsync(reciente);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var consulta = _fixture.CrearContexto();
+        var repositorio = new MenuRepository(consulta);
+        var (primera, total) = await repositorio.BuscarAsync(_e.DietaId, null, 1, 3);
+        var (segunda, _) = await repositorio.BuscarAsync(_e.DietaId, null, 2, 3);
+
+        Assert.Equal(4, total);
+        Assert.Equal(reciente.Id, primera[0].Id);
+        Assert.Equal(3, primera.Count);
+        Assert.Single(segunda);
+        Assert.Equal("No cumple.", primera.Concat(segunda).Single(m => m.Id == _e.RechazadoId).Validacion!.Observaciones);
+        Assert.Empty(consulta.ChangeTracker.Entries());
+    }
+
+    [Fact]
+    public async Task BuscarAsync_de_otra_dieta_no_trae_nada()
+    {
+        await using var ctx = _fixture.CrearContexto();
+
+        var (menus, total) = await new MenuRepository(ctx).BuscarAsync(Guid.NewGuid(), null, 1, 10);
+
+        Assert.Empty(menus);
+        Assert.Equal(0, total);
+    }
+
     [Fact]
     public async Task AddAsync_y_Remove_dan_de_alta_y_de_baja_un_menu()
     {
@@ -178,9 +232,9 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
     /// <summary>
     /// Menú pendiente, con su parametrización (RS-07 exige darla al crearlo) y un ítem.
     /// </summary>
-    private static Menu NuevoMenu(Guid dietaId, Guid creadorId, Guid alimentoId)
+    private static Menu NuevoMenu(Guid dietaId, Guid creadorId, Guid alimentoId, DateTime? fechaCreacion = null)
     {
-        var menu = new Menu(Guid.NewGuid(), dietaId, creadorId, DateTime.UtcNow.AddDays(-6), 1, true,
+        var menu = new Menu(Guid.NewGuid(), dietaId, creadorId, fechaCreacion ?? DateTime.UtcNow.AddDays(-6), 1, true,
             [(TipoPreparacion.Postre.Id, 1m)], [GrupoFrutas]);
         menu.AgregarItem(alimentoId);
         return menu;
@@ -223,9 +277,17 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
             await ctx.SaveChangesAsync();
         }
 
-        return new Escenario(dieta.Id, creador.Id, jefe.Id, p1.Id, p2.Id, alimento.Id, final.Id, pendiente.Id);
+        return new Escenario(dieta.Id, creador.Id, jefe.Id, p1.Id, p2.Id, alimento.Id, final.Id, pendiente.Id, rechazado.Id);
     }
 
     private sealed record Escenario(
-        Guid DietaId, Guid CreadorId, Guid JefeId, Guid P1, Guid P2, Guid AlimentoId, Guid FinalId, Guid PendienteId);
+        Guid DietaId,
+        Guid CreadorId,
+        Guid JefeId,
+        Guid P1,
+        Guid P2,
+        Guid AlimentoId,
+        Guid FinalId,
+        Guid PendienteId,
+        Guid RechazadoId);
 }

@@ -87,6 +87,15 @@ public sealed class ManejadorDeExcepcionesTests
         Assert.Equal(StatusCodes.Status401Unauthorized, problema.Status);
     }
 
+    [Fact]
+    public void CredencialesInvalidasException_es_401()
+    {
+        var problema = ManejadorDeExcepciones.Traducir(new CredencialesInvalidasException());
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, problema.Status);
+        Assert.Equal("Credenciales inválidas.", problema.Detail);
+    }
+
     [Theory]
     [InlineData(PostgresErrorCodes.UniqueViolation, StatusCodes.Status409Conflict)]
     [InlineData(PostgresErrorCodes.ForeignKeyViolation, StatusCodes.Status409Conflict)]

@@ -50,7 +50,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 1. Up aplica todas las migraciones: 28 tablas de usuario, 31 triggers, 23 funciones fn_*,
+    /// 1. Up aplica todas las migraciones: 29 tablas de usuario, 31 triggers, 23 funciones fn_*,
     /// índice ux_items_alimentarios_r5_16_nombre.
     /// </summary>
     [Fact]
@@ -68,7 +68,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
         await using var conn = new NpgsqlConnection(_cadenaBaseVacia);
         await conn.OpenAsync();
 
-        // 28 tablas de usuario (sin __EFMigrationsHistory)
+        // 29 tablas de usuario (sin __EFMigrationsHistory)
         await using var cmdTablas = conn.CreateCommand();
         cmdTablas.CommandText = """
             SELECT count(*) FROM information_schema.tables
@@ -76,7 +76,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
             AND table_name != '__EFMigrationsHistory'
             """;
         var tablas = Convert.ToInt32(await cmdTablas.ExecuteScalarAsync());
-        Assert.Equal(28, tablas);
+        Assert.Equal(29, tablas);
 
         // 31 triggers de usuario (no internos)
         await using var cmdTriggers = conn.CreateCommand();
@@ -241,7 +241,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 4. Up después de Down a 0 vuelve a funcionar (mismos conteos que prueba 1).
+    /// 4. Up después de Down a 0 vuelve a funcionar (mismos conteos que prueba 1: 29 tablas).
     /// </summary>
     [Fact]
     public async Task Up_despues_de_Down_a_cero_vuelve_a_funcionar()
@@ -265,7 +265,7 @@ public sealed class CadenaDeMigracionesTests : IAsyncLifetime
             AND table_name != '__EFMigrationsHistory'
             """;
         var tablas = Convert.ToInt32(await cmdTablas.ExecuteScalarAsync());
-        Assert.Equal(28, tablas);
+        Assert.Equal(29, tablas);
 
         await using var cmdTriggers = conn.CreateCommand();
         cmdTriggers.CommandText = """

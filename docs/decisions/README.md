@@ -41,3 +41,4 @@ alternativas consideradas y las consecuencias que implica.
 | [009](ADR-009-mongodb-ficha-nutricional.md) | Ficha nutricional en MongoDB: conciliación RM-10, configuración restricción–alérgeno y mantenimiento de RM-06 | Propuesto |
 | [010](ADR-010-capa-de-aplicacion.md) | Capa de aplicación: casos de uso, validación, errores y transacción | Aceptado |
 | [011](ADR-011-rs02-composicion-del-plato.md) | RS-02 también alcanza la composición del plato | Aceptado |
+| [013](ADR-013-cliente-catalogo-actor-header-nginx.md) | Cliente Blazor del catálogo: contrato `ICatalogoApi`, cabecera `X-Actor-Id` provisional y proxy Nginx | Aceptado |

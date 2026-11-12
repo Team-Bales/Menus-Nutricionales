@@ -15,8 +15,12 @@ internal sealed class NutricionistasFalsos : INutricionistaRepository
 
     /// <summary>Agrega un nutricionista, jefe o no, autorizado para las dietas indicadas.</summary>
     public Nutricionista Agregar(bool esJefe, params Guid[] dietasAutorizadas)
+        => Agregar("Nutricionista de prueba", esJefe, dietasAutorizadas);
+
+    /// <summary>Agrega un nutricionista con ese nombre, jefe o no, autorizado para las dietas indicadas.</summary>
+    public Nutricionista Agregar(string nombre, bool esJefe, params Guid[] dietasAutorizadas)
     {
-        var nutricionista = new Nutricionista(Guid.NewGuid(), "Nutricionista de prueba", Especialidad);
+        var nutricionista = new Nutricionista(Guid.NewGuid(), nombre, Especialidad);
         if (esJefe)
         {
             nutricionista.DesignarJefe();

@@ -42,3 +42,4 @@ alternativas consideradas y las consecuencias que implica.
 | [010](ADR-010-capa-de-aplicacion.md) | Capa de aplicación: casos de uso, validación, errores y transacción | Aceptado |
 | [011](ADR-011-autenticacion-jwt-bootstrap.md) | Autenticación — JWT, login, registro y bootstrap de Admin | Aceptado |
 | [012](ADR-012-rs02-composicion-del-plato.md) | RS-02 también alcanza la composición del plato | Aceptado |
+| [014](ADR-014-strategy-generacion-automatica-menu.md) | Patrón Strategy para la selección de ítems en la generación automática de menús | Aceptado |

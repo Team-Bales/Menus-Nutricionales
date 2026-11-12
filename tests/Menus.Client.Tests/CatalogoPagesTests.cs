@@ -39,7 +39,7 @@ public sealed class CatalogoPagesTests : BunitContext
     }
 
     [Fact]
-    public void Platos_muestra_la_cantidad_de_ingredientes_del_detalle()
+    public void Platos_muestra_la_cantidad_de_ingredientes_del_listado()
     {
         Services.AddSingleton<ICatalogoApi>(new CatalogoFalso());
 
@@ -71,7 +71,7 @@ public sealed class CatalogoPagesTests : BunitContext
         public Task<Guid> CrearAlimentoAsync(ClasificacionFormulario alimento, CancellationToken ct = default) => Task.FromResult(AlimentoId);
         public Task ActualizarAlimentoAsync(Guid id, ClasificacionFormulario alimento, CancellationToken ct = default) => Task.CompletedTask;
         public Task EliminarAlimentoAsync(Guid id, CancellationToken ct = default) => ErrorAlEliminarAlimento ? Task.FromException(new ApiException(HttpStatusCode.Conflict, "El alimento está en uso.")) : Task.CompletedTask;
-        public Task<Pagina<Plato>> ListarPlatosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default) => Task.FromResult(new Pagina<Plato>([new(PlatoId, "Avena con leche", Grupo, Tipo, Nivel, Guid.NewGuid())], 1, page, size));
+        public Task<Pagina<Plato>> ListarPlatosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default) => Task.FromResult(new Pagina<Plato>([new(PlatoId, "Avena con leche", Grupo, Tipo, Nivel, Guid.NewGuid(), 2)], 1, page, size));
         public Task<PlatoDetalle> ObtenerPlatoAsync(Guid id, CancellationToken ct = default) => Task.FromResult(new PlatoDetalle(PlatoId, "Avena con leche", Grupo, Tipo, Nivel, Guid.NewGuid(), [new(AlimentoId, "Avena", 100m), new(Guid.NewGuid(), "Leche", 200m)]));
         public Task<Guid> CrearPlatoAsync(ClasificacionFormulario plato, IReadOnlyList<IngredienteFormulario> ingredientes, CancellationToken ct = default) => Task.FromResult(PlatoId);
         public Task ActualizarPlatoAsync(Guid id, ClasificacionFormulario plato, CancellationToken ct = default) => Task.CompletedTask;

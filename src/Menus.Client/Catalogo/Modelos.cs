@@ -12,7 +12,7 @@ public sealed record Pagina<T>(IReadOnlyList<T> Data, int Total, int Page, int S
 public sealed record Alimento(Guid Id, string Nombre, Guid GrupoNutricionalId, Guid TipoPreparacionId, Guid NivelCaloricoId, Guid NutricionistaId);
 
 /// <summary>Plato del catálogo, sin sus ingredientes.</summary>
-public sealed record Plato(Guid Id, string Nombre, Guid GrupoNutricionalId, Guid TipoPreparacionId, Guid NivelCaloricoId, Guid NutricionistaId);
+public sealed record Plato(Guid Id, string Nombre, Guid GrupoNutricionalId, Guid TipoPreparacionId, Guid NivelCaloricoId, Guid NutricionistaId, int CantidadDeIngredientes);
 
 /// <summary>Ingrediente de un plato.</summary>
 public sealed record Ingrediente(Guid AlimentoId, string Nombre, decimal Cantidad);
@@ -32,9 +32,20 @@ public sealed class ClasificacionFormulario : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (GrupoNutricionalId == Guid.Empty) yield return new("Selecciona un grupo nutricional.", [nameof(GrupoNutricionalId)]);
-        if (TipoPreparacionId == Guid.Empty) yield return new("Selecciona un tipo de preparación.", [nameof(TipoPreparacionId)]);
-        if (NivelCaloricoId == Guid.Empty) yield return new("Selecciona un nivel calórico.", [nameof(NivelCaloricoId)]);
+        if (GrupoNutricionalId == Guid.Empty)
+        {
+            yield return new("Selecciona un grupo nutricional.", [nameof(GrupoNutricionalId)]);
+        }
+
+        if (TipoPreparacionId == Guid.Empty)
+        {
+            yield return new("Selecciona un tipo de preparación.", [nameof(TipoPreparacionId)]);
+        }
+
+        if (NivelCaloricoId == Guid.Empty)
+        {
+            yield return new("Selecciona un nivel calórico.", [nameof(NivelCaloricoId)]);
+        }
     }
 }
 

@@ -32,7 +32,7 @@ else if (_pagina is not null)
         @if (_pagina.Data.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">No hay platos con esos filtros.</td></tr> }
         @foreach (var plato in _pagina.Data)
         {
-            <tr><td>@plato.Nombre</td><td>@Nombre(_grupos, plato.GrupoNutricionalId)</td><td>@Nombre(_tipos, plato.TipoPreparacionId)</td><td>@Nombre(_niveles, plato.NivelCaloricoId)</td><td>@CantidadIngredientes(plato.Id)</td><td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-secondary me-1" @onclick="(() => VerDetalle(plato.Id))">Detalle</button><button class="btn btn-sm btn-outline-primary me-1" @onclick="(() => Editar(plato.Id))">Editar</button><button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(plato))">Eliminar</button></td></tr>
+            <tr><td>@plato.Nombre</td><td>@Nombre(_grupos, plato.GrupoNutricionalId)</td><td>@Nombre(_tipos, plato.TipoPreparacionId)</td><td>@Nombre(_niveles, plato.NivelCaloricoId)</td><td>@plato.CantidadDeIngredientes</td><td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-secondary me-1" @onclick="(() => VerDetalle(plato.Id))">Detalle</button><button class="btn btn-sm btn-outline-primary me-1" @onclick="(() => Editar(plato.Id))">Editar</button><button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(plato))">Eliminar</button></td></tr>
         }
     </tbody></table></div>
     <div class="d-flex justify-content-between align-items-center"><span class="text-muted small">@_pagina.Total resultado(s)</span><div class="btn-group"><button class="btn btn-outline-secondary" disabled="@(_pagina.Page == 1)" @onclick="PaginaAnterior">Anterior</button><button class="btn btn-outline-secondary" disabled="@(_pagina.Page * _pagina.Size >= _pagina.Total)" @onclick="PaginaSiguiente">Siguiente</button></div></div>
@@ -42,7 +42,6 @@ else if (_pagina is not null)
     private IReadOnlyList<Nomenclador> _grupos = [];
     private IReadOnlyList<Nomenclador> _tipos = [];
     private IReadOnlyList<Nomenclador> _niveles = [];
-    private readonly Dictionary<Guid, int> _ingredientesPorPlato = [];
     private Pagina<Plato>? _pagina;
     private Guid? _grupo;
     private Guid? _tipo;
@@ -69,11 +68,6 @@ else if (_pagina is not null)
         try
         {
             _pagina = await Api.ListarPlatosAsync(_grupo, _tipo, _nivel, page, 10);
-            _ingredientesPorPlato.Clear();
-            foreach (var plato in _pagina.Data)
-            {
-                _ingredientesPorPlato[plato.Id] = (await Api.ObtenerPlatoAsync(plato.Id)).Ingredientes.Count;
-            }
         }
         catch (ApiException ex) { _error = ex.Message; }
         finally { _cargando = false; }
@@ -93,7 +87,6 @@ else if (_pagina is not null)
     private void Nuevo() => Navegacion.NavigateTo("/catalogo/platos/nuevo");
     private void VerDetalle(Guid id) => Navegacion.NavigateTo($"/catalogo/platos/{id}");
     private void Editar(Guid id) => Navegacion.NavigateTo($"/catalogo/platos/{id}/editar");
-    private string CantidadIngredientes(Guid id) => _ingredientesPorPlato.TryGetValue(id, out var cantidad) ? cantidad.ToString() : "—";
 
     private static string Nombre(IEnumerable<Nomenclador> nomencladores, Guid id) => nomencladores.FirstOrDefault(n => n.Id == id)?.Nombre ?? "—";
 }

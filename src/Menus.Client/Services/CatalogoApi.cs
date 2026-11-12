@@ -151,9 +151,20 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
     private static string RutaPaginada(string route, Guid? grupo, Guid? tipo, Guid? nivel, int page, int size)
     {
         var query = new List<string> { $"page={page}", $"size={size}" };
-        if (grupo is not null) query.Add($"grupo={grupo}");
-        if (tipo is not null) query.Add($"tipo={tipo}");
-        if (nivel is not null) query.Add($"nivel={nivel}");
+        if (grupo is not null)
+        {
+            query.Add($"grupo={grupo}");
+        }
+
+        if (tipo is not null)
+        {
+            query.Add($"tipo={tipo}");
+        }
+
+        if (nivel is not null)
+        {
+            query.Add($"nivel={nivel}");
+        }
         return $"{route}?{string.Join("&", query)}";
     }
 

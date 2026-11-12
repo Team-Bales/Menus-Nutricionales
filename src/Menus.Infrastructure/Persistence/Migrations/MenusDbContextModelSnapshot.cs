@@ -502,6 +502,57 @@ namespace Menus.Infrastructure.Persistence.Migrations
                     b.ToTable("servicios", (string)null);
                 });
 
+            modelBuilder.Entity("Menus.Domain.Entidades.Usuario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<Guid?>("EntidadId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entidad_id");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("rol");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ux_usuarios_email");
+
+                    b.HasIndex("EntidadId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_usuarios_entidad_id_non_null")
+                        .HasFilter("entidad_id IS NOT NULL");
+
+                    b.ToTable("usuarios", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_usuarios_email_no_vacio", "btrim(email) <> ''");
+
+                            t.HasCheckConstraint("ck_usuarios_entidad_id_por_rol", "(rol = 'Admin' AND entidad_id IS NULL) OR (rol IN ('Nutricionista', 'Paciente') AND entidad_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_usuarios_password_hash_no_vacio", "btrim(password_hash) <> ''");
+
+                            t.HasCheckConstraint("ck_usuarios_rol_valido", "rol IN ('Admin', 'Nutricionista', 'Paciente')");
+                        });
+                });
+
             modelBuilder.Entity("Menus.Domain.Entidades.Validacion", b =>
                 {
                     b.Property<Guid>("MenuId")

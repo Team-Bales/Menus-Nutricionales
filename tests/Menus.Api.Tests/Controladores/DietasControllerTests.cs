@@ -3,6 +3,7 @@ using Menus.Application.Catalogo.Dietas;
 using Menus.Application.Catalogo.Dietas.ActualizarDieta;
 using Menus.Application.Catalogo.Dietas.AgregarGrupoDieta;
 using Menus.Application.Catalogo.Dietas.AgregarRestriccionDieta;
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Catalogo.Dietas.EliminarDieta;
 using Menus.Application.Catalogo.Dietas.ListarDietas;
 using Menus.Application.Catalogo.Dietas.ObtenerDieta;
@@ -140,6 +141,19 @@ public sealed class DietasControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new QuitarRestriccionDietaCommand(id, Restriccion), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task ObtenerDisponibilidadCalorica_envia_la_consulta_con_el_id_de_la_ruta()
+    {
+        var id = Guid.NewGuid();
+        var dto = new DisponibilidadCaloricaDto(id, []);
+        _despachador.Resultado = dto;
+
+        var respuesta = await Controlador.ObtenerDisponibilidadCalorica(id, CancellationToken.None);
+
+        Assert.Same(dto, respuesta);
+        Assert.Equal(new DisponibilidadCaloricaQuery(id), _despachador.Recibida);
     }
 
     /// <summary>Guarda la solicitud recibida y devuelve el resultado preparado.</summary>

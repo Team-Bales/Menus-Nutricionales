@@ -23,4 +23,21 @@ public interface IPacienteRepository : IRepository<Paciente, Guid>
     /// <param name="dietaId">Identificador de la dieta.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Paciente>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Devuelve una página de pacientes, sin sus inscripciones, ordenados por nombre, con los filtros que se indiquen,
+    /// y el total sin paginar.
+    /// </summary>
+    /// <param name="salaId">Solo los de esta sala, si se indica.</param>
+    /// <param name="dietaId">Solo los inscritos en esta dieta, si se indica.</param>
+    /// <param name="pagina">Número de página, desde 1.</param>
+    /// <param name="tamano">Cantidad de pacientes por página.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Los pacientes de la página y el total de los que cumplen los filtros.</returns>
+    Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+        Guid? salaId,
+        Guid? dietaId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default);
 }

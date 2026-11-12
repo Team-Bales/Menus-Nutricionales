@@ -1,3 +1,4 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -5,11 +6,16 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Platos.ActualizarPlato;
 
-/// <summary>Reclasifica el plato en nombre del actor.</summary>
+/// <summary>
+/// Reclasifica el plato en nombre del actor e invalida la disponibilidad calórica de todas las dietas (informe,
+/// «Consultas recurrentes»; #101): cambiar el grupo o el nivel calórico la cambia.
+/// </summary>
 internal sealed class ActualizarPlatoHandler(
     IPlatoRepository platos,
+    IDietaRepository dietas,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<ActualizarPlatoCommand, Unidad>
+    IActorActual actor,
+    ICache cache) : IHandler<ActualizarPlatoCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el plato no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">Si el actor no es quien describió el plato (RS-02).</exception>
@@ -26,6 +32,8 @@ internal sealed class ActualizarPlatoHandler(
             solicitud.NivelCaloricoId);
 
         await unidadDeTrabajo.CommitAsync(ct);
+
+        await CacheDeDisponibilidadCalorica.InvalidarTodasAsync(dietas, cache, ct);
 
         return Unidad.Valor;
     }

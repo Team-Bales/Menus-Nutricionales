@@ -1,6 +1,9 @@
+using Menus.Application.Catalogo;
+using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
+using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +16,7 @@ public sealed class DependencyInjectionTests
 {
     private const string Key = "clave-de-prueba-con-mas-de-32-bytes-1234567890";
 
-    private static IConfiguration CreateConfiguration(string? jwtKey = Key, string? mongo = null)
+    private static IConfiguration CreateConfiguration(string? jwtKey = Key, string? mongo = null, string? redis = null)
     {
         var valores = new Dictionary<string, string?>
         {
@@ -26,6 +29,11 @@ public sealed class DependencyInjectionTests
         if (mongo is not null)
         {
             valores["ConnectionStrings:Mongo"] = mongo;
+        }
+
+        if (redis is not null)
+        {
+            valores["ConnectionStrings:Redis"] = redis;
         }
 
         return new ConfigurationBuilder()
@@ -91,5 +99,60 @@ public sealed class DependencyInjectionTests
 
         Assert.Throws<InvalidOperationException>(
             () => scope.ServiceProvider.GetRequiredService<IFichaNutricionalStore>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConMongo_LosCasosDeUsoMantienenLasFichasEnMongo()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(mongo: "mongodb://localhost:27017/menus_prueba"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<FichasNutricionalesEnMongo>(scope.ServiceProvider.GetRequiredService<IFichasNutricionales>());
+        Assert.IsType<FichaNutricionalStore>(scope.ServiceProvider.GetRequiredService<IDesgloseDeIngredientes>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_SinMongo_LosCasosDeUsoNoTienenFichasQueMantener()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<SinFichasNutricionales>(scope.ServiceProvider.GetRequiredService<IFichasNutricionales>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConRedis_RegistraRedisCache()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(redis: "localhost:6379"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<RedisCache>(scope.ServiceProvider.GetRequiredService<ICache>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_SinRedis_RegistraCacheNula()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<CacheNula>(scope.ServiceProvider.GetRequiredService<ICache>());
     }
 }

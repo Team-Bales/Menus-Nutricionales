@@ -1,11 +1,15 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 
 namespace Menus.Application.Catalogo.Dietas.QuitarGrupoDieta;
 
-/// <summary>Quita el grupo de la cobertura de la dieta, o no hace nada si no la cubre (idempotente).</summary>
-internal sealed class QuitarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWork unidadDeTrabajo)
+/// <summary>
+/// Quita el grupo de la cobertura de la dieta, o no hace nada si no la cubre (idempotente). Invalida su
+/// disponibilidad calórica (informe, «Consultas recurrentes»; #101).
+/// </summary>
+internal sealed class QuitarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWork unidadDeTrabajo, ICache cache)
     : IHandler<QuitarGrupoDietaCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si la dieta no existe.</exception>
@@ -19,6 +23,7 @@ internal sealed class QuitarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWo
         {
             dieta.QuitarGrupo(solicitud.GrupoNutricionalId);
             await unidadDeTrabajo.CommitAsync(ct);
+            await CacheDeDisponibilidadCalorica.InvalidarAsync(cache, solicitud.DietaId, ct);
         }
 
         return Unidad.Valor;

@@ -5,13 +5,17 @@ using Menus.Domain.Excepciones;
 
 namespace Menus.Application.Catalogo.Platos.AgregarIngrediente;
 
-/// <summary>Agrega el ingrediente en nombre del actor, que tiene que ser quien describió el plato.</summary>
+/// <summary>
+/// Agrega el ingrediente en nombre del actor, que tiene que ser quien describió el plato, y después lo agrega al
+/// desglose de la ficha del plato (R8-06).
+/// </summary>
 internal sealed class AgregarIngredienteHandler(
     IItemAlimentarioRepository items,
     IAlimentoRepository alimentos,
     IPlatoRepository platos,
     IUnitOfWork unidadDeTrabajo,
-    IActorActual actor) : IHandler<AgregarIngredienteCommand, Unidad>
+    IActorActual actor,
+    IFichasNutricionales fichas) : IHandler<AgregarIngredienteCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si el plato no existe.</exception>
     /// <exception cref="ReglaDeNegocioException">
@@ -25,10 +29,11 @@ internal sealed class AgregarIngredienteHandler(
             ?? throw new NoEncontradoException("plato", solicitud.PlatoId);
 
         ComposicionDelPlato.ExigirDescriptor(plato, nutricionistaId);
-        await ComposicionDelPlato.ExigirAlimentosAsync([solicitud.AlimentoId], alimentos, items, ct);
+        var alimento = (await ComposicionDelPlato.ExigirAlimentosAsync([solicitud.AlimentoId], alimentos, items, ct))[0];
 
-        plato.AgregarIngrediente(solicitud.AlimentoId, solicitud.Cantidad);
+        plato.AgregarIngrediente(alimento.Id, solicitud.Cantidad);
         await unidadDeTrabajo.CommitAsync(ct);
+        await fichas.AgregarIngredienteAsync(plato.Id, alimento);
 
         return Unidad.Valor;
     }

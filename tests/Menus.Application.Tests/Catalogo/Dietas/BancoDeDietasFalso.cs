@@ -24,6 +24,12 @@ internal sealed class BancoDeDietasFalso
 
     public List<Menu> Menus { get; } = [];
 
+    /// <summary>Grupos que excluye cada restricción alimentaria (#101: <see cref="DietasFalsas.GetGruposProhibidosAsync"/>).</summary>
+    public Dictionary<Guid, List<Guid>> GruposExcluidosPorRestriccion { get; } = [];
+
+    /// <summary>Nivel calórico de cada ítem del banco (#101: <see cref="MenusFalsos.ContarItemsFinalesPorNivelCaloricoAsync"/>).</summary>
+    public Dictionary<Guid, Guid> NivelesDeItems { get; } = [];
+
     public UnidadDeTrabajoFalsaDeDietas UnidadDeTrabajo { get; } = new();
 
     public DietasFalsas DietasRepo => new(this);
@@ -31,6 +37,21 @@ internal sealed class BancoDeDietasFalso
     public PacientesFalsos PacientesRepo => new(this);
 
     public MenusFalsos MenusRepo => new(this);
+
+    /// <summary>Registra que una restricción alimentaria excluye un grupo nutricional.</summary>
+    public void ExcluirGrupo(Guid restriccionAlimentariaId, Guid grupoNutricionalId)
+    {
+        if (!GruposExcluidosPorRestriccion.TryGetValue(restriccionAlimentariaId, out var grupos))
+        {
+            grupos = [];
+            GruposExcluidosPorRestriccion[restriccionAlimentariaId] = grupos;
+        }
+
+        grupos.Add(grupoNutricionalId);
+    }
+
+    /// <summary>Registra el nivel calórico de un ítem del banco, para contarlo en los menús finales.</summary>
+    public void RegistrarNivelDeItem(Guid itemId, Guid nivelCaloricoId) => NivelesDeItems[itemId] = nivelCaloricoId;
 
     /// <summary>Agrega una dieta con un grupo requerido, para que ya cumpla RK-07.</summary>
     public Dieta Agregar(string nombre, Guid? programa = null, Guid? grupoRequerido = null)
@@ -95,6 +116,27 @@ internal sealed class DietasFalsas(BancoDeDietasFalso banco) : IDietaRepository
         IReadOnlyList<Dieta> enPagina = [.. filtradas.Skip((pagina - 1) * tamano).Take(tamano)];
         return Task.FromResult((enPagina, filtradas.Count));
     }
+
+    public Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Dieta>>([.. banco.Dietas.Where(d => ids.Contains(d.Id))]);
+
+    public Task<IReadOnlyList<Guid>> GetGruposProhibidosAsync(Guid dietaId, CancellationToken cancellationToken = default)
+    {
+        var dieta = banco.Dietas.Find(d => d.Id == dietaId);
+        if (dieta is null)
+        {
+            return Task.FromResult<IReadOnlyList<Guid>>([]);
+        }
+
+        var restringidos = dieta.GruposNutricionales
+            .Where(g => g.Tipo == TipoCobertura.Restringido)
+            .Select(g => g.GrupoNutricionalId);
+
+        var excluidos = dieta.Restricciones
+            .SelectMany(r => banco.GruposExcluidosPorRestriccion.GetValueOrDefault(r.RestriccionAlimentariaId, []));
+
+        return Task.FromResult<IReadOnlyList<Guid>>([.. restringidos.Union(excluidos)]);
+    }
 }
 
 internal sealed class PacientesFalsos(BancoDeDietasFalso banco) : IPacienteRepository
@@ -118,6 +160,23 @@ internal sealed class PacientesFalsos(BancoDeDietasFalso banco) : IPacienteRepos
 
     public Task<IReadOnlyList<Paciente>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Paciente>>([.. banco.Pacientes.Where(p => p.Dietas.Any(d => d.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Paciente> Pacientes, int Total)> BuscarAsync(
+        Guid? salaId,
+        Guid? dietaId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Pacientes
+            .Where(p => salaId is null || p.SalaId == salaId)
+            .Where(p => dietaId is null || p.Dietas.Any(d => d.DietaId == dietaId))
+            .OrderBy(p => p.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        IReadOnlyList<Paciente> enPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enPagina, filtrados.Count));
+    }
 }
 
 internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
@@ -150,6 +209,17 @@ internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
 
     public Task<IReadOnlyList<Menu>> GetPendientesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.DietaId == dietaId && m.EsPendiente)]);
+
+    public Task<IReadOnlyDictionary<Guid, int>> ContarItemsFinalesPorNivelCaloricoAsync(Guid dietaId, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyDictionary<Guid, int> conteo = banco.Menus
+            .Where(m => m.DietaId == dietaId && m.EsFinal)
+            .SelectMany(m => m.Items)
+            .Select(i => banco.NivelesDeItems[i.ItemId])
+            .GroupBy(nivelId => nivelId)
+            .ToDictionary(g => g.Key, g => g.Count());
+        return Task.FromResult(conteo);
+    }
 }
 
 internal sealed class UnidadDeTrabajoFalsaDeDietas : IUnitOfWork

@@ -1,7 +1,10 @@
+using Menus.Application.Catalogo;
+using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
+using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Persistence.Repositories;
@@ -11,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace Menus.Infrastructure;
 
@@ -35,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IPacienteRepository, PacienteRepository>();
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
+        services.AddScoped<IValoracionRepository, ValoracionRepository>();
         services.AddScoped<IItemAlimentarioRepository, ItemAlimentarioRepository>();
         services.AddScoped<IAlimentoRepository, AlimentoRepository>();
         services.AddScoped<IPlatoRepository, PlatoRepository>();
@@ -74,6 +79,30 @@ public static class DependencyInjection
             // Baja coordinada de alimentos y platos (RM-09): solo tiene sentido si hay ficha que borrar.
             services.AddScoped<IFichaNutricionalStore, FichaNutricionalStore>();
             services.AddScoped<BajaCoordinadaDeItems>();
+
+            // Lo que los casos de uso del catálogo mantienen de la ficha, después de confirmar (RM-09, R8-06).
+            services.AddScoped<IDesgloseDeIngredientes, FichaNutricionalStore>();
+            services.AddScoped<IFichasNutricionales, FichasNutricionalesEnMongo>();
+        }
+        else
+        {
+            // Sin MongoDB no hay fichas: los casos de uso siguen funcionando, sin nada que mantener.
+            services.AddScoped<IFichasNutricionales, SinFichasNutricionales>();
+        }
+
+        // Redis (caché de disponibilidad calórica y valoraciones recientes, ADR-005), solo si hay cadena de
+        // conexión: sin ella, las dos consultas se calculan siempre contra PostgreSQL (CacheNula).
+        var cadenaRedis = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(cadenaRedis))
+        {
+            var opcionesRedis = ConfigurationOptions.Parse(cadenaRedis);
+            opcionesRedis.AbortOnConnectFail = false;
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(opcionesRedis));
+            services.AddSingleton<ICache, RedisCache>();
+        }
+        else
+        {
+            services.AddSingleton<ICache, CacheNula>();
         }
 
         return services;

@@ -123,6 +123,25 @@ public sealed class ComposicionDePlatosTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ContarIngredientesAsync_cuenta_los_de_cada_plato_pedido_en_una_consulta()
+    {
+        var arroz = await _s.AlimentoConAsync();
+        var leche = await _s.AlimentoConAsync();
+        var azucar = await _s.AlimentoConAsync();
+        var conTres = await _s.PlatoConAsync(null, null, arroz, leche, azucar);
+        var conUno = await _s.PlatoConAsync(null, null, arroz);
+        var noPedido = await _s.PlatoConAsync(null, null, leche, azucar);
+
+        await using var ctx = _fixture.CrearContexto();
+        var cantidades = await new PlatoRepository(ctx).ContarIngredientesAsync([conTres, conUno, Guid.NewGuid()]);
+
+        Assert.Equal(2, cantidades.Count);
+        Assert.Equal(3, cantidades[conTres]);
+        Assert.Equal(1, cantidades[conUno]);
+        Assert.False(cantidades.ContainsKey(noPedido));
+    }
+
+    [Fact]
     public async Task BuscarAsync_de_platos_filtra_por_grupo_y_por_tipo_de_preparacion()
     {
         var alimento = await _s.AlimentoConAsync();

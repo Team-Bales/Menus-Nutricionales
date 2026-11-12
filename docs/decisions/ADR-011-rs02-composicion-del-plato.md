@@ -1,7 +1,7 @@
 # ADR-011: RS-02 también alcanza la composición del plato
 
-**Estado:** Propuesto  
-**Fecha:** 2026-11-07 (PR #231, a pedido de la revisión)
+**Estado:** Aceptado  
+**Fecha:** 2026-11-07 (PR #231, a pedido de la revisión; aceptado al aprobarse el PR)
 
 ## Contexto
 

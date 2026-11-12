@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.IntegrationTests.Datos;
 using Menus.Infrastructure.IntegrationTests.Fixtures;
@@ -49,6 +50,21 @@ public sealed class ItemAlimentarioRepositoryTests : IAsyncLifetime
 
         Assert.True(await new ItemAlimentarioRepository(ctx).ExisteNombreAsync(buscado));
         Assert.False(await new ItemAlimentarioRepository(ctx).ExisteNombreAsync("Avena integral"));
+    }
+
+    [Fact]
+    public async Task GetByIdsAsync_trae_alimentos_y_platos_sin_rastrear_e_ignora_los_que_no_existen()
+    {
+        var avena = await _s.AlimentoConAsync(nombre: "Avena");
+        await _s.AlimentoConAsync(nombre: "Arroz");
+        var plato = await _s.PlatoConAsync(null, null, avena);
+
+        await using var ctx = _fixture.CrearContexto();
+        var items = await new ItemAlimentarioRepository(ctx).GetByIdsAsync([avena, plato, Guid.NewGuid()]);
+
+        Assert.Equal(new[] { avena, plato }.Order(), items.Select(i => i.Id).Order());
+        Assert.Contains(items, i => i is Plato);
+        Assert.Empty(ctx.ChangeTracker.Entries());
     }
 
     [Fact]

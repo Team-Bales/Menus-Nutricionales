@@ -75,6 +75,9 @@ internal sealed class ItemsFalsos(BancoFalso banco) : IItemAlimentarioRepository
     public Task<bool> FiguraEnAlgunMenuAsync(Guid itemId, CancellationToken cancellationToken = default)
         => Task.FromResult(banco.EnMenus.Contains(itemId));
 
+    public Task<IReadOnlyList<ItemAlimentario>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<ItemAlimentario>>([.. banco.Items.Where(i => ids.Contains(i.Id))]);
+
     public Task<IReadOnlyDictionary<Guid, int>> ContarPorNivelCaloricoAsync(
         IReadOnlyCollection<Guid> gruposProhibidos,
         CancellationToken cancellationToken = default)

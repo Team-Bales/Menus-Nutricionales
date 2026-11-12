@@ -32,6 +32,15 @@ public sealed class ItemAlimentarioRepository : Repository<ItemAlimentario, Guid
         => Context.MenuItems.AnyAsync(mi => mi.ItemId == itemId, cancellationToken);
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<ItemAlimentario>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+        => await Context.ItemsAlimentarios
+            .AsNoTracking()
+            .Where(i => ids.Contains(i.Id))
+            .ToListAsync(cancellationToken);
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyDictionary<Guid, int>> ContarPorNivelCaloricoAsync(
         IReadOnlyCollection<Guid> gruposProhibidos,
         CancellationToken cancellationToken = default)

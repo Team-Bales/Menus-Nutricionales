@@ -198,6 +198,32 @@ internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
     public Task<IReadOnlyList<Menu>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.DietaId == dietaId)]);
 
+    public Task<(IReadOnlyList<Menu> Menus, int Total)> BuscarAsync(
+        Guid dietaId,
+        EstadoDeMenu? estado,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Menus
+            .Where(m => m.DietaId == dietaId)
+            .Where(m => estado switch
+            {
+                EstadoDeMenu.Pendiente => m.EsPendiente,
+                EstadoDeMenu.Final => m.EsFinal,
+                EstadoDeMenu.Rechazado => m.EsRechazado,
+                _ => true,
+            })
+            .ToList();
+
+        IReadOnlyList<Menu> enLaPagina = [.. filtrados
+            .OrderByDescending(m => m.FechaCreacion)
+            .ThenBy(m => m.Id)
+            .Skip((pagina - 1) * tamano)
+            .Take(tamano)];
+        return Task.FromResult((enLaPagina, filtrados.Count));
+    }
+
     public Task<IReadOnlyList<Menu>> GetByNutricionistaCreadorAsync(Guid nutricionistaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.NutricionistaCreadorId == nutricionistaId)]);
 

@@ -28,6 +28,24 @@ public interface IMenuRepository : IRepository<Menu, Guid>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Menu>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Busca por página los menús de una dieta, los haya creado quien los haya creado, del más reciente al más
+    /// antiguo, con filtro opcional por estado (#80).
+    /// </summary>
+    /// <remarks>Trae cada menú con su dictamen, sin ítems, parametrización ni asignaciones.</remarks>
+    /// <param name="dietaId">Identificador de la dieta.</param>
+    /// <param name="estado">Si no es nulo, solo los menús en ese estado.</param>
+    /// <param name="pagina">Número de página, desde 1.</param>
+    /// <param name="tamano">Tamaño de página.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>La página pedida y el total de menús que cumplen el filtro, sin paginar.</returns>
+    Task<(IReadOnlyList<Menu> Menus, int Total)> BuscarAsync(
+        Guid dietaId,
+        EstadoDeMenu? estado,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Devuelve los menús que creó un nutricionista (relación <c>Crea</c>).</summary>
     /// <param name="nutricionistaId">Identificador del nutricionista creador.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

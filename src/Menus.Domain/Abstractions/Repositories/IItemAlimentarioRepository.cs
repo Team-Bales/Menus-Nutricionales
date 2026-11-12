@@ -33,6 +33,14 @@ public interface IItemAlimentarioRepository : IRepository<ItemAlimentario, Guid>
     Task<bool> FiguraEnAlgunMenuAsync(Guid itemId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Devuelve, sin rastrear, los alimentos y platos de esos identificadores que existen.
+    /// </summary>
+    /// <remarks>Lo usa el detalle del menú (#80), para mostrar el nombre de sus ítems.</remarks>
+    /// <param name="ids">Identificadores buscados.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    Task<IReadOnlyList<ItemAlimentario>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Cuenta los ítems del banco por nivel calórico, excluyendo los que pertenecen a alguno de los grupos
     /// prohibidos (informe, «R1 — Disponibilidad calórica», #101).
     /// </summary>

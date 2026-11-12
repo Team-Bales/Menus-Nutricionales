@@ -18,14 +18,16 @@ internal static class ComposicionDelPlato
     /// <param name="alimentos">Repositorio de alimentos.</param>
     /// <param name="items">Repositorio de ítems, para distinguir un plato de un identificador inexistente.</param>
     /// <param name="ct">Token de cancelación.</param>
+    /// <returns>Los alimentos, para quien necesite sus datos (por ejemplo, el nombre para la ficha).</returns>
     /// <exception cref="ReglaDeNegocioException">Si alguno no existe (RR-02) o es un plato (RS-12).</exception>
-    public static async Task ExigirAlimentosAsync(
+    public static async Task<IReadOnlyList<Alimento>> ExigirAlimentosAsync(
         IReadOnlyCollection<Guid> ids,
         IAlimentoRepository alimentos,
         IItemAlimentarioRepository items,
         CancellationToken ct)
     {
-        var encontrados = (await alimentos.GetByIdsAsync(ids, ct)).Select(a => a.Id).ToHashSet();
+        var existentes = await alimentos.GetByIdsAsync(ids, ct);
+        var encontrados = existentes.Select(a => a.Id).ToHashSet();
 
         foreach (var id in ids.Where(id => !encontrados.Contains(id)))
         {
@@ -38,6 +40,8 @@ internal static class ComposicionDelPlato
 
             throw new ReglaDeNegocioException($"No existe el alimento {id} que se quiere usar como ingrediente.", "RR-02");
         }
+
+        return existentes;
     }
 
     /// <summary>

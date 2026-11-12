@@ -16,6 +16,7 @@ public sealed class LoginValidator : AbstractValidator<LoginCommand>
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("La contraseña es obligatoria.")
+            .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.")
             .MaximumLength(100).WithMessage("La contraseña no puede exceder 100 caracteres.")
             .Must(ValidarLongitudBytesBcrypt).WithMessage("La contraseña no puede exceder 72 bytes (límite de BCrypt).");
     }

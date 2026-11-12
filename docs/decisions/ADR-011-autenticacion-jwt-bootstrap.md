@@ -35,7 +35,7 @@ Se implementa lo descrito arriba siguiendo al pie el diseño aprobado en el issu
 2. **Infrastructure** (`Menus.Infrastructure`):
    - `BCryptPasswordHasher` implementa `IPasswordHasher` (BCrypt.Net-Next, workFactor 12, `VerifyDummy` con `Lazy<string>`).
    - `JwtTokenService` implementa `ITokenEmitter` (método `Emitir` que devuelve `TokenEmitido`). Mantiene `GenerateToken` legacy `[Obsolete]`.
-   - `JwtClaimTypes` añade `EntidadId = "entidad_id"`. `JwtRoles.IsValido` reenvía a `RolesUsuario.EsValido`.
+   - `JwtClaimTypes` añade `EntidadId = "entidad_id"`. `JwtClaimTypes.IsValid` reenvía a `RolesUsuario.EsValido`.
    - `UsuarioRepository`, `UsuarioConfiguration` (tabla, CHECKs, índices).
    - Migración `AddUsuariosTable`.
    - DI registra `IUsuarioRepository`, `IPasswordHasher`, `ITokenEmitter`.

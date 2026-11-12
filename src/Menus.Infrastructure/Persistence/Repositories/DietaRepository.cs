@@ -1,5 +1,6 @@
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Menus.Infrastructure.Persistence.Repositories;
@@ -63,4 +64,24 @@ public sealed class DietaRepository : Repository<Dieta, Guid>, IDietaRepository
             .AsNoTracking()
             .Where(d => ids.Contains(d.Id))
             .ToListAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<Guid>> GetGruposProhibidosAsync(Guid dietaId, CancellationToken cancellationToken = default)
+    {
+        var restringidos = Context.DietasGruposNutricionales
+            .AsNoTracking()
+            .Where(g => g.DietaId == dietaId && g.Tipo == TipoCobertura.Restringido)
+            .Select(g => g.GrupoNutricionalId);
+
+        var excluidosPorRestriccion = Context.DietasRestricciones
+            .AsNoTracking()
+            .Where(r => r.DietaId == dietaId)
+            .Join(
+                Context.RestriccionesGruposExcluidos.AsNoTracking(),
+                r => r.RestriccionAlimentariaId,
+                e => e.RestriccionAlimentariaId,
+                (r, e) => e.GrupoNutricionalId);
+
+        return await restringidos.Union(excluidosPorRestriccion).ToListAsync(cancellationToken);
+    }
 }

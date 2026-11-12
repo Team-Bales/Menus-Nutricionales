@@ -43,4 +43,12 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
     /// <param name="ids">Identificadores buscados.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Devuelve los grupos nutricionales prohibidos para la dieta: los que cubre como <c>Restringido</c> y los
+    /// que excluye cualquiera de sus restricciones alimentarias (informe, «R1 — Disponibilidad calórica», #101).
+    /// </summary>
+    /// <param name="dietaId">Identificador de la dieta.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    Task<IReadOnlyList<Guid>> GetGruposProhibidosAsync(Guid dietaId, CancellationToken cancellationToken = default);
 }

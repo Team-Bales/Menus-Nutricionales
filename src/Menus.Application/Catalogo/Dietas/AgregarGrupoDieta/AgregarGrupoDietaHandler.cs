@@ -1,11 +1,15 @@
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 
 namespace Menus.Application.Catalogo.Dietas.AgregarGrupoDieta;
 
-/// <summary>Agrega el grupo a la cobertura de la dieta, o no hace nada si ya la cubre (idempotente).</summary>
-internal sealed class AgregarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWork unidadDeTrabajo)
+/// <summary>
+/// Agrega el grupo a la cobertura de la dieta, o no hace nada si ya la cubre (idempotente). Invalida su
+/// disponibilidad calórica (informe, «Consultas recurrentes»; #101).
+/// </summary>
+internal sealed class AgregarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWork unidadDeTrabajo, ICache cache)
     : IHandler<AgregarGrupoDietaCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si la dieta no existe.</exception>
@@ -20,6 +24,7 @@ internal sealed class AgregarGrupoDietaHandler(IDietaRepository dietas, IUnitOfW
         {
             dieta.AgregarGrupo(solicitud.GrupoNutricionalId, solicitud.Tipo);
             await unidadDeTrabajo.CommitAsync(ct);
+            await CacheDeDisponibilidadCalorica.InvalidarAsync(cache, solicitud.DietaId, ct);
         }
 
         return Unidad.Valor;

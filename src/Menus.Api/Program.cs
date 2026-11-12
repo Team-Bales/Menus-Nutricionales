@@ -1,5 +1,6 @@
 using Menus.Api.Actor;
 using Menus.Api.Auth;
+using Menus.Api.Cors;
 using Menus.Api.Errores;
 using Menus.Application;
 using Menus.Application.Comun;
@@ -20,11 +21,16 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IActorActual, ActorDesdeCabecera>();
 builder.Services.AddScoped<IIdentidadAutenticada, IdentidadAutenticada>();
 builder.Services.AddHostedService<AuthBootstrapService>();
+builder.Services.AddCorsDelCliente(builder.Configuration);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Antes que todo lo demás: el navegador tiene que poder leer también los errores (404, 409, 422), y la comprobación
+// previa (OPTIONS) no puede llegar a la redirección a HTTPS.
+app.UseCors(CorsDelCliente.Politica);
 
 app.UseExceptionHandler();
 

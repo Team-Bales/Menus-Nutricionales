@@ -58,6 +58,10 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         dieta.AgregarGrupo(GrupoCereales, TipoCobertura.Requerido);
         _ = dieta.Id; // suppress unused warning
 
+        // Autorizar nutricionistas para la dieta
+        nutricionistaEjecutor.AutorizarDieta(dieta.Id);
+        nutricionistaOtro.AutorizarDieta(dieta.Id);
+
         // Crear menú (aprobado)
         var menu = new Menu(
             Guid.NewGuid(),
@@ -72,6 +76,7 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
 
         // Aprobar el menú (para que sea final y se pueda asignar)
         var nutricionistaJefe = new Nutricionista(Guid.NewGuid(), "Jefe Nutricion", EspecialidadClinica);
+        nutricionistaJefe.AutorizarDieta(dieta.Id);
         nutricionistaJefe.DesignarJefe();
         menu.Aprobar(nutricionistaJefe.Id, DateTime.UtcNow.AddDays(-1));
 

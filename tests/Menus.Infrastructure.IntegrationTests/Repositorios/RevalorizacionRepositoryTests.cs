@@ -83,9 +83,6 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         nutricionistaJefe.DesignarJefe();
         menu.Aprobar(nutricionistaJefe.Id, DateTime.UtcNow.AddDays(-1));
 
-        // Asignar menú al paciente
-        menu.AsignarPaciente(_pacienteId);
-
         // Crear valoración revisada
         var valoracionRevisada = new ValoracionNutricional(
             Guid.NewGuid(),
@@ -96,15 +93,12 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
             DateTime.UtcNow.AddDays(-1));
         _valoracionRevisadaId = valoracionRevisada.Id;
 
-        // Primera transacción: persistir entidades base
+        // Primera transacción: persistir entidades base (incluyendo PacienteDieta explícita)
+        var pacienteDieta = new PacienteDieta(_pacienteId, dieta.Id);
+        paciente.InscribirDieta(dieta.Id); // También en el dominio para consistencia
         await using (var ctx = _fixture.CrearContexto())
         {
-            ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada);
-            // Asegurar que las inscripciones de paciente-dieta se persistan
-            foreach (var pd in paciente.Dietas)
-            {
-                ctx.Add(pd);
-            }
+            ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada, pacienteDieta);
             await ctx.SaveChangesAsync();
         }
 

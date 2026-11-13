@@ -95,7 +95,6 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
 
         // Primera transacción: persistir entidades base (incluyendo PacienteDieta explícita)
         var pacienteDieta = new PacienteDieta(_pacienteId, dieta.Id);
-        paciente.InscribirDieta(dieta.Id); // También en el dominio para consistencia
         await using (var ctx = _fixture.CrearContexto())
         {
             ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada, pacienteDieta);

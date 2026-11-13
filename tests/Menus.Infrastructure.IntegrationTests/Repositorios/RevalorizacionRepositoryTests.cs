@@ -96,14 +96,25 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
             DateTime.UtcNow.AddDays(-1));
         _valoracionRevisadaId = valoracionRevisada.Id;
 
-        await using var ctx = _fixture.CrearContexto();
-        ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada);
-        // Asegurar que las inscripciones de paciente-dieta se persistan (EF Core a veces no las trackea desde la colección)
-        foreach (var pd in paciente.Dietas)
+        // Primera transacción: persistir entidades base
+        await using (var ctx = _fixture.CrearContexto())
         {
-            ctx.Add(pd);
+            ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada);
+            // Asegurar que las inscripciones de paciente-dieta se persistan
+            foreach (var pd in paciente.Dietas)
+            {
+                ctx.Add(pd);
+            }
+            await ctx.SaveChangesAsync();
         }
-        await ctx.SaveChangesAsync();
+
+        // Segunda transacción: asignar menú al paciente (RS-04 lo comprueba en BD)
+        await using (var ctx2 = _fixture.CrearContexto())
+        {
+            var menuDb = await ctx2.Set<Menu>().FindAsync(_menuId);
+            menuDb!.AsignarPaciente(_pacienteId);
+            await ctx2.SaveChangesAsync();
+        }
     }
 
     public Task DisposeAsync() => Task.CompletedTask;

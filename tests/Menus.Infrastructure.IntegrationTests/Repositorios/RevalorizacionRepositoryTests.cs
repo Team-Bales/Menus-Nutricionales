@@ -98,6 +98,11 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
 
         await using var ctx = _fixture.CrearContexto();
         ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada);
+        // Asegurar que las inscripciones de paciente-dieta se persistan (EF Core a veces no las trackea desde la colección)
+        foreach (var pd in paciente.Dietas)
+        {
+            ctx.Add(pd);
+        }
         await ctx.SaveChangesAsync();
     }
 

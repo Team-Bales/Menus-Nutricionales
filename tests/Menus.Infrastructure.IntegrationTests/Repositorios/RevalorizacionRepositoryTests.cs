@@ -80,32 +80,35 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         nutricionistaJefe.DesignarJefe();
         menu.Aprobar(nutricionistaJefe.Id, DateTime.UtcNow.AddDays(-1));
 
-        // Crear valoración revisada
-        var valoracionRevisada = new ValoracionNutricional(
-            Guid.NewGuid(),
-            _menuId,
-            _pacienteId,
-            _nutricionistaEjecutorId,
-            ResultadoNutricional.Normal.Id,
-            DateTime.UtcNow.AddDays(-1));
-        _valoracionRevisadaId = valoracionRevisada.Id;
-
-        // Primera transacción: persistir entidades base + asignación (requerida por FK valoraciones_nutricionales)
+        // Primera transacción: entidades base + PacienteDieta (sin valoración ni asignación)
         var pacienteDieta = new PacienteDieta(_pacienteId, dieta.Id);
-        menu.AsignarPaciente(_pacienteId); // Crea la Asignacion en el menú
         await using (var ctx = _fixture.CrearContexto())
         {
-            ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada, pacienteDieta);
+            ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, pacienteDieta);
             await ctx.SaveChangesAsync();
         }
 
-        // Segunda transacción: (ya no se necesita asignar, pero mantenemos estructura por si se añade más)
+        // Segunda transacción: asignar menú al paciente (RS-04 requiere PacienteDieta ya committeado)
         await using (var ctx2 = _fixture.CrearContexto())
         {
-            // Solo verificamos que la asignación existe
             var menuDb = await ctx2.Set<Menu>().FindAsync(_menuId);
-            Assert.NotNull(menuDb);
-            Assert.Contains(menuDb.Asignaciones, a => a.PacienteId == _pacienteId);
+            menuDb!.AsignarPaciente(_pacienteId);
+            await ctx2.SaveChangesAsync();
+        }
+
+        // Tercera transacción: crear valoración revisada (FK a asignación menu-paciente)
+        await using (var ctx3 = _fixture.CrearContexto())
+        {
+            var valoracionRevisada = new ValoracionNutricional(
+                Guid.NewGuid(),
+                _menuId,
+                _pacienteId,
+                _nutricionistaEjecutorId,
+                ResultadoNutricional.Normal.Id,
+                DateTime.UtcNow.AddDays(-1));
+            _valoracionRevisadaId = valoracionRevisada.Id;
+            ctx3.Add(valoracionRevisada);
+            await ctx3.SaveChangesAsync();
         }
     }
 

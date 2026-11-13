@@ -117,11 +117,26 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetPendientesByNutricionistaAsync_devuelve_solo_las_del_nutricionista_sin_valoracion_generada_ordenadas_por_fecha()
     {
+        // Crear valoración generada real para r4 (ya atendida)
+        var valoracionGeneradaR4 = new ValoracionNutricional(
+            Guid.NewGuid(),
+            _menuId,
+            _pacienteId,
+            _nutricionistaEjecutorId,
+            ResultadoNutricional.Buena.Id,
+            DateTime.UtcNow.AddDays(-1));
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            ctx.Add(valoracionGeneradaR4);
+            await ctx.SaveChangesAsync();
+        }
+
         var r1 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-2), _nutricionistaEjecutorId, _valoracionRevisadaId);
         var r2 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-1), _nutricionistaEjecutorId, _valoracionRevisadaId);
         var r3 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, _nutricionistaOtroId, _valoracionRevisadaId);
         var r4 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-3), _nutricionistaEjecutorId, _valoracionRevisadaId);
-        r4.RegistrarValoracionGenerada(Guid.NewGuid()); // Ya atendida
+        r4.RegistrarValoracionGenerada(valoracionGeneradaR4.Id); // Ya atendida con valoración real
 
         await using (var ctx = _fixture.CrearContexto())
         {
@@ -142,9 +157,48 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetByPacienteAsync_devuelve_las_revalorizaciones_que_revisan_sus_valoraciones()
     {
+        // Crear segunda valoración revisada para otro paciente
+        var dietaOtra = new Dieta(Guid.NewGuid(), "Dieta Otra", ProgramaPediatria);
+        dietaOtra.AgregarGrupo(GrupoCereales, TipoCobertura.Requerido);
+        var pacienteOtro = new Paciente(Guid.NewGuid(), "Paciente Otro", 25, _salaId);
+        var pacienteOtraDieta = new PacienteDieta(pacienteOtro.Id, dietaOtra.Id);
+        var menuOtro = new Menu(
+            Guid.NewGuid(),
+            dietaOtra.Id,
+            _nutricionistaEjecutorId,
+            DateTime.UtcNow.AddDays(-2),
+            1,
+            false,
+            [(TipoPlatoFuerte, 1.0m)],
+            [GrupoCereales]);
+        var nutricionistaJefeOtro = new Nutricionista(Guid.NewGuid(), "Jefe Otro", EspecialidadClinica);
+        nutricionistaJefeOtro.AutorizarDieta(dietaOtra.Id);
+        nutricionistaJefeOtro.DesignarJefe();
+        menuOtro.Aprobar(nutricionistaJefeOtro.Id, DateTime.UtcNow.AddDays(-1));
+        var valoracionRevisadaOtra = new ValoracionNutricional(
+            Guid.NewGuid(),
+            menuOtro.Id,
+            pacienteOtro.Id,
+            _nutricionistaEjecutorId,
+            ResultadoNutricional.Normal.Id,
+            DateTime.UtcNow.AddDays(-1));
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            ctx.AddRange(dietaOtra, pacienteOtro, pacienteOtraDieta, menuOtro, nutricionistaJefeOtro, valoracionRevisadaOtra);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (var ctx2 = _fixture.CrearContexto())
+        {
+            var menuOtroDb = await ctx2.Set<Menu>().FindAsync(menuOtro.Id);
+            menuOtroDb!.AsignarPaciente(pacienteOtro.Id);
+            await ctx2.SaveChangesAsync();
+        }
+
         var r1 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-2), _nutricionistaEjecutorId, _valoracionRevisadaId);
         var r2 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-1), _nutricionistaOtroId, _valoracionRevisadaId);
-        var r3 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, _nutricionistaEjecutorId, Guid.NewGuid()); // De otro paciente
+        var r3 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, _nutricionistaEjecutorId, valoracionRevisadaOtra.Id); // De otro paciente
 
         await using (var ctx = _fixture.CrearContexto())
         {
@@ -152,8 +206,8 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
             await ctx.SaveChangesAsync();
         }
 
-        await using var ctx2 = _fixture.CrearContexto();
-        var porPaciente = await new RevalorizacionRepository(ctx2).GetByPacienteAsync(_pacienteId);
+        await using var ctx3 = _fixture.CrearContexto();
+        var porPaciente = await new RevalorizacionRepository(ctx3).GetByPacienteAsync(_pacienteId);
 
         Assert.Equal(2, porPaciente.Count);
         Assert.Contains(porPaciente, r => r.Id == r1.Id);

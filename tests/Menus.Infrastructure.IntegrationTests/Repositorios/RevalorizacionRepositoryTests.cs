@@ -58,6 +58,9 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         dieta.AgregarGrupo(GrupoCereales, TipoCobertura.Requerido);
         _ = dieta.Id; // suppress unused warning
 
+        // Inscribir paciente en la dieta
+        paciente.InscribirDieta(dieta.Id);
+
         // Autorizar nutricionistas para la dieta
         nutricionistaEjecutor.AutorizarDieta(dieta.Id);
         nutricionistaOtro.AutorizarDieta(dieta.Id);

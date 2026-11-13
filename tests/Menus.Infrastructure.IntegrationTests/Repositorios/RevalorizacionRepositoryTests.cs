@@ -174,9 +174,6 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         var nutricionistaJefeOtro = new Nutricionista(Guid.NewGuid(), "Jefe Otro", EspecialidadClinica);
         nutricionistaJefeOtro.AutorizarDieta(dietaOtra.Id);
         nutricionistaJefeOtro.DesignarJefe();
-        // Autorizar también al nutricionista creador del menú (RS-03)
-        var nutricionistaCreadorOtro = new Nutricionista(_nutricionistaEjecutorId, "Nutricionista Ejecutor", EspecialidadClinica);
-        nutricionistaCreadorOtro.AutorizarDieta(dietaOtra.Id);
         menuOtro.Aprobar(nutricionistaJefeOtro.Id, DateTime.UtcNow.AddDays(-1));
         // Asignar menú al otro paciente (requerido por FK valoraciones_nutricionales)
         menuOtro.AsignarPaciente(pacienteOtro.Id);
@@ -191,6 +188,9 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         await using (var ctx = _fixture.CrearContexto())
         {
             ctx.AddRange(dietaOtra, pacienteOtro, pacienteOtraDieta, menuOtro, nutricionistaJefeOtro, valoracionRevisadaOtra);
+            // Autorizar al nutricionista creador del menú para la dieta otra (RS-03)
+            var autorizacion = new NutricionistasDieta(_nutricionistaEjecutorId, dietaOtra.Id);
+            ctx.Add(autorizacion);
             await ctx.SaveChangesAsync();
         }
 

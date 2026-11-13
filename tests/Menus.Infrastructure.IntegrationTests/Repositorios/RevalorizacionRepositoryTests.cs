@@ -175,6 +175,8 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         nutricionistaJefeOtro.AutorizarDieta(dietaOtra.Id);
         nutricionistaJefeOtro.DesignarJefe();
         menuOtro.Aprobar(nutricionistaJefeOtro.Id, DateTime.UtcNow.AddDays(-1));
+        // Asignar menú al otro paciente (requerido por FK valoraciones_nutricionales)
+        menuOtro.AsignarPaciente(pacienteOtro.Id);
         var valoracionRevisadaOtra = new ValoracionNutricional(
             Guid.NewGuid(),
             menuOtro.Id,
@@ -187,13 +189,6 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
         {
             ctx.AddRange(dietaOtra, pacienteOtro, pacienteOtraDieta, menuOtro, nutricionistaJefeOtro, valoracionRevisadaOtra);
             await ctx.SaveChangesAsync();
-        }
-
-        await using (var ctx2 = _fixture.CrearContexto())
-        {
-            var menuOtroDb = await ctx2.Set<Menu>().FindAsync(menuOtro.Id);
-            menuOtroDb!.AsignarPaciente(pacienteOtro.Id);
-            await ctx2.SaveChangesAsync();
         }
 
         var r1 = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow.AddHours(-2), _nutricionistaEjecutorId, _valoracionRevisadaId);

@@ -16,7 +16,7 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
 {
     private static readonly Guid EspecialidadClinica = Guid.Parse("44444444-0000-0000-0000-000000000001");
-    private static readonly Guid EspecialidadOtra = Guid.Parse("55555555-0000-0000-0000-000000000001");
+    private static readonly Guid EspecialidadOtra = Guid.Parse("44444444-0000-0000-0000-000000000002");
     private static readonly Guid GrupoCereales = Guid.Parse("11111111-0000-0000-0000-000000000001");
     private static readonly Guid TipoPlatoFuerte = Guid.Parse("55555555-0000-0000-0000-000000000002");
     private static readonly Guid NivelMedio = Guid.Parse("66666666-0000-0000-0000-000000000002");

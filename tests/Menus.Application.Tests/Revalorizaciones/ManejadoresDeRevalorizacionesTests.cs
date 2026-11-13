@@ -79,7 +79,7 @@ public sealed class ManejadoresDeRevalorizacionesTests
         var creado = await handler.HandleAsync(comando, CancellationToken.None);
 
         // Se crea la nueva valoración
-        var nuevaValoracion = Assert.Single(_banco.Valoraciones.Where(v => v.Id != RevalorizacionesFalso.ValoracionRevisada));
+        var nuevaValoracion = Assert.Single(_banco.Valoraciones, v => v.Id != RevalorizacionesFalso.ValoracionRevisada);
         Assert.Equal(creado.Id, nuevaValoracion.Id);
         Assert.Equal(RevalorizacionesFalso.Menu, nuevaValoracion.MenuId); // RS-10: misma asignación
         Assert.Equal(RevalorizacionesFalso.Paciente, nuevaValoracion.PacienteId); // RS-10: misma asignación

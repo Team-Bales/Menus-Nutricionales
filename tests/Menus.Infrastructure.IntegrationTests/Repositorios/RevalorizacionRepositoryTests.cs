@@ -90,20 +90,22 @@ public sealed class RevalorizacionRepositoryTests : IAsyncLifetime
             DateTime.UtcNow.AddDays(-1));
         _valoracionRevisadaId = valoracionRevisada.Id;
 
-        // Primera transacción: persistir entidades base (incluyendo PacienteDieta explícita)
+        // Primera transacción: persistir entidades base + asignación (requerida por FK valoraciones_nutricionales)
         var pacienteDieta = new PacienteDieta(_pacienteId, dieta.Id);
+        menu.AsignarPaciente(_pacienteId); // Crea la Asignacion en el menú
         await using (var ctx = _fixture.CrearContexto())
         {
             ctx.AddRange(sala, nutricionistaEjecutor, nutricionistaOtro, nutricionistaJefe, paciente, dieta, menu, valoracionRevisada, pacienteDieta);
             await ctx.SaveChangesAsync();
         }
 
-        // Segunda transacción: asignar menú al paciente (RS-04 lo comprueba en BD)
+        // Segunda transacción: (ya no se necesita asignar, pero mantenemos estructura por si se añade más)
         await using (var ctx2 = _fixture.CrearContexto())
         {
+            // Solo verificamos que la asignación existe
             var menuDb = await ctx2.Set<Menu>().FindAsync(_menuId);
-            menuDb!.AsignarPaciente(_pacienteId);
-            await ctx2.SaveChangesAsync();
+            Assert.NotNull(menuDb);
+            Assert.Contains(menuDb.Asignaciones, a => a.PacienteId == _pacienteId);
         }
     }
 

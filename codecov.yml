@@ -1,0 +1,6 @@
+coverage:
+  ignore:
+    # Program.cs de Menus.Client arranca el host real de Blazor WebAssembly (RunAsync) y depende del runtime
+    # del navegador (interop JS); no se puede ejercitar desde xUnit sin un navegador real, a diferencia del
+    # Program.cs de Menus.Api, que sí se cubre con WebApplicationFactory en las pruebas de integración.
+    - "src/Menus.Client/Program.cs"

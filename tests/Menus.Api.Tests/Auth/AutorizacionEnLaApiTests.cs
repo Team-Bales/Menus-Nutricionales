@@ -95,7 +95,7 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/revalorizaciones"] = Autenticado,
         ["GET api/revalorizaciones/{id:guid}"] = Autenticado,
         ["POST api/revalorizaciones/{id:guid}/resultado"] = SoloNutricionista,
-        ["GET api/revalorizaciones/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes"] = SoloNutricionista,
+        ["GET api/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes"] = SoloNutricionista,
     };
 
     private static async Task<HttpResponseMessage> PedirAsync(

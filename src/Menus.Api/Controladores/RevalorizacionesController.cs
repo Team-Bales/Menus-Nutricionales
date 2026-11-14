@@ -62,14 +62,14 @@ public sealed class RevalorizacionesController(IDespachador despachador) : Contr
     {
         var comando = new RegistrarResultadoRevalorizacionCommand(id, cuerpo.ResultadoNutricionalId);
         var creado = await despachador.EnviarAsync(comando, ct);
-        return CreatedAtAction(nameof(ValoracionesController.Obtener), new { id = creado.Id }, creado);
+        return CreatedAtAction(nameof(ValoracionesController.Obtener), "Valoraciones", new { id = creado.Id }, creado);
     }
 
     /// <summary>Lista las revalorizaciones pendientes de un nutricionista (sin valoración generada).</summary>
     /// <response code="200">Lista de revalorizaciones pendientes, ordenadas por fecha de solicitud.</response>
     /// <response code="404">El nutricionista no existe.</response>
     [Authorize(Policy = Politicas.SoloNutricionista)]
-    [HttpGet("nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes")]
+    [HttpGet("~/api/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes")]
     [ProducesResponseType<IReadOnlyList<RevalorizacionDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<IReadOnlyList<RevalorizacionDto>> ListarPendientes(Guid nutricionistaId, CancellationToken ct)

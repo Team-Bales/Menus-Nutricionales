@@ -1,6 +1,7 @@
 using System.Reflection;
 using FluentValidation;
 using Menus.Application.Comun;
+using Menus.Application.GeneracionDeMenus;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Application;
@@ -39,6 +40,10 @@ public static class DependencyInjection
         }
 
         services.AddValidatorsFromAssembly(ensamblado, ServiceLifetime.Scoped, includeInternalTypes: true);
+
+        // Estrategia de generación automática de menús (patrón Strategy, #98; checklist #96). Se registra aparte
+        // porque no implementa IHandler<,>: el caso de uso la recibe inyectada, no la crea.
+        services.AddScoped<IEstrategiaGeneracionMenu, EstrategiaGeneracionAleatoria>();
 
         return services;
     }

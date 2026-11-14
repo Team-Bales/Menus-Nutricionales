@@ -81,6 +81,7 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/pacientes/{id:guid}/dietas"] = NutricionistaOAdmin,
         ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
 
+        ["POST api/dietas/{dietaId:guid}/menus/generacion-automatica"] = SoloNutricionista,
         ["GET api/menus"] = SoloNutricionista,
         ["GET api/menus/{id:guid}"] = SoloNutricionista,
         ["POST api/menus/{id:guid}/validar"] = SoloNutricionista,
@@ -90,6 +91,11 @@ public sealed class AutorizacionEnLaApiTests
         ["GET api/valoraciones/{id:guid}"] = SoloNutricionista,
         ["GET api/dietas/{dietaId:guid}/valoraciones"] = SoloNutricionista,
         ["GET api/pacientes/{pacienteId:guid}/valoraciones"] = SoloNutricionista,
+
+        ["POST api/revalorizaciones"] = Autenticado,
+        ["GET api/revalorizaciones/{id:guid}"] = Autenticado,
+        ["POST api/revalorizaciones/{id:guid}/resultado"] = SoloNutricionista,
+        ["GET api/revalorizaciones/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes"] = SoloNutricionista,
     };
 
     private static async Task<HttpResponseMessage> PedirAsync(

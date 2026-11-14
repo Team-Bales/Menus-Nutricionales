@@ -3,6 +3,7 @@ using Menus.Application.Catalogo.Alimentos.EliminarAlimento;
 using Menus.Application.Catalogo.Alimentos.ListarAlimentos;
 using Menus.Application.Catalogo.Alimentos.ObtenerAlimento;
 using Menus.Application.Catalogo.Alimentos.RegistrarAlimento;
+using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
 using Menus.Application.Comun;
 using Menus.Application.Tests.Catalogo.Dietas;
 using Menus.Application.Tests.Comun;
@@ -202,20 +203,14 @@ public sealed class ManejadoresDeAlimentosTests
     {
         var dieta1 = _dietas.Agregar("Dieta 1");
         var dieta2 = _dietas.Agregar("Dieta 2");
-        await _cache.GuardarAsync(
-            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta1.Id),
-            "x", TimeSpan.FromHours(1));
-        await _cache.GuardarAsync(
-            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta2.Id),
-            "x", TimeSpan.FromHours(1));
+        await _cache.GuardarAsync(CacheDeDisponibilidadCalorica.Clave(dieta1.Id), "x", TimeSpan.FromHours(1));
+        await _cache.GuardarAsync(CacheDeDisponibilidadCalorica.Clave(dieta2.Id), "x", TimeSpan.FromHours(1));
 
         await Registrar().HandleAsync(
             new RegistrarAlimentoCommand("Avena", BancoFalso.GrupoCereales, TipoPreparacion.Entrante.Id, NivelCalorico.Bajo.Id),
             CancellationToken.None);
 
-        Assert.Null(await _cache.ObtenerAsync<string>(
-            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta1.Id), CancellationToken.None));
-        Assert.Null(await _cache.ObtenerAsync<string>(
-            Menus.Application.Catalogo.Dietas.DisponibilidadCalorica.CacheDeDisponibilidadCalorica.Clave(dieta2.Id), CancellationToken.None));
+        Assert.Null(await _cache.ObtenerAsync<string>(CacheDeDisponibilidadCalorica.Clave(dieta1.Id), CancellationToken.None));
+        Assert.Null(await _cache.ObtenerAsync<string>(CacheDeDisponibilidadCalorica.Clave(dieta2.Id), CancellationToken.None));
     }
 }

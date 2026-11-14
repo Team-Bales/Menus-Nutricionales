@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IRepository<Sala, Guid>, SalaRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
         services.AddScoped<IValoracionRepository, ValoracionRepository>();
+        services.AddScoped<IRevalorizacionRepository, RevalorizacionRepository>();
         services.AddScoped<IItemAlimentarioRepository, ItemAlimentarioRepository>();
         services.AddScoped<IAlimentoRepository, AlimentoRepository>();
         services.AddScoped<IPlatoRepository, PlatoRepository>();
@@ -89,6 +90,16 @@ public static class DependencyInjection
             // Lo que los casos de uso del catálogo mantienen de la ficha, después de confirmar (RM-09, R8-06).
             services.AddScoped<IDesgloseDeIngredientes, FichaNutricionalStore>();
             services.AddScoped<IFichasNutricionales, FichasNutricionalesEnMongo>();
+
+            // Conciliación RM-10: opciones, conciliador y servicio hospedado.
+            services.Configure<ConciliacionOptions>(configuration.GetSection(ConciliacionOptions.SectionName));
+            services.AddScoped<IFichasConciliador, FichasConciliador>();
+
+            var conciliacionOptions = configuration.GetSection(ConciliacionOptions.SectionName).Get<ConciliacionOptions>() ?? new ConciliacionOptions();
+            if (conciliacionOptions.Habilitada)
+            {
+                services.AddHostedService<ConciliacionHostedService>();
+            }
         }
         else
         {

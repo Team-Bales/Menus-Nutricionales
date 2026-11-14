@@ -43,3 +43,4 @@ alternativas consideradas y las consecuencias que implica.
 | [011](ADR-011-autenticacion-jwt-bootstrap.md) | Autenticación — JWT, login, registro y bootstrap de Admin | Aceptado |
 | [012](ADR-012-rs02-composicion-del-plato.md) | RS-02 también alcanza la composición del plato | Aceptado |
 | [013](ADR-013-cliente-catalogo-actor-header-nginx.md) | Cliente Blazor del catálogo: contrato `ICatalogoApi`, cabecera `X-Actor-Id` provisional y proxy Nginx | Aceptado |
+| [014](ADR-014-strategy-generacion-automatica-menu.md) | Patrón Strategy para la selección de ítems en la generación automática de menús | Aceptado |

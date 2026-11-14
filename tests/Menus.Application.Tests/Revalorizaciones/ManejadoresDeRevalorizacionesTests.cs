@@ -106,6 +106,23 @@ public sealed class ManejadoresDeRevalorizacionesTests
     }
 
     [Fact]
+    public async Task RegistrarResultado_con_valoracion_revisada_inexistente_lanza_NoEncontrado()
+    {
+        _banco.Sembrar();
+        var revalorizacion = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, RevalorizacionesFalso.NutricionistaEjecutor, Guid.NewGuid()); // Valoración revisada inexistente
+        _banco.Revalorizaciones.Add(revalorizacion);
+
+        var comando = new RegistrarResultadoRevalorizacionCommand(revalorizacion.Id, ResultadoNutricional.Buena.Id);
+        var handler = new RegistrarResultadoRevalorizacionHandler(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.UnidadDeTrabajo, new ActorFalso(RevalorizacionesFalso.NutricionistaEjecutor), new CacheFalso());
+
+        var ex = await Assert.ThrowsAsync<NoEncontradoException>(() => handler.HandleAsync(comando, CancellationToken.None));
+        Assert.Equal("valoración", ex.Recurso);
+        Assert.DoesNotContain(_banco.Valoraciones, v => v.Id != RevalorizacionesFalso.ValoracionRevisada); // No se crea valoración nueva
+        Assert.Null(revalorizacion.ValoracionGeneradaId);
+        Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
     public async Task RegistrarResultado_por_otro_nutricionista_lanza_RK11_sin_crear_valoracion()
     {
         _banco.Sembrar();

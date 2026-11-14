@@ -30,10 +30,10 @@ public sealed class Nutricionista : Entity<Guid>
     }
 
     /// <summary>Nombre del nutricionista.</summary>
-    public string Nombre { get; }
+    public string Nombre { get; private set; }
 
     /// <summary>FK → Especialidad.</summary>
-    public Guid EspecialidadId { get; }
+    public Guid EspecialidadId { get; private set; }
 
     /// <summary>
     /// Si el nutricionista ocupa el cargo de jefe de nutrición (RD-18). Empieza en falso.
@@ -48,6 +48,17 @@ public sealed class Nutricionista : Entity<Guid>
     /// Dietas para las que este nutricionista está autorizado a crear o validar menús (solo lectura).
     /// </summary>
     public IReadOnlyCollection<NutricionistasDieta> DietasAutorizadas => _dietasAutorizadas.AsReadOnly();
+
+    /// <summary>Actualiza el nombre y la especialidad del nutricionista (#71).</summary>
+    /// <param name="nombre">Nuevo nombre.</param>
+    /// <param name="especialidadId">Nueva especialidad.</param>
+    /// <exception cref="DatoInvalidoException">Si <paramref name="nombre"/> es nulo o solo espacios.</exception>
+    public void Actualizar(string nombre, Guid especialidadId)
+    {
+        DatoInvalidoException.SiVacio(nombre);
+        Nombre = nombre;
+        EspecialidadId = especialidadId;
+    }
 
     /// <summary>
     /// Autoriza al nutricionista para la dieta indicada.

@@ -57,6 +57,25 @@ public sealed class CatalogoApiTests
     }
 
     [Fact]
+    public async Task ListarProgramas_y_especialidades_piden_sus_rutas_de_nomencladores()
+    {
+        var rutas = new List<string>();
+        var handler = new HandlerFalso(req =>
+        {
+            rutas.Add(req.RequestUri!.AbsolutePath);
+            return Json(req, "[]");
+        });
+        var api = Crear(handler);
+
+        await api.ListarProgramasAsync();
+        await api.ListarEspecialidadesAsync();
+
+        Assert.Equal(
+            ["/api/nomencladores/programas-atencion", "/api/nomencladores/especialidades"],
+            rutas);
+    }
+
+    [Fact]
     public async Task CrearNomencladorAsync_envia_post_a_la_ruta_del_tipo_elegido()
     {
         var creado = Guid.NewGuid();
@@ -99,6 +118,23 @@ public sealed class CatalogoApiTests
     }
 
     [Fact]
+    public async Task ObtenerDietaAsync_pide_la_ruta_y_deserializa_las_relaciones()
+    {
+        var dietaId = Guid.NewGuid();
+        var grupoId = Guid.NewGuid();
+        var restriccionId = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req,
+            $$"""{"id":"{{dietaId}}","nombre":"Basal","programaAtencionId":"{{Guid.Empty}}","grupos":[{"grupoNutricionalId":"{{grupoId}}","tipo":1}],"restricciones":["{{restriccionId}}"]}"""));
+
+        var dieta = await Crear(handler).ObtenerDietaAsync(dietaId);
+
+        Assert.Equal($"/api/dietas/{dietaId}", handler.Recibida!.RequestUri!.AbsolutePath);
+        Assert.Equal("Basal", dieta.Nombre);
+        Assert.Equal(new GrupoCubierto(grupoId, TipoCobertura.Restringido), Assert.Single(dieta.Grupos));
+        Assert.Equal([restriccionId], dieta.Restricciones);
+    }
+
+    [Fact]
     public async Task AgregarGrupoDietaAsync_envia_el_tipo_de_cobertura_a_la_ruta_de_la_dieta()
     {
         var dietaId = Guid.NewGuid();
@@ -133,6 +169,28 @@ public sealed class CatalogoApiTests
 
         Assert.Equal(HttpMethod.Post, handler.Recibida!.Method);
         Assert.Equal($"/api/dietas/{dietaId}/restricciones", handler.Recibida.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task Quitar_relaciones_de_dieta_envia_delete_a_las_rutas_correctas()
+    {
+        var rutas = new List<string>();
+        var handler = new HandlerFalso(req =>
+        {
+            rutas.Add(req.RequestUri!.AbsolutePath);
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        });
+        var dietaId = Guid.NewGuid();
+        var grupoId = Guid.NewGuid();
+        var restriccionId = Guid.NewGuid();
+        var api = Crear(handler);
+
+        await api.QuitarGrupoDietaAsync(dietaId, grupoId);
+        await api.QuitarRestriccionDietaAsync(dietaId, restriccionId);
+
+        Assert.Equal(
+            [$"/api/dietas/{dietaId}/grupos/{grupoId}", $"/api/dietas/{dietaId}/restricciones/{restriccionId}"],
+            rutas);
     }
 
     [Fact]

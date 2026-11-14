@@ -5,8 +5,7 @@ namespace Menus.Application.Comun;
 /// </summary>
 /// <remarks>
 /// Los manejadores lo toman de aquí y nunca de un campo del comando, que el cliente podría inventar. La implementación
-/// vive en <c>Menus.Api</c>: hasta la autenticación (#74) lee la cabecera <c>X-Actor-Id</c>; después, el token. Los
-/// manejadores no cambian.
+/// vive en <c>Menus.Api</c> y lo lee del token (#74): el <c>entidad_id</c> de un usuario con rol <c>Nutricionista</c>.
 /// </remarks>
 public interface IActorActual
 {

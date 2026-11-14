@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.GeneracionDeMenus.GenerarMenuAutomaticamente;
 using Menus.Application.GestionDeMenus;
@@ -6,6 +7,7 @@ using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
 using Menus.Application.GestionDeMenus.ValidarMenu;
 using Menus.Domain.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -16,10 +18,11 @@ namespace Menus.Api.Controladores;
 /// global.
 /// </summary>
 /// <remarks>
-/// Los roles de cada acción los pone el #74; mientras tanto, generar ya exige que el nutricionista esté autorizado
-/// para la dieta (RF-06) y dictaminar que el actor sea jefe de nutrición autorizado para la dieta (RS-03).
+/// Todas las acciones son para un nutricionista (#74). Además, generar exige que esté autorizado para la dieta (RF-06)
+/// y dictaminar, que sea jefe de nutrición autorizado para la dieta (RS-03); eso lo comprueban los casos de uso.
 /// </remarks>
 [ApiController]
+[Authorize(Policy = Politicas.SoloNutricionista)]
 [Route("api/menus")]
 [Produces("application/json")]
 public sealed class MenusController(IDespachador despachador) : ControllerBase

@@ -1,5 +1,6 @@
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
+using System.Net.Http.Headers;
+using Menus.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Menus.Api.Tests.Cors;
@@ -8,33 +9,36 @@ namespace Menus.Api.Tests.Cors;
 /// Pruebas de la política CORS con la API entera en memoria (<see cref="WebApplicationFactory{TEntryPoint}"/>): el
 /// registro y el lugar de <c>UseCors</c> en <c>Program</c>, y los orígenes de <c>appsettings.Development.json</c>.
 /// </summary>
-/// <remarks>Ninguna petición llega a la base: la cadena de conexión solo tiene que existir.</remarks>
+/// <remarks>
+/// Ninguna petición llega a la base: la cadena de conexión solo tiene que existir. Desde el #74, las peticiones llevan
+/// un token, como las del cliente.
+/// </remarks>
 public sealed class CorsEnLaApiTests
 {
     private const string OrigenDelCliente = "http://localhost:5134";
     private const string CatalogoCerrado = "/api/nomencladores/tipos-preparacion";
 
-    private static WebApplicationFactory<Program> Api(string entorno) => new WebApplicationFactory<Program>()
-        .WithWebHostBuilder(builder => builder
-            .UseEnvironment(entorno)
-            .UseSetting("ConnectionStrings:Postgres", "Host=localhost;Database=sin_uso")
-            .UseSetting("Jwt:Key", "clave-de-prueba-de-al-menos-treinta-y-dos-bytes")
-            .UseSetting("Jwt:Issuer", "pruebas")
-            .UseSetting("Jwt:Audience", "pruebas"));
+    private static WebApplicationFactory<Program> Api(string entorno) => ApiEnMemoria.Crear(entorno);
 
     private static async Task<HttpResponseMessage> PedirAsync(
         WebApplicationFactory<Program> api,
         HttpMethod metodo,
         string ruta,
         string origen,
-        bool comprobacionPrevia = false)
+        bool comprobacionPrevia = false,
+        bool conToken = true)
     {
         using var peticion = new HttpRequestMessage(metodo, ruta);
         peticion.Headers.Add("Origin", origen);
         if (comprobacionPrevia)
         {
+            // La comprobación previa del navegador nunca lleva el token: solo anuncia que lo va a mandar.
             peticion.Headers.Add("Access-Control-Request-Method", "POST");
-            peticion.Headers.Add("Access-Control-Request-Headers", "x-actor-id,content-type");
+            peticion.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
+        }
+        else if (conToken)
+        {
+            peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Nutricionista));
         }
 
         return await api.CreateClient().SendAsync(peticion);
@@ -44,7 +48,7 @@ public sealed class CorsEnLaApiTests
         => respuesta.Headers.TryGetValues("Access-Control-Allow-Origin", out var valores) ? valores.Single() : null;
 
     [Fact]
-    public async Task En_Development_la_comprobacion_previa_admite_al_cliente_con_X_Actor_Id()
+    public async Task En_Development_la_comprobacion_previa_admite_al_cliente_con_el_token()
     {
         await using var api = Api("Development");
 
@@ -52,7 +56,7 @@ public sealed class CorsEnLaApiTests
 
         Assert.Equal(HttpStatusCode.NoContent, respuesta.StatusCode);
         Assert.Equal(OrigenDelCliente, OrigenAdmitido(respuesta));
-        Assert.Contains("x-actor-id", respuesta.Headers.GetValues("Access-Control-Allow-Headers").Single());
+        Assert.Contains("authorization", respuesta.Headers.GetValues("Access-Control-Allow-Headers").Single());
     }
 
     [Fact]
@@ -74,6 +78,17 @@ public sealed class CorsEnLaApiTests
         using var respuesta = await PedirAsync(api, HttpMethod.Get, "/api/alimentos?page=0", OrigenDelCliente);
 
         Assert.Equal(HttpStatusCode.UnprocessableEntity, respuesta.StatusCode);
+        Assert.Equal(OrigenDelCliente, OrigenAdmitido(respuesta));
+    }
+
+    [Fact]
+    public async Task En_Development_un_401_sin_token_tambien_lleva_el_origen_del_cliente()
+    {
+        await using var api = Api("Development");
+
+        using var respuesta = await PedirAsync(api, HttpMethod.Get, CatalogoCerrado, OrigenDelCliente, conToken: false);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
         Assert.Equal(OrigenDelCliente, OrigenAdmitido(respuesta));
     }
 

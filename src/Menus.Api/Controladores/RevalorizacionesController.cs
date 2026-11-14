@@ -1,7 +1,9 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Revalorizaciones.ListarPendientes;
 using Menus.Application.Revalorizaciones.RegistrarResultadoRevalorizacion;
 using Menus.Application.Revalorizaciones.SolicitarRevalorizacion;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -11,6 +13,11 @@ namespace Menus.Api.Controladores;
 /// solo ese nutricionista registra el resultado (una nueva valoración generada, RS-10)
 /// y se listan las pendientes por nutricionista.
 /// </summary>
+/// <remarks>
+/// Registrar el resultado y listar las pendientes son para un nutricionista (#74). Solicitar y consultar piden solo un
+/// usuario autenticado: que solicite únicamente el paciente de la valoración revisada (RS-09) exige comprobarlo en el
+/// caso de uso, y queda para un issue aparte.
+/// </remarks>
 [ApiController]
 [Route("api/revalorizaciones")]
 [Produces("application/json")]
@@ -42,13 +49,12 @@ public sealed class RevalorizacionesController(IDespachador despachador) : Contr
 
     /// <summary>Registra el resultado de una revalorización: la valoración nutricional generada por el nutricionista ejecutor.</summary>
     /// <response code="201">Resultado registrado; <c>Location</c> apunta a la valoración generada.</response>
-    /// <response code="401">Falta la cabecera <c>X-Actor-Id</c>.</response>
     /// <response code="404">La revalorización no existe.</response>
     /// <response code="409">El actor no es el nutricionista ejecutante (RK-11) o la revalorización ya tiene resultado.</response>
     /// <response code="422">El resultado nutricional no es una categoría válida (RR-17).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPost("{id:guid}/resultado")]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -62,6 +68,7 @@ public sealed class RevalorizacionesController(IDespachador despachador) : Contr
     /// <summary>Lista las revalorizaciones pendientes de un nutricionista (sin valoración generada).</summary>
     /// <response code="200">Lista de revalorizaciones pendientes, ordenadas por fecha de solicitud.</response>
     /// <response code="404">El nutricionista no existe.</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpGet("nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes")]
     [ProducesResponseType<IReadOnlyList<RevalorizacionDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

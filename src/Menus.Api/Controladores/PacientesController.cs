@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Pacientes;
 using Menus.Application.Pacientes.ActualizarPaciente;
@@ -5,6 +6,7 @@ using Menus.Application.Pacientes.DesinscribirDieta;
 using Menus.Application.Pacientes.InscribirDieta;
 using Menus.Application.Pacientes.ListarPacientes;
 using Menus.Application.Pacientes.ObtenerPaciente;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -15,9 +17,10 @@ namespace Menus.Api.Controladores;
 /// </summary>
 /// <remarks>
 /// No hay <c>POST /api/pacientes</c>: el alta se hace con la cuenta del paciente, en
-/// <c>/api/auth/registro/paciente</c> (#70). Los roles de cada acción los pone el #74.
+/// <c>/api/auth/registro/paciente</c> (#70). Todas las acciones son para un nutricionista o el administrador (#74).
 /// </remarks>
 [ApiController]
+[Authorize(Policy = Politicas.NutricionistaOAdmin)]
 [Route("api/pacientes")]
 [Produces("application/json")]
 public sealed class PacientesController(IDespachador despachador) : ControllerBase

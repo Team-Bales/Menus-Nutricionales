@@ -375,7 +375,7 @@ public sealed class FichasConciliadorTests : IAsyncLifetime
             Tipo = "compuesto",
             Ingredientes =
             [
-                new IngredienteFicha { AlimentoId = FichaNutricionalEsquema.Identificador(alimento), Nombre = "Nombre Correcto" },
+                new IngredienteFicha { AlimentoId = FichaNutricionalEsquema.Identificador(alimento), Nombre = "Alimento Valido" },
                 new IngredienteFicha { AlimentoId = "no-es-un-guid-valido", Nombre = "Nombre Invalido" }
             ],
             ActualizadoEn = DateTime.UtcNow.AddDays(-1)

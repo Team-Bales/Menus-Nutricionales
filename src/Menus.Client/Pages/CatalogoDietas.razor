@@ -1,0 +1,129 @@
+@page "/catalogo/dietas"
+@inject ICatalogoApi Api
+@inject NavigationManager Navegacion
+
+<PageTitle>Dietas</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Dietas</h1>
+        <p class="text-muted mb-0">Planes de alimentación definidos por programa de atención.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-5">
+                <label class="form-label" for="programa">Programa de atención</label>
+                <select id="programa" class="form-select" @bind="_programa">
+                    <option value="">Todos</option>
+                    @foreach (var programa in _programas)
+                    {
+                        <option value="@programa.Id">@programa.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-3 d-flex gap-2">
+                <button class="btn btn-outline-primary" @onclick="AplicarFiltros">Filtrar</button>
+                <button class="btn btn-outline-secondary" @onclick="LimpiarFiltros">Limpiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_cargando)
+{
+    <p class="text-muted">Cargando dietas…</p>
+}
+else if (_pagina is not null)
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Nombre</th><th>Programa de atención</th><th>N.º grupos</th><th>N.º restricciones</th><th class="text-end">Acciones</th></tr></thead>
+            <tbody>
+                @if (_pagina.Data.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">No hay dietas con esos filtros.</td></tr>
+                }
+                @foreach (var dieta in _pagina.Data)
+                {
+                    <tr>
+                        <td>@dieta.Nombre</td>
+                        <td>@NombrePrograma(dieta.ProgramaAtencionId)</td>
+                        <td>@dieta.CantidadDeGrupos</td>
+                        <td>@dieta.CantidadDeRestricciones</td>
+                        <td class="text-end"><button class="btn btn-sm btn-outline-primary" @onclick="(() => VerDetalle(dieta.Id))">Ver detalle</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">@_pagina.Total resultado(s)</span>
+        <div class="btn-group" role="group" aria-label="Paginación de dietas">
+            <button class="btn btn-outline-secondary" disabled="@(_pagina.Page == 1)" @onclick="PaginaAnterior">Anterior</button>
+            <button class="btn btn-outline-secondary" disabled="@(_pagina.Page * _pagina.Size >= _pagina.Total)" @onclick="PaginaSiguiente">Siguiente</button>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Nomenclador> _programas = [];
+    private Pagina<Dieta>? _pagina;
+    private Guid? _programa;
+    private bool _cargando = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _programas = await Api.ListarProgramasAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _cargando = false;
+            return;
+        }
+
+        await CargarPagina(1);
+    }
+
+    private async Task CargarPagina(int page)
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            _pagina = await Api.ListarDietasAsync(_programa, page, 10);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private Task AplicarFiltros() => CargarPagina(1);
+
+    private async Task LimpiarFiltros()
+    {
+        _programa = null;
+        await CargarPagina(1);
+    }
+
+    private Task PaginaAnterior() => CargarPagina(Math.Max(1, (_pagina?.Page ?? 2) - 1));
+    private Task PaginaSiguiente() => CargarPagina((_pagina?.Page ?? 0) + 1);
+    private void VerDetalle(Guid id) => Navegacion.NavigateTo($"/catalogo/dietas/{id}");
+    private string NombrePrograma(Guid id) => _programas.FirstOrDefault(p => p.Id == id)?.Nombre ?? "—";
+}

@@ -1,4 +1,6 @@
+using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
+using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -124,5 +126,30 @@ public sealed class RepositoryTests
         await context.SaveChangesAsync();
 
         Assert.Empty(await repository.ListAsync());
+    }
+
+    [Fact]
+    public async Task DietaRepository_ContarRelaciones_devuelve_los_conteos_de_cada_dieta_solicitada()
+    {
+        await using var context = CreateContext();
+        var primera = new Dieta(Guid.NewGuid(), "Dieta A", Guid.NewGuid());
+        primera.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
+        primera.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Restringido);
+        primera.AgregarRestriccion(Guid.NewGuid());
+
+        var segunda = new Dieta(Guid.NewGuid(), "Dieta B", Guid.NewGuid());
+        segunda.AgregarGrupo(Guid.NewGuid(), TipoCobertura.Requerido);
+
+        context.Dietas.AddRange(primera, segunda);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var repository = new DietaRepository(context);
+
+        var conteos = await repository.ContarRelacionesAsync([primera.Id, segunda.Id, Guid.NewGuid()]);
+
+        Assert.Equal(new ConteosDeDieta(2, 1), conteos[primera.Id]);
+        Assert.Equal(new ConteosDeDieta(1, 0), conteos[segunda.Id]);
+        Assert.Equal(new ConteosDeDieta(0, 0), conteos.Single(pair => pair.Key != primera.Id && pair.Key != segunda.Id).Value);
     }
 }

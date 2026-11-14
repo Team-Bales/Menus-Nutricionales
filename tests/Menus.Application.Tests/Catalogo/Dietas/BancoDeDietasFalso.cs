@@ -117,6 +117,17 @@ internal sealed class DietasFalsas(BancoDeDietasFalso banco) : IDietaRepository
         return Task.FromResult((enPagina, filtradas.Count));
     }
 
+    public Task<IReadOnlyDictionary<Guid, ConteosDeDieta>> ContarRelacionesAsync(
+        IReadOnlyCollection<Guid> dietaIds,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyDictionary<Guid, ConteosDeDieta>>(dietaIds.ToDictionary(
+            id => id,
+            id =>
+            {
+                var dieta = banco.Dietas.Single(d => d.Id == id);
+                return new ConteosDeDieta(dieta.GruposNutricionales.Count, dieta.Restricciones.Count);
+            }));
+
     public Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Dieta>>([.. banco.Dietas.Where(d => ids.Contains(d.Id))]);
 

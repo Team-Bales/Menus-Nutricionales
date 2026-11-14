@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!--
+            Sin esto, "Menus.Application.Tests" y "Menus.Infrastructure.IntegrationTests" (pero no los demás
+            proyectos de test, por una inconsistencia del colector) se reportan a sí mismos en el XML de
+            cobertura con 0% en todas sus líneas: cuentan como "código sin cubrir" en el diff de la PR aunque
+            sus pruebas pasen, porque la herramienta no mide "cobertura de los tests" sino del código que
+            ejecutan. Esto fuerza la exclusión para los 8 proyectos de test, de forma consistente.
+          -->
+          <Exclude>[*Tests*]*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

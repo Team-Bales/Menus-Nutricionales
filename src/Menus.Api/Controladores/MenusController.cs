@@ -1,4 +1,5 @@
 using Menus.Application.Comun;
+using Menus.Application.GeneracionDeMenus.GenerarMenuAutomaticamente;
 using Menus.Application.GestionDeMenus;
 using Menus.Application.GestionDeMenus.ListarMenus;
 using Menus.Application.GestionDeMenus.ObtenerMenu;
@@ -10,19 +11,52 @@ using Microsoft.AspNetCore.Mvc;
 namespace Menus.Api.Controladores;
 
 /// <summary>
-/// Menús: listado por dieta, detalle, dictamen y menú de reemplazo (#80). Cada acción arma el comando o la consulta y
-/// lo envía al despachador (ADR-010, §8); los errores los traduce el manejador global.
+/// Menús: generación automática (#98), listado por dieta, detalle, dictamen y menú de reemplazo (#80). Cada acción
+/// arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los traduce el manejador
+/// global.
 /// </summary>
 /// <remarks>
-/// La generación automática está en <c>POST /api/dietas/{dietaId}/menus/generacion-automatica</c> (#98). Los roles de
-/// cada acción los pone el #74; mientras tanto, el dictamen ya exige que el actor sea jefe de nutrición autorizado
-/// para la dieta (RS-03).
+/// Los roles de cada acción los pone el #74; mientras tanto, generar ya exige que el nutricionista esté autorizado
+/// para la dieta (RF-06) y dictaminar que el actor sea jefe de nutrición autorizado para la dieta (RS-03).
 /// </remarks>
 [ApiController]
 [Route("api/menus")]
 [Produces("application/json")]
 public sealed class MenusController(IDespachador despachador) : ControllerBase
 {
+    /// <summary>
+    /// Genera automáticamente un menú para la dieta, aplicando los parámetros de generación (informe, RF-10).
+    /// </summary>
+    /// <response code="201">Creado; <c>Location</c> apunta al menú.</response>
+    /// <response code="404">La dieta no existe, o el actor no es un nutricionista existente.</response>
+    /// <response code="409">
+    /// El nutricionista no está autorizado para la dieta (RF-06), o no hay ítems compatibles suficientes.
+    /// </response>
+    /// <response code="422">La entrada no es válida (por ejemplo, proporciones que no suman 1).</response>
+    [HttpPost("~/api/dietas/{dietaId:guid}/menus/generacion-automatica")]
+    [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> GenerarAutomaticamente(Guid dietaId, CuerpoDeGeneracionAutomatica cuerpo, CancellationToken ct)
+    {
+        // Sin Distribucion en el cuerpo, cuerpo.Distribucion llega null (Program.cs suprime el [Required]
+        // implícito para que el validador responda 422, no el binder): no desreferenciarlo aquí, para que sea
+        // GenerarMenuAutomaticamenteValidator quien lo rechace con 422 en vez de un 500 por NullReferenceException.
+        IReadOnlyList<(Guid TipoPreparacionId, decimal Proporcion)> distribucion = cuerpo.Distribucion is null
+            ? []
+            : [.. cuerpo.Distribucion.Select(p => (p.TipoPreparacionId, p.Proporcion))];
+
+        var comando = new GenerarMenuAutomaticamenteCommand(
+            dietaId,
+            cuerpo.CantidadTotalAlimentos,
+            distribucion,
+            cuerpo.GruposNutricionalesIds ?? []);
+
+        var creado = await despachador.EnviarAsync(comando, ct);
+        return Created($"/api/menus/{creado.Id}", creado);
+    }
+
     /// <summary>
     /// Lista por páginas los menús de una dieta, del más reciente al más antiguo, los haya creado cualquiera de los
     /// nutricionistas autorizados para ella.

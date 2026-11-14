@@ -3,6 +3,7 @@ using Menus.Application.Comun;
 using Menus.Application.Tests.Catalogo;
 using Menus.Application.Tests.Catalogo.Dietas;
 using Menus.Application.Tests.Comun;
+using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 
 namespace Menus.Application.Tests.Catalogo.Dietas.DisponibilidadCalorica;
@@ -123,9 +124,9 @@ public sealed class DisponibilidadCaloricaHandlerTests
         Assert.Equal(porNivel, porNivel with { });
     }
 
-    private Menus.Domain.Entidades.Menu CrearMenuPendiente(Guid dietaId, Guid creadorId)
+    private Menu CrearMenuPendiente(Guid dietaId, Guid creadorId)
     {
-        var menu = new Menus.Domain.Entidades.Menu(
+        var menu = new Menu(
             Guid.NewGuid(), dietaId, creadorId, DateTime.UtcNow.AddDays(-1), 1, true,
             [(TipoPreparacion.PlatoFuerte.Id, 1m)], [BancoDeDietasFalso.GrupoCereales]);
         _banco.Menus.Add(menu);

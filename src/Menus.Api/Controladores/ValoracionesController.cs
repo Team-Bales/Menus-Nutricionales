@@ -1,9 +1,11 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Valoraciones;
 using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Application.Valoraciones.ObtenerValoracion;
 using Menus.Application.Valoraciones.RegistrarValoracion;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -14,10 +16,12 @@ namespace Menus.Api.Controladores;
 /// traduce el manejador global.
 /// </summary>
 /// <remarks>
-/// No hay <c>PUT</c> ni <c>DELETE</c>: una valoración no cambia (R7-33) y no se borra. Los roles de cada acción
-/// (Nutricionista para crear y para listar por dieta; el propio paciente para listar las suyas) los pone el #74.
+/// No hay <c>PUT</c> ni <c>DELETE</c>: una valoración no cambia (R7-33) y no se borra. Todas las acciones son para un
+/// nutricionista (#74). Que el propio paciente liste las suyas queda para el panel del paciente (#88), que tiene que
+/// comprobar que sea él.
 /// </remarks>
 [ApiController]
+[Authorize(Policy = Politicas.SoloNutricionista)]
 [Route("api/valoraciones")]
 [Produces("application/json")]
 public sealed class ValoracionesController(IDespachador despachador) : ControllerBase

@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.GestionDeMenus;
 using Menus.Application.GestionDeMenus.ListarMenus;
@@ -5,6 +6,7 @@ using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
 using Menus.Application.GestionDeMenus.ValidarMenu;
 using Menus.Domain.Entidades;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -14,11 +16,12 @@ namespace Menus.Api.Controladores;
 /// lo envía al despachador (ADR-010, §8); los errores los traduce el manejador global.
 /// </summary>
 /// <remarks>
-/// La generación automática está en <c>POST /api/dietas/{dietaId}/menus/generacion-automatica</c> (#98). Los roles de
-/// cada acción los pone el #74; mientras tanto, el dictamen ya exige que el actor sea jefe de nutrición autorizado
-/// para la dieta (RS-03).
+/// La generación automática está en <c>POST /api/dietas/{dietaId}/menus/generacion-automatica</c> (#98). Todas las
+/// acciones son para un nutricionista (#74); además, el dictamen exige que sea jefe de nutrición autorizado para la
+/// dieta (RS-03), y eso lo comprueba el caso de uso.
 /// </remarks>
 [ApiController]
+[Authorize(Policy = Politicas.SoloNutricionista)]
 [Route("api/menus")]
 [Produces("application/json")]
 public sealed class MenusController(IDespachador despachador) : ControllerBase

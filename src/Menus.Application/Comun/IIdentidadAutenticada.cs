@@ -6,7 +6,7 @@ namespace Menus.Application.Comun;
 /// <remarks>
 /// Implementada en <c>Menus.Api</c> leyendo <c>sub</c>, <c>entidad_id</c> y <c>role</c> del token.
 /// No consulta ni enriquece con campos role-specific (especialidad, jefe, etc.).
-/// <see cref="IActorActual"/> y <see cref="ActorDesdeCabecera"/> no se tocan; #74 hará esa migración.
+/// <see cref="IActorActual"/> también sale del token desde el #74, y solo para el rol <c>Nutricionista</c>.
 /// </remarks>
 public interface IIdentidadAutenticada
 {

@@ -32,6 +32,42 @@ public sealed class NutricionistaTests
     }
 
     [Fact]
+    public void Actualizar_ValidArgs_CambiaNombreYEspecialidad()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        var nuevaEspecialidad = Guid.NewGuid();
+
+        nutricionista.Actualizar("Dra. Pérez Gómez", nuevaEspecialidad);
+
+        Assert.Equal("Dra. Pérez Gómez", nutricionista.Nombre);
+        Assert.Equal(nuevaEspecialidad, nutricionista.EspecialidadId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Actualizar_NombreVacio_LanzaDatoInvalidoException(string nombre)
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+
+        Assert.Throws<DatoInvalidoException>(() => nutricionista.Actualizar(nombre, _especialidadId));
+        Assert.Equal("Dra. Pérez", nutricionista.Nombre);
+    }
+
+    [Fact]
+    public void Actualizar_NoAfectaLasDietasAutorizadasNiElCargoDeJefe()
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);
+        nutricionista.AutorizarDieta(_dietaId1);
+        nutricionista.DesignarJefe();
+
+        nutricionista.Actualizar("Dra. Pérez Gómez", Guid.NewGuid());
+
+        Assert.Single(nutricionista.DietasAutorizadas, a => a.DietaId == _dietaId1);
+        Assert.True(nutricionista.EsJefe);
+    }
+
+    [Fact]
     public void AutorizarDieta_ValidArgs_AgregaYRetornaAutorizacion()
     {
         var nutricionista = new Nutricionista(Guid.NewGuid(), "Dra. Pérez", _especialidadId);

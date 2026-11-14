@@ -8,6 +8,60 @@ public sealed record Nomenclador(Guid Id, string Nombre);
 /// <summary>Resultado paginado que devuelve la API.</summary>
 public sealed record Pagina<T>(IReadOnlyList<T> Data, int Total, int Page, int Size);
 
+/// <summary>Dieta mostrada en un listado, con los conteos que requiere el catálogo.</summary>
+public sealed record Dieta(Guid Id, string Nombre, Guid ProgramaAtencionId, int CantidadDeGrupos, int CantidadDeRestricciones);
+
+/// <summary>Detalle de una dieta con sus grupos nutricionales y restricciones alimentarias.</summary>
+public sealed record DietaDetalle(Guid Id, string Nombre, Guid ProgramaAtencionId, IReadOnlyList<GrupoCubierto> Grupos, IReadOnlyList<Guid> Restricciones);
+
+/// <summary>Grupo nutricional cubierto por una dieta y el tipo de cobertura aplicado.</summary>
+public sealed record GrupoCubierto(Guid GrupoNutricionalId, TipoCobertura Tipo);
+
+/// <summary>Tipo de cobertura de un grupo nutricional en una dieta.</summary>
+public enum TipoCobertura
+{
+    /// <summary>El grupo debe estar presente en el menú.</summary>
+    Requerido,
+
+    /// <summary>El grupo no debe estar presente en el menú.</summary>
+    Restringido,
+}
+
+/// <summary>Catálogos institucionales que pueden administrarse desde la interfaz.</summary>
+public enum TipoDeNomenclador
+{
+    /// <summary>Grupos nutricionales.</summary>
+    GruposNutricionales,
+
+    /// <summary>Restricciones alimentarias.</summary>
+    RestriccionesAlimentarias,
+
+    /// <summary>Programas de atención.</summary>
+    ProgramasAtencion,
+
+    /// <summary>Especialidades de nutricionistas.</summary>
+    Especialidades,
+}
+
+/// <summary>Datos necesarios para agregar un grupo a la cobertura de una dieta.</summary>
+public sealed class GrupoCubiertoFormulario
+{
+    /// <summary>Identificador del grupo nutricional.</summary>
+    public Guid GrupoNutricionalId { get; set; }
+
+    /// <summary>Tipo de cobertura que tendrá el grupo.</summary>
+    public TipoCobertura Tipo { get; set; } = TipoCobertura.Requerido;
+}
+
+/// <summary>Formulario mínimo para crear un elemento de nomenclador.</summary>
+public sealed class NomencladorFormulario
+{
+    /// <summary>Nombre visible del elemento.</summary>
+    [Required(ErrorMessage = "El nombre es obligatorio.")]
+    [StringLength(100, ErrorMessage = "El nombre no puede superar 100 caracteres.")]
+    public string Nombre { get; set; } = string.Empty;
+}
+
 /// <summary>Alimento del catálogo.</summary>
 public sealed record Alimento(Guid Id, string Nombre, Guid GrupoNutricionalId, Guid TipoPreparacionId, Guid NivelCaloricoId, Guid NutricionistaId);
 

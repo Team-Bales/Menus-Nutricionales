@@ -47,6 +47,95 @@ public sealed class CatalogoApiTests
     }
 
     [Fact]
+    public async Task ListarRestriccionesAsync_pide_la_ruta_de_nomencladores()
+    {
+        var handler = new HandlerFalso(req => Json(req, "[]"));
+
+        await Crear(handler).ListarRestriccionesAsync();
+
+        Assert.Equal("/api/nomencladores/restricciones-alimentarias", handler.Recibida!.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task CrearNomencladorAsync_envia_post_a_la_ruta_del_tipo_elegido()
+    {
+        var creado = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, $$"""{"id":"{{creado}}"}"""));
+
+        var id = await Crear(handler).CrearNomencladorAsync(
+            TipoDeNomenclador.ProgramasAtencion,
+            new NomencladorFormulario { Nombre = "Atención primaria" });
+
+        Assert.Equal(HttpMethod.Post, handler.Recibida!.Method);
+        Assert.Equal("/api/nomencladores/programas-atencion", handler.Recibida.RequestUri!.AbsolutePath);
+        Assert.Equal(creado, id);
+    }
+
+    [Fact]
+    public async Task EliminarNomencladorAsync_envia_delete_a_la_ruta_del_elemento()
+    {
+        var id = Guid.NewGuid();
+        var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+
+        await Crear(handler).EliminarNomencladorAsync(TipoDeNomenclador.Especialidades, id);
+
+        Assert.Equal(HttpMethod.Delete, handler.Recibida!.Method);
+        Assert.Equal($"/api/nomencladores/especialidades/{id}", handler.Recibida.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task ListarDietasAsync_arma_la_ruta_paginada_con_el_programa()
+    {
+        var programa = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":2,"size":5}"""));
+
+        await Crear(handler).ListarDietasAsync(programa, 2, 5);
+
+        var query = handler.Recibida!.RequestUri!.Query;
+        Assert.Equal("/api/dietas", handler.Recibida.RequestUri.AbsolutePath);
+        Assert.Contains($"programa={programa}", query);
+        Assert.Contains("page=2", query);
+        Assert.Contains("size=5", query);
+    }
+
+    [Fact]
+    public async Task AgregarGrupoDietaAsync_envia_el_tipo_de_cobertura_a_la_ruta_de_la_dieta()
+    {
+        var dietaId = Guid.NewGuid();
+        var grupoId = Guid.NewGuid();
+        string? cuerpo = null;
+        var handler = new HandlerFalso(req =>
+        {
+            cuerpo = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        });
+
+        await Crear(handler).AgregarGrupoDietaAsync(dietaId, new GrupoCubiertoFormulario
+        {
+            GrupoNutricionalId = grupoId,
+            Tipo = TipoCobertura.Restringido,
+        });
+
+        Assert.Equal(HttpMethod.Post, handler.Recibida!.Method);
+        Assert.Equal($"/api/dietas/{dietaId}/grupos", handler.Recibida.RequestUri!.AbsolutePath);
+        Assert.Contains(grupoId.ToString(), cuerpo);
+        Assert.Contains("1", cuerpo);
+    }
+
+    [Fact]
+    public async Task AgregarRestriccionDietaAsync_envia_post_a_la_ruta_de_la_dieta()
+    {
+        var dietaId = Guid.NewGuid();
+        var restriccionId = Guid.NewGuid();
+        var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+
+        await Crear(handler).AgregarRestriccionDietaAsync(dietaId, restriccionId);
+
+        Assert.Equal(HttpMethod.Post, handler.Recibida!.Method);
+        Assert.Equal($"/api/dietas/{dietaId}/restricciones", handler.Recibida.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
     public async Task ListarAlimentosAsync_arma_la_ruta_paginada_con_los_filtros_presentes()
     {
         var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":2,"size":5}"""));

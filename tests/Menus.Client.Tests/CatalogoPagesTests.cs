@@ -63,8 +63,19 @@ public sealed class CatalogoPagesTests : BunitContext
         public bool ErrorAlEliminarAlimento { get; init; }
 
         public Task<IReadOnlyList<Nomenclador>> ListarGruposAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([new(Grupo, "Cereales")]);
+        public Task<IReadOnlyList<Nomenclador>> ListarRestriccionesAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([]);
+        public Task<IReadOnlyList<Nomenclador>> ListarProgramasAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([]);
+        public Task<IReadOnlyList<Nomenclador>> ListarEspecialidadesAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([]);
         public Task<IReadOnlyList<Nomenclador>> ListarTiposPreparacionAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([new(Tipo, "Plato fuerte")]);
         public Task<IReadOnlyList<Nomenclador>> ListarNivelesCaloricosAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Nomenclador>>([new(Nivel, "Medio")]);
+        public Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default) => Task.FromResult(Guid.NewGuid());
+        public Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default) => Task.FromResult(new Pagina<Dieta>([], 0, page, size));
+        public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default) => Task.FromResult(new DietaDetalle(id, "Dieta", Guid.Empty, [], []));
+        public Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default) => Task.CompletedTask;
+        public Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task AgregarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default) => Task.CompletedTask;
+        public Task QuitarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default) => Task.CompletedTask;
         public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default) => Task.FromResult(new Pagina<Alimento>([new(AlimentoId, "Avena", Grupo, Tipo, Nivel, Guid.NewGuid())], 1, page, size));
         public Task<IReadOnlyList<Alimento>> ListarTodosLosAlimentosAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Alimento>>([new(AlimentoId, "Avena", Grupo, Tipo, Nivel, Guid.NewGuid())]);
         public Task<Alimento> ObtenerAlimentoAsync(Guid id, CancellationToken ct = default) => Task.FromResult(new Alimento(AlimentoId, "Avena", Grupo, Tipo, Nivel, Guid.NewGuid()));

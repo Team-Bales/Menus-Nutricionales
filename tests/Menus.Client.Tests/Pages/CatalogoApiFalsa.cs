@@ -15,14 +15,23 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public static readonly Guid Nivel = Guid.Parse("33333333-3333-3333-3333-333333333333");
     public static readonly Guid AlimentoId = Guid.Parse("44444444-4444-4444-4444-444444444444");
     public static readonly Guid PlatoId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+    public static readonly Guid DietaId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+    public static readonly Guid Restriccion = Guid.Parse("77777777-7777-7777-7777-777777777777");
+    public static readonly Guid Programa = Guid.Parse("88888888-8888-8888-8888-888888888888");
+    public static readonly Guid Especialidad = Guid.Parse("99999999-9999-9999-9999-999999999999");
 
     public List<Nomenclador> Grupos { get; set; } = [new(Grupo, "Cereales")];
     public List<Nomenclador> Tipos { get; set; } = [new(Tipo, "Plato fuerte")];
     public List<Nomenclador> Niveles { get; set; } = [new(Nivel, "Medio")];
+    public List<Nomenclador> Restricciones { get; set; } = [new(Restriccion, "Sin gluten")];
+    public List<Nomenclador> Programas { get; set; } = [new(Programa, "Atención primaria")];
+    public List<Nomenclador> Especialidades { get; set; } = [new(Especialidad, "Nutrición clínica")];
     public List<Alimento> Alimentos { get; set; } = [new(AlimentoId, "Avena", Grupo, Tipo, Nivel, Guid.NewGuid())];
     public List<Plato> Platos { get; set; } = [new(PlatoId, "Avena con leche", Grupo, Tipo, Nivel, Guid.NewGuid(), 2)];
+    public List<Dieta> Dietas { get; set; } = [new(DietaId, "Dieta basal", Programa, 1, 1)];
     public PlatoDetalle PlatoDetalle { get; set; } = new(PlatoId, "Avena con leche", Grupo, Tipo, Nivel, Guid.NewGuid(), [new(AlimentoId, "Avena", 100m)]);
     public Alimento Alimento { get; set; } = new(AlimentoId, "Avena", Grupo, Tipo, Nivel, Guid.NewGuid());
+    public DietaDetalle DietaDetalle { get; set; } = new(DietaId, "Dieta basal", Programa, [new(Grupo, TipoCobertura.Requerido)], [Restriccion]);
     public Guid IdCreado { get; set; } = Guid.NewGuid();
 
     public ApiException? ErrorAlCargarNomencladores { get; set; }
@@ -32,6 +41,9 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public ApiException? ErrorAlEliminar { get; set; }
     public ApiException? ErrorAlAgregarIngrediente { get; set; }
     public ApiException? ErrorAlQuitarIngrediente { get; set; }
+    public ApiException? ErrorAlCargarDieta { get; set; }
+    public ApiException? ErrorAlGuardarDieta { get; set; }
+    public ApiException? ErrorAlEliminarDieta { get; set; }
 
     public ClasificacionFormulario? UltimaClasificacionCreada { get; private set; }
     public (Guid Id, ClasificacionFormulario Formulario)? UltimaActualizacion { get; private set; }
@@ -44,15 +56,76 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public (Guid PlatoId, Guid AlimentoId)? UltimoIngredienteQuitado { get; private set; }
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaAlimentos { get; private set; }
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaPlatos { get; private set; }
+    public (Guid? Programa, int Page, int Size)? UltimaConsultaDietas { get; private set; }
+    public (Guid DietaId, Guid GrupoId, TipoCobertura Tipo)? UltimoGrupoDeDietaAgregado { get; private set; }
+    public (Guid DietaId, Guid GrupoId)? UltimoGrupoDeDietaQuitado { get; private set; }
+    public (Guid DietaId, Guid RestriccionId)? UltimaRestriccionAgregada { get; private set; }
+    public (Guid DietaId, Guid RestriccionId)? UltimaRestriccionQuitada { get; private set; }
+    public (TipoDeNomenclador Tipo, string Nombre)? UltimoNomencladorCreado { get; private set; }
+    public (TipoDeNomenclador Tipo, Guid Id)? UltimoNomencladorEliminado { get; private set; }
 
     public Task<IReadOnlyList<Nomenclador>> ListarGruposAsync(CancellationToken ct = default)
         => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Grupos]);
+
+    public Task<IReadOnlyList<Nomenclador>> ListarRestriccionesAsync(CancellationToken ct = default)
+        => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Restricciones]);
+
+    public Task<IReadOnlyList<Nomenclador>> ListarProgramasAsync(CancellationToken ct = default)
+        => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Programas]);
+
+    public Task<IReadOnlyList<Nomenclador>> ListarEspecialidadesAsync(CancellationToken ct = default)
+        => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Especialidades]);
 
     public Task<IReadOnlyList<Nomenclador>> ListarTiposPreparacionAsync(CancellationToken ct = default)
         => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Tipos]);
 
     public Task<IReadOnlyList<Nomenclador>> ListarNivelesCaloricosAsync(CancellationToken ct = default)
         => Resultado<IReadOnlyList<Nomenclador>>(ErrorAlCargarNomencladores, [.. Niveles]);
+
+    public Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default)
+    {
+        UltimoNomencladorCreado = (tipo, formulario.Nombre);
+        return Resultado(ErrorAlGuardar, IdCreado);
+    }
+
+    public Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default)
+    {
+        UltimoNomencladorEliminado = (tipo, id);
+        return Resultado(ErrorAlEliminar);
+    }
+
+    public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
+    {
+        UltimaConsultaDietas = (programa, page, size);
+        return Resultado(ErrorAlCargarDieta, new Pagina<Dieta>([.. Dietas], Dietas.Count, page, size));
+    }
+
+    public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default)
+        => Resultado(ErrorAlCargarDieta, DietaDetalle);
+
+    public Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default)
+    {
+        UltimoGrupoDeDietaAgregado = (dietaId, grupo.GrupoNutricionalId, grupo.Tipo);
+        return Resultado(ErrorAlGuardarDieta);
+    }
+
+    public Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default)
+    {
+        UltimoGrupoDeDietaQuitado = (dietaId, grupoId);
+        return Resultado(ErrorAlEliminarDieta);
+    }
+
+    public Task AgregarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
+    {
+        UltimaRestriccionAgregada = (dietaId, restriccionId);
+        return Resultado(ErrorAlGuardarDieta);
+    }
+
+    public Task QuitarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
+    {
+        UltimaRestriccionQuitada = (dietaId, restriccionId);
+        return Resultado(ErrorAlEliminarDieta);
+    }
 
     public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
     {

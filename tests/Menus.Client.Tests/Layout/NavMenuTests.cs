@@ -13,6 +13,8 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.Contains("catalogo/alimentos", cut.Markup);
         Assert.Contains("catalogo/platos", cut.Markup);
+        Assert.Contains("catalogo/dietas", cut.Markup);
+        Assert.Contains("admin/nomencladores", cut.Markup);
     }
 
     [Fact]

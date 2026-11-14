@@ -56,8 +56,9 @@ public sealed class FichasConciliador(
         var tamanoLote = _opciones.TamanoLote;
         ObjectId? ultimoId = null;
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // Leer lote de MongoDB ordenado por _id ascendente
             var filtro = Builders<FichaNutricionalDocumento>.Filter.Empty;
             if (ultimoId.HasValue)
@@ -233,7 +234,7 @@ public sealed class FichasConciliador(
                         continue;
                     }
 
-                    if (!string.Equals(ingrediente.Nombre, nombrePostgres, StringComparison.Ordinal))
+                    if (ingrediente.Nombre is not null && !string.Equals(ingrediente.Nombre, nombrePostgres, StringComparison.Ordinal))
                     {
                         // El nombre difiere: actualizar solo esta copia
                         var filtroArray = Builders<FichaNutricionalDocumento>.Filter.ElemMatch(

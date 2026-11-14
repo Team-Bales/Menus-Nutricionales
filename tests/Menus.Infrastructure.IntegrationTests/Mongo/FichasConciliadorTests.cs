@@ -350,7 +350,7 @@ public sealed class FichasConciliadorTests : IAsyncLifetime
     {
         var alimento = await _sembrador.AlimentoAsync("Sin Cambios");
         var platoId = await _sembrador.PlatoAsync(alimento);
-        await _mongoContexto.Fichas.InsertOneAsync(FichaPlato(platoId, (alimento, "Nombre Correcto")));
+        await _mongoContexto.Fichas.InsertOneAsync(FichaPlato(platoId, (alimento, "Sin Cambios")));
 
         var antes = (await LeerFichaAsync("Plato", platoId))!.ActualizadoEn;
         await Task.Delay(10); // Asegurar que pasaría tiempo

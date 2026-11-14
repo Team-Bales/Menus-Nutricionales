@@ -149,6 +149,20 @@ public sealed class ManejadoresDeSalasTests
             () => handler.HandleAsync(new ActualizarSalaCommand(Guid.NewGuid(), "Sala A"), CancellationToken.None));
     }
 
+    [Fact]
+    public void El_validador_de_actualizar_exige_el_nombre()
+        => Assert.Equal(
+            ["Nombre"],
+            new ActualizarSalaValidator().Validate(new ActualizarSalaCommand(Guid.NewGuid(), ""))
+                .Errors.Select(e => e.PropertyName));
+
+    [Fact]
+    public void El_validador_de_actualizar_rechaza_un_nombre_demasiado_largo()
+        => Assert.Equal(
+            ["Nombre"],
+            new ActualizarSalaValidator().Validate(new ActualizarSalaCommand(Guid.NewGuid(), new string('a', 101)))
+                .Errors.Select(e => e.PropertyName));
+
     // ---- Eliminar ----
 
     [Fact]

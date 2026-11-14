@@ -138,6 +138,24 @@ public sealed class FichasConciliadorTests : IAsyncLifetime
         Assert.NotNull(await LeerFichaAsync("Plato", platoId));
     }
 
+    // ---- Caso 3b: Ficha de plato válida sin ingredientes: el conciliador no la toca ----
+
+    [Fact]
+    public async Task Ficha_plato_valida_sin_ingredientes_se_conserva()
+    {
+        var alimento = await _sembrador.AlimentoAsync("Alimento Plato Sin Ingredientes");
+        var platoId = await _sembrador.PlatoAsync(alimento);
+        await _mongoContexto.Fichas.InsertOneAsync(FichaPlato(platoId));
+
+        var resultado = await CrearConciliador().ConciliarAsync();
+
+        Assert.Equal(1, resultado.Revisadas);
+        Assert.Equal(0, resultado.HuerfanasEliminadas);
+        Assert.Equal(0, resultado.NombresActualizados);
+        Assert.Equal(0, resultado.FichasInvalidas);
+        Assert.NotNull(await LeerFichaAsync("Plato", platoId));
+    }
+
     // ---- Caso 4: Ficha de plato con ingredientes; se cambió el nombre de A en PostgreSQL ----
 
     [Fact]

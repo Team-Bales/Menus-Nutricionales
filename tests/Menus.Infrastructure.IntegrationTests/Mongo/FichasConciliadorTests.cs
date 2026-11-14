@@ -359,4 +359,78 @@ public sealed class FichasConciliadorTests : IAsyncLifetime
 
         Assert.Equal(antes, despues);
     }
+
+    // ---- Caso: Ingrediente con alimentoId no parseable (líneas 193, 199-201) ----
+
+    [Fact]
+    public async Task Ingrediente_con_alimentoId_no_parseable_loguea_warning_y_no_falla()
+    {
+        var alimento = await _sembrador.AlimentoAsync("Alimento Valido");
+        var platoId = await _sembrador.PlatoAsync(alimento);
+
+        // Insertar ficha de plato con un ingrediente que tiene alimentoId no parseable
+        var ficha = new FichaNutricionalDocumento
+        {
+            Origen = new OrigenFicha { Tabla = "Plato", Id = FichaNutricionalEsquema.Identificador(platoId) },
+            Tipo = "compuesto",
+            Ingredientes =
+            [
+                new IngredienteFicha { AlimentoId = FichaNutricionalEsquema.Identificador(alimento), Nombre = "Nombre Correcto" },
+                new IngredienteFicha { AlimentoId = "no-es-un-guid-valido", Nombre = "Nombre Invalido" }
+            ],
+            ActualizadoEn = DateTime.UtcNow.AddDays(-1)
+        };
+        await _mongoContexto.Fichas.InsertOneAsync(ficha, new InsertOneOptions { BypassDocumentValidation = true });
+
+        var resultado = await CrearConciliador().ConciliarAsync();
+
+        // La ficha válida se procesa, la inválida solo se loguea
+        Assert.Equal(1, resultado.Revisadas);
+        Assert.Equal(0, resultado.NombresActualizados); // No hay cambios de nombre reales
+        Assert.Equal(0, resultado.FichasInvalidas); // FichasInvalidas es para origen.id, no para ingredientes
+
+        // La ficha sigue existiendo y el ingrediente válido se conserva
+        var fichaLeida = await LeerFichaAsync("Plato", platoId);
+        Assert.NotNull(fichaLeida);
+        Assert.Equal(2, fichaLeida!.Ingredientes!.Count);
+    }
+
+    // ---- Caso: Ingrediente que referencia alimento ausente en PostgreSQL (líneas 231-234) ----
+
+    [Fact]
+    public async Task Ingrediente_con_alimento_ausente_en_postgres_loguea_warning_y_no_toca_elemento()
+    {
+        var alimentoExistente = await _sembrador.AlimentoAsync("Existente");
+        var platoId = await _sembrador.PlatoAsync(alimentoExistente);
+        var alimentoAusenteId = Guid.NewGuid(); // No existe en PostgreSQL
+
+        // Insertar ficha de plato con un ingrediente que referencia un alimento inexistente
+        var ficha = new FichaNutricionalDocumento
+        {
+            Origen = new OrigenFicha { Tabla = "Plato", Id = FichaNutricionalEsquema.Identificador(platoId) },
+            Tipo = "compuesto",
+            Ingredientes =
+            [
+                new IngredienteFicha { AlimentoId = FichaNutricionalEsquema.Identificador(alimentoExistente), Nombre = "Existente" },
+                new IngredienteFicha { AlimentoId = FichaNutricionalEsquema.Identificador(alimentoAusenteId), Nombre = "Ausente" }
+            ],
+            ActualizadoEn = DateTime.UtcNow.AddDays(-1)
+        };
+        await _mongoContexto.Fichas.InsertOneAsync(ficha);
+
+        var resultado = await CrearConciliador().ConciliarAsync();
+
+        // Solo el ingrediente existente se procesa; el ausente se loguea y no se toca
+        Assert.Equal(1, resultado.Revisadas);
+        Assert.Equal(0, resultado.NombresActualizados); // No hay cambios porque los nombres coinciden
+
+        // La ficha sigue existiendo con ambos ingredientes intactos
+        var fichaLeida = await LeerFichaAsync("Plato", platoId);
+        Assert.NotNull(fichaLeida);
+        Assert.Equal(2, fichaLeida!.Ingredientes!.Count);
+        var ingExistente = fichaLeida.Ingredientes.First(i => i.AlimentoId == FichaNutricionalEsquema.Identificador(alimentoExistente));
+        var ingAusente = fichaLeida.Ingredientes.First(i => i.AlimentoId == FichaNutricionalEsquema.Identificador(alimentoAusenteId));
+        Assert.Equal("Existente", ingExistente.Nombre);
+        Assert.Equal("Ausente", ingAusente.Nombre); // No se modifica
+    }
 }

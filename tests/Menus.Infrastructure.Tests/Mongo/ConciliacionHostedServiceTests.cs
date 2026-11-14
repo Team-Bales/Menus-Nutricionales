@@ -158,4 +158,120 @@ public sealed class ConciliacionHostedServiceTests
 
         // Si llegamos aquí sin excepción, la prueba pasa
     }
+
+    /// <summary>
+    /// (5) Cancelación durante el retraso inicial (líneas 53-56): si se cancela mientras
+    /// espera <see cref="ConciliacionOptions.RetrasoInicial"/>, el servicio registra y sale sin excepción.
+    /// </summary>
+    [Fact]
+    public async Task Cancelacion_durante_retraso_inicial_registra_y_sale()
+    {
+        var opciones = new ConciliacionOptions
+        {
+            Habilitada = true,
+            RetrasoInicial = TimeSpan.FromSeconds(10), // Largo para poder cancelar
+            Intervalo = TimeSpan.FromMilliseconds(50),
+            TamanoLote = 500
+        };
+
+        _conciliadorMock
+            .Setup(c => c.ConciliarAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ResultadoConciliacion(0, 0, 0, 0));
+
+        var servicio = CrearServicio(opciones);
+        using var cts = new CancellationTokenSource();
+
+        await servicio.StartAsync(cts.Token);
+        // Cancelar antes de que termine el retraso inicial
+        await cts.CancelAsync();
+
+        // StopAsync no debe lanzar
+        await servicio.StopAsync(CancellationToken.None);
+
+        // Verificar que se logueó la cancelación durante el retraso inicial
+        _loggerMock.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("cancelada durante el retraso inicial")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // El conciliador NO debe haber sido llamado
+        _conciliadorMock.Verify(c => c.ConciliarAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// (6) Cancelación originada por <see cref="IFichasConciliador.ConciliarAsync"/> con token de parada
+    /// (líneas 95-98): si el conciliador lanza <see cref="OperationCanceledException"/> y el token
+    /// está cancelado, el servicio registra y re-lanza para detener el bucle principal.
+    /// </summary>
+    [Fact]
+    public async Task Cancelacion_desde_conciliador_con_token_parada_relanza_y_detiene_bucle()
+    {
+        var opciones = new ConciliacionOptions
+        {
+            Habilitada = true,
+            RetrasoInicial = TimeSpan.FromMilliseconds(10),
+            Intervalo = TimeSpan.FromMilliseconds(50),
+            TamanoLote = 500
+        };
+
+        var cts = new CancellationTokenSource();
+        var tcsFirstCall = new TaskCompletionSource<ResultadoConciliacion>();
+        var tcsSecondCall = new TaskCompletionSource<ResultadoConciliacion>();
+        var callCount = 0;
+
+        // Primera llamada: se completa cuando lo decidamos. Segunda: espera cancelación.
+        _conciliadorMock
+            .Setup(c => c.ConciliarAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(ct =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    return tcsFirstCall.Task;
+                }
+                // Segunda llamada: esperar a que se cancele el token, luego lanzar
+                return ct.IsCancellationRequested
+                    ? Task.FromException<ResultadoConciliacion>(new OperationCanceledException(ct))
+                    : Task.Delay(Timeout.Infinite, ct).ContinueWith<ResultadoConciliacion>(_ =>
+                        throw new OperationCanceledException(ct), ct);
+            });
+
+        var servicio = CrearServicio(opciones);
+        await servicio.StartAsync(cts.Token);
+
+        // Esperar a que pase el retraso inicial y la primera llamada a ConciliarAsync haya comenzado
+        await Task.Delay(100);
+
+        // Completar la primera llamada con éxito
+        tcsFirstCall.SetResult(new ResultadoConciliacion(0, 0, 0, 0));
+
+        // Esperar a que la primera ejecución termine y la segunda llamada a ConciliarAsync comience
+        await Task.Delay(200);
+
+        // Ahora cancelar el token - la segunda llamada a ConciliarAsync debería lanzar
+        await cts.CancelAsync();
+
+        // Esperar a que el servicio procese la cancelación
+        await Task.Delay(200);
+
+        // StopAsync no debe lanzar
+        await servicio.StopAsync(CancellationToken.None);
+
+        // Verificar que se logueó "cancelada por token de parada"
+        _loggerMock.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("cancelada por token de parada")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // El conciliador fue llamado 2 veces
+        Assert.Equal(2, callCount);
+    }
 }

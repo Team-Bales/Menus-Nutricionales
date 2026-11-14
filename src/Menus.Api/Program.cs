@@ -18,9 +18,10 @@ builder.Services.AddControllers(o => o.SuppressImplicitRequiredAttributeForNonNu
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorDeExcepciones>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IActorActual, ActorDesdeCabecera>();
+builder.Services.AddScoped<IActorActual, ActorDesdeToken>();
 builder.Services.AddScoped<IIdentidadAutenticada, IdentidadAutenticada>();
 builder.Services.AddHostedService<AuthBootstrapService>();
+builder.Services.AddPoliticasDeAutorizacion();
 builder.Services.AddCorsDelCliente(builder.Configuration);
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -37,7 +38,8 @@ app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // El documento OpenAPI de desarrollo no pide token: la política de reserva lo cerraría.
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();

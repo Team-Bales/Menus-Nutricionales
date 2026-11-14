@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Catalogo.Alimentos;
 using Menus.Application.Catalogo.Alimentos.ActualizarAlimento;
 using Menus.Application.Catalogo.Alimentos.EliminarAlimento;
@@ -5,6 +6,7 @@ using Menus.Application.Catalogo.Alimentos.ListarAlimentos;
 using Menus.Application.Catalogo.Alimentos.ObtenerAlimento;
 using Menus.Application.Catalogo.Alimentos.RegistrarAlimento;
 using Menus.Application.Comun;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -22,6 +24,7 @@ public sealed class AlimentosController(IDespachador despachador) : ControllerBa
     /// <response code="201">Creado; <c>Location</c> apunta al alimento.</response>
     /// <response code="409">Ya hay un alimento o un plato con ese nombre (RC-01).</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPost]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -67,6 +70,7 @@ public sealed class AlimentosController(IDespachador despachador) : ControllerBa
     /// <response code="404">No existe.</response>
     /// <response code="409">El actor no es quien describió el alimento (RS-02).</response>
     /// <response code="422">La clasificación no es válida.</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -84,6 +88,7 @@ public sealed class AlimentosController(IDespachador despachador) : ControllerBa
     /// <response code="204">Eliminado.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Es ingrediente de un plato (RR-04) o figura en un menú (RR-22).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

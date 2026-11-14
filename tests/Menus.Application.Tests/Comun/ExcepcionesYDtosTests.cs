@@ -31,9 +31,9 @@ public sealed class ExcepcionesYDtosTests
     [Fact]
     public void ActorNoIdentificadoException_constructor_asigna_mensaje()
     {
-        var ex = new ActorNoIdentificadoException("Falta la cabecera X-Actor-Id.");
+        var ex = new ActorNoIdentificadoException("El token no identifica a un nutricionista.");
 
-        Assert.Equal("Falta la cabecera X-Actor-Id.", ex.Message);
+        Assert.Equal("El token no identifica a un nutricionista.", ex.Message);
     }
 
     [Fact]

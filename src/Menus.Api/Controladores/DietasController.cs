@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Catalogo.Dietas;
 using Menus.Application.Catalogo.Dietas.ActualizarDieta;
 using Menus.Application.Catalogo.Dietas.AgregarGrupoDieta;
@@ -10,6 +11,7 @@ using Menus.Application.Catalogo.Dietas.QuitarGrupoDieta;
 using Menus.Application.Catalogo.Dietas.QuitarRestriccionDieta;
 using Menus.Application.Catalogo.Dietas.RegistrarDieta;
 using Menus.Application.Comun;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -27,6 +29,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <summary>Registra una dieta con su cobertura de grupos nutricionales y sus restricciones.</summary>
     /// <response code="201">Creada; <c>Location</c> apunta a la dieta.</response>
     /// <response code="422">La entrada no es válida (por ejemplo, sin ningún grupo requerido, RK-07).</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
@@ -66,6 +69,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <response code="204">Actualizada.</response>
     /// <response code="404">No existe.</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -80,6 +84,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <response code="204">Eliminada.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Tiene pacientes inscritos (RR-12) o algún menú (RR-13).</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -94,6 +99,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <response code="204">Cubierto.</response>
     /// <response code="404">La dieta no existe.</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("{id:guid}/grupos")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -108,6 +114,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <response code="204">Quitado.</response>
     /// <response code="404">La dieta no existe.</response>
     /// <response code="409">Es el único grupo requerido de la dieta (RK-07).</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("{id:guid}/grupos/{grupoId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -122,6 +129,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <response code="204">Agregada.</response>
     /// <response code="404">La dieta no existe.</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("{id:guid}/restricciones")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -135,6 +143,7 @@ public sealed class DietasController(IDespachador despachador) : ControllerBase
     /// <summary>Quita una restricción alimentaria de la dieta. Quitar una que no tiene no falla.</summary>
     /// <response code="204">Quitada.</response>
     /// <response code="404">La dieta no existe.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("{id:guid}/restricciones/{restriccionId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

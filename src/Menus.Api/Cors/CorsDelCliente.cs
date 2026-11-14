@@ -25,7 +25,7 @@ public static class CorsDelCliente
     {
         var origenes = configuracion.GetSection(Seccion).Get<string[]>() ?? [];
 
-        // Cualquier cabecera: el cliente manda X-Actor-Id, y desde el #74 mandará Authorization.
+        // Cualquier cabecera: el cliente manda el token en Authorization (#74).
         var politica = new CorsPolicyBuilder(origenes).AllowAnyHeader().AllowAnyMethod().Build();
 
         return services.AddCors(o => o.AddPolicy(Politica, politica));

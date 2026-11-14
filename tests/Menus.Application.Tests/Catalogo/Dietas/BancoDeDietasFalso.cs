@@ -245,7 +245,13 @@ internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.NutricionistaCreadorId == nutricionistaId)]);
 
     public Task<IReadOnlyList<Menu>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Menu>>([]);
+        => Task.FromResult<IReadOnlyList<Menu>>(
+        [
+            .. banco.Menus
+                .Where(m => m.Asignaciones.Any(a => a.PacienteId == pacienteId))
+                .OrderByDescending(m => m.FechaCreacion)
+                .ThenBy(m => m.Id),
+        ]);
 
     public Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.DietaId == dietaId && m.EsFinal)]);

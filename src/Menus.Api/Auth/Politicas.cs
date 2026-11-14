@@ -1,4 +1,5 @@
 using Menus.Domain;
+using Menus.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Menus.Api.Auth;
@@ -32,6 +33,16 @@ public static class Politicas
     public const string NutricionistaOAdmin = "NutricionistaOAdmin";
 
     /// <summary>
+    /// Lo de un paciente concreto: lo ve el propio paciente, y también el personal (nutricionista o administrador). El
+    /// paciente es el del parámetro <see cref="ParametroDelPaciente"/> de la ruta, y tiene que coincidir con el
+    /// <c>entidad_id</c> del token (#84).
+    /// </summary>
+    public const string PacientePropioOPersonal = "PacientePropioOPersonal";
+
+    /// <summary>Nombre del parámetro de ruta con el paciente, en las rutas que usan <see cref="PacientePropioOPersonal"/>.</summary>
+    public const string ParametroDelPaciente = "id";
+
+    /// <summary>
     /// Registra las políticas, la de reserva y la respuesta en <c>ProblemDetails</c> de los 401 y 403
     /// (<see cref="RespuestaDeAutorizacion"/>).
     /// </summary>
@@ -42,8 +53,29 @@ public static class Politicas
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(SoloAdmin, p => p.RequireRole(RolesUsuario.Admin))
             .AddPolicy(SoloNutricionista, p => p.RequireRole(RolesUsuario.Nutricionista))
-            .AddPolicy(NutricionistaOAdmin, p => p.RequireRole(RolesUsuario.Nutricionista, RolesUsuario.Admin));
+            .AddPolicy(NutricionistaOAdmin, p => p.RequireRole(RolesUsuario.Nutricionista, RolesUsuario.Admin))
+            .AddPolicy(PacientePropioOPersonal, p => p.RequireAssertion(EsPersonalOElPropioPaciente));
 
         return services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaDeAutorizacion>();
+    }
+
+    /// <summary>
+    /// El personal pasa siempre; un paciente, solo si el de la ruta es él. Sin token no pasa nadie, y la API responde
+    /// 401; con el token de otro paciente, 403.
+    /// </summary>
+    /// <param name="contexto">Contexto de la autorización; su recurso es la petición en curso.</param>
+    internal static bool EsPersonalOElPropioPaciente(AuthorizationHandlerContext contexto)
+    {
+        var usuario = contexto.User;
+        if (usuario.IsInRole(RolesUsuario.Nutricionista) || usuario.IsInRole(RolesUsuario.Admin))
+        {
+            return true;
+        }
+
+        return usuario.IsInRole(RolesUsuario.Paciente)
+            && contexto.Resource is HttpContext peticion
+            && Guid.TryParse(peticion.GetRouteValue(ParametroDelPaciente)?.ToString(), out var deLaRuta)
+            && Guid.TryParse(usuario.FindFirst(JwtClaimTypes.EntidadId)?.Value, out var delToken)
+            && deLaRuta == delToken;
     }
 }

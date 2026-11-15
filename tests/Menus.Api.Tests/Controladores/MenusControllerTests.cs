@@ -2,6 +2,7 @@ using Menus.Api.Controladores;
 using Menus.Application.Comun;
 using Menus.Application.GeneracionDeMenus.GenerarMenuAutomaticamente;
 using Menus.Application.GestionDeMenus;
+using Menus.Application.GestionDeMenus.AsignarMenu;
 using Menus.Application.GestionDeMenus.ListarMenus;
 using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
@@ -123,6 +124,19 @@ public sealed class MenusControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new RegistrarReemplazoCommand(id, rechazado), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task Asignar_arma_el_comando_con_el_menu_de_la_ruta_y_responde_204()
+    {
+        var id = Guid.NewGuid();
+        var paciente = Guid.NewGuid();
+        _despachador.Resultado = Unidad.Valor;
+
+        var respuesta = await Controlador.Asignar(id, new AsignacionDeMenu(paciente), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(respuesta);
+        Assert.Equal(new AsignarMenuCommand(id, paciente), _despachador.Recibida);
     }
 
     /// <summary>Guarda la solicitud recibida y devuelve el resultado preparado.</summary>

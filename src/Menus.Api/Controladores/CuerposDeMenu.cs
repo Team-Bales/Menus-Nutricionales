@@ -28,3 +28,7 @@ public sealed record DictamenDeMenu(bool Aprobado, string? Observaciones);
 /// </summary>
 /// <param name="MenuRechazadoId">Identificador del menú rechazado.</param>
 public sealed record MenuReemplazado(Guid MenuRechazadoId);
+
+/// <summary>Cuerpo de <c>POST /api/menus/{id}/asignaciones</c>: el paciente al que se asigna. El id del menú va en la ruta.</summary>
+/// <param name="PacienteId">Identificador del paciente.</param>
+public sealed record AsignacionDeMenu(Guid PacienteId);

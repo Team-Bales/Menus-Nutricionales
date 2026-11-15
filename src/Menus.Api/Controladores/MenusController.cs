@@ -2,6 +2,7 @@ using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.GeneracionDeMenus.GenerarMenuAutomaticamente;
 using Menus.Application.GestionDeMenus;
+using Menus.Application.GestionDeMenus.AsignarMenu;
 using Menus.Application.GestionDeMenus.ListarMenus;
 using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
@@ -13,9 +14,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Menus.Api.Controladores;
 
 /// <summary>
-/// Menús: generación automática (#98), listado por dieta, detalle, dictamen y menú de reemplazo (#80). Cada acción
-/// arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los traduce el manejador
-/// global.
+/// Menús: generación automática (#98), listado por dieta, detalle, dictamen, menú de reemplazo (#80) y asignación a
+/// pacientes (#84). Cada acción arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los
+/// traduce el manejador global.
 /// </summary>
 /// <remarks>
 /// Todas las acciones son para un nutricionista (#74). Además, generar exige que esté autorizado para la dieta (RF-06)
@@ -129,6 +130,27 @@ public sealed class MenusController(IDespachador despachador) : ControllerBase
     public async Task<IActionResult> RegistrarReemplazo(Guid id, MenuReemplazado cuerpo, CancellationToken ct)
     {
         await despachador.EnviarAsync(new RegistrarReemplazoCommand(id, cuerpo.MenuRechazadoId), ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Asigna el menú a un paciente inscrito en su dieta. Un menú se asigna a varios pacientes, una sola vez a cada uno.
+    /// </summary>
+    /// <response code="204">Asignado.</response>
+    /// <response code="404">El menú o el paciente no existen.</response>
+    /// <response code="409">
+    /// El nutricionista no está autorizado para la dieta del menú, el paciente no está inscrito en ella (RS-04), el menú
+    /// no es final (RS-16) o ya está asignado a ese paciente (RC-13).
+    /// </response>
+    /// <response code="422">Falta el paciente.</response>
+    [HttpPost("{id:guid}/asignaciones")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Asignar(Guid id, AsignacionDeMenu cuerpo, CancellationToken ct)
+    {
+        await despachador.EnviarAsync(new AsignarMenuCommand(id, cuerpo.PacienteId), ct);
         return NoContent();
     }
 }

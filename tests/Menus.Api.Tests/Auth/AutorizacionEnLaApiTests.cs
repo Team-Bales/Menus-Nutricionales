@@ -23,6 +23,7 @@ public sealed class AutorizacionEnLaApiTests
     private const string SoloAdmin = Politicas.SoloAdmin;
     private const string SoloNutricionista = Politicas.SoloNutricionista;
     private const string NutricionistaOAdmin = Politicas.NutricionistaOAdmin;
+    private const string PacientePropioOPersonal = Politicas.PacientePropioOPersonal;
 
     /// <summary>
     /// Lo que pide cada endpoint. Un endpoint nuevo que no esté aquí hace fallar
@@ -80,12 +81,14 @@ public sealed class AutorizacionEnLaApiTests
         ["PUT api/pacientes/{id:guid}"] = NutricionistaOAdmin,
         ["POST api/pacientes/{id:guid}/dietas"] = NutricionistaOAdmin,
         ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
+        ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
 
         ["POST api/dietas/{dietaId:guid}/menus/generacion-automatica"] = SoloNutricionista,
         ["GET api/menus"] = SoloNutricionista,
         ["GET api/menus/{id:guid}"] = SoloNutricionista,
         ["POST api/menus/{id:guid}/validar"] = SoloNutricionista,
         ["POST api/menus/{id:guid}/reemplazo"] = SoloNutricionista,
+        ["POST api/menus/{id:guid}/asignaciones"] = SoloNutricionista,
 
         ["POST api/valoraciones"] = SoloNutricionista,
         ["GET api/valoraciones/{id:guid}"] = SoloNutricionista,
@@ -189,6 +192,24 @@ public sealed class AutorizacionEnLaApiTests
         var problema = await respuesta.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal(403, problema!.Status);
         Assert.Equal(RespuestaDeAutorizacion.SinPermisos, problema.Detail);
+    }
+
+    [Fact]
+    public async Task Un_paciente_que_pide_los_menus_de_otro_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}/menus", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+        Assert.Equal(RespuestaDeAutorizacion.SinPermisos, (await respuesta.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
+    }
+
+    [Fact]
+    public async Task Sin_token_los_menus_de_un_paciente_responden_401()
+    {
+        using var respuesta = await PedirAsync(HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}/menus");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
     }
 
     [Theory]

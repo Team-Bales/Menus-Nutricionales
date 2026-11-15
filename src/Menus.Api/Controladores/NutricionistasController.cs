@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Nutricionistas;
 using Menus.Application.Nutricionistas.ActualizarNutricionista;
@@ -31,7 +32,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="403">No es administrador.</response>
     /// <response code="422">La paginación no es válida.</response>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType<ResultadoPaginado<NutricionistaDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -60,7 +61,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="404">El nutricionista o la especialidad no existen.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -79,7 +80,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="404">El nutricionista o la dieta no existen.</response>
     /// <response code="422">Falta la dieta.</response>
     [HttpPost("{id:guid}/dietas")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -98,7 +99,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="404">El nutricionista no existe.</response>
     /// <response code="409">El nutricionista no estaba autorizado para esa dieta.</response>
     [HttpDelete("{id:guid}/dietas/{dietaId:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -116,7 +117,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="403">No es administrador.</response>
     /// <response code="404">No existe.</response>
     [HttpPost("{id:guid}/rol-jefe")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

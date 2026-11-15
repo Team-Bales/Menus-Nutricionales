@@ -83,6 +83,13 @@ public sealed class AutorizacionEnLaApiTests
         ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
         ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
 
+        ["GET api/nutricionistas"] = SoloAdmin,
+        ["GET api/nutricionistas/{id:guid}"] = Autenticado,
+        ["PUT api/nutricionistas/{id:guid}"] = SoloAdmin,
+        ["POST api/nutricionistas/{id:guid}/dietas"] = SoloAdmin,
+        ["DELETE api/nutricionistas/{id:guid}/dietas/{dietaId:guid}"] = SoloAdmin,
+        ["POST api/nutricionistas/{id:guid}/rol-jefe"] = SoloAdmin,
+
         ["POST api/dietas/{dietaId:guid}/menus/generacion-automatica"] = SoloNutricionista,
         ["GET api/menus"] = SoloNutricionista,
         ["GET api/menus/{id:guid}"] = SoloNutricionista,

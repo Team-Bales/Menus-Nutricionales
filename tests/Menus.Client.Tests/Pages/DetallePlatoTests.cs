@@ -139,9 +139,9 @@ public sealed class DetallePlatoTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Avena con leche", cut.Markup));
 
         cut.Find("button.btn-outline-primary").Click();
-        Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}/editar", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}/editar", nav.Uri));
 
         cut.Find("button.btn-outline-secondary").Click();
-        Assert.EndsWith("/catalogo/platos", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/platos", nav.Uri));
     }
 }

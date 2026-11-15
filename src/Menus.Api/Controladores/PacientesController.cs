@@ -1,6 +1,7 @@
 using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.GestionDeMenus;
+using Menus.Application.GestionDeMenus.ListarConsumosDePaciente;
 using Menus.Application.GestionDeMenus.ListarMenusDePaciente;
 using Menus.Application.Pacientes;
 using Menus.Application.Pacientes.ActualizarPaciente;
@@ -20,8 +21,8 @@ namespace Menus.Api.Controladores;
 /// <remarks>
 /// No hay <c>POST /api/pacientes</c>: el alta se hace con la cuenta del paciente, en
 /// <c>/api/auth/registro/paciente</c> (#70). La gestión es para un nutricionista o el administrador (#74); los menús
-/// asignados los ve además el propio paciente (#84). Por eso la política va en cada acción y no en la clase: la de
-/// la clase se sumaría a la de cada acción.
+/// asignados (#84) y el histórico de consumo (#85) los ve además el propio paciente. Por eso la política va en cada
+/// acción y no en la clase: la de la clase se sumaría a la de cada acción.
 /// </remarks>
 [ApiController]
 [Route("api/pacientes")]
@@ -115,4 +116,19 @@ public sealed class PacientesController(IDespachador despachador) : ControllerBa
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<IReadOnlyList<MenuDetalleDto>> ListarMenus(Guid id, CancellationToken ct)
         => despachador.EnviarAsync(new ListarMenusDePacienteQuery(id), ct);
+
+    /// <summary>
+    /// El histórico de consumo del paciente: cada día en que se le sirvió un menú, con la aceptación de cada ítem, del
+    /// más reciente al más antiguo. Lo ven el propio paciente y el personal.
+    /// </summary>
+    /// <response code="200">Los servicios; la lista está vacía si no tiene ninguno.</response>
+    /// <response code="403">El token es de otro paciente.</response>
+    /// <response code="404">El paciente no existe.</response>
+    [Authorize(Policy = Politicas.PacientePropioOPersonal)]
+    [HttpGet("{" + Politicas.ParametroDelPaciente + ":guid}/consumos")]
+    [ProducesResponseType<IReadOnlyList<ServicioDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public Task<IReadOnlyList<ServicioDto>> ListarConsumos(Guid id, CancellationToken ct)
+        => despachador.EnviarAsync(new ListarConsumosDePacienteQuery(id), ct);
 }

@@ -32,3 +32,16 @@ public sealed record MenuReemplazado(Guid MenuRechazadoId);
 /// <summary>Cuerpo de <c>POST /api/menus/{id}/asignaciones</c>: el paciente al que se asigna. El id del menú va en la ruta.</summary>
 /// <param name="PacienteId">Identificador del paciente.</param>
 public sealed record AsignacionDeMenu(Guid PacienteId);
+
+/// <summary>
+/// Cuerpo de <c>POST /api/menus/{id}/asignaciones/{pacienteId}/servicios</c>: el día del servicio y la aceptación de
+/// cada ítem. El menú y el paciente van en la ruta.
+/// </summary>
+/// <param name="Fecha">Día del servicio, en el calendario UTC (<c>aaaa-mm-dd</c>).</param>
+/// <param name="Consumos">La aceptación de cada ítem; si se omite, el servicio queda sin consumo registrado.</param>
+public sealed record ServicioDeMenu(DateOnly Fecha, IReadOnlyList<ConsumoDeItem>? Consumos);
+
+/// <summary>La aceptación o el rechazo de un ítem del menú en el servicio.</summary>
+/// <param name="ItemId">Identificador del alimento o plato.</param>
+/// <param name="Aceptacion"><see langword="true"/> si el paciente lo aceptó; de lo contrario, <see langword="false"/>.</param>
+public sealed record ConsumoDeItem(Guid ItemId, bool Aceptacion);

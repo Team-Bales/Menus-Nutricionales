@@ -63,6 +63,7 @@ public sealed class DependencyInjectionTests
 
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<INutricionistaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IPacienteRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ISalaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRepository<Sala, Guid>>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IItemAlimentarioRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAlimentoRepository>());

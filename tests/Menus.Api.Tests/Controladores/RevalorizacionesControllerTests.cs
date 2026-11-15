@@ -1,3 +1,4 @@
+using System.Reflection;
 using Menus.Api.Controladores;
 using Menus.Application.Comun;
 using Menus.Application.Revalorizaciones.ListarPendientes;
@@ -63,6 +64,7 @@ public sealed class RevalorizacionesControllerTests
 
         var created = Assert.IsType<CreatedAtActionResult>(resultado.Result);
         Assert.Equal(nameof(ValoracionesController.Obtener), created.ActionName);
+        Assert.Equal("Valoraciones", created.ControllerName);
         Assert.Equal(valoracionGeneradaId, created.RouteValues!["id"]);
         Assert.Equal(new IdCreadoDto(valoracionGeneradaId), created.Value);
 
@@ -87,5 +89,16 @@ public sealed class RevalorizacionesControllerTests
         Assert.Equal(lista, resultado);
         var queryEnviada = Assert.IsType<ListarRevalorizacionesPendientesQuery>(_despachador.Recibida);
         Assert.Equal(nutricionistaId, queryEnviada.NutricionistaId);
+    }
+
+    [Fact]
+    public void ListarPendientes_cuelga_de_los_nutricionistas_y_no_de_las_revalorizaciones()
+    {
+        var get = typeof(RevalorizacionesController)
+            .GetMethod(nameof(RevalorizacionesController.ListarPendientes))!
+            .GetCustomAttribute<HttpGetAttribute>()!;
+
+        // «~/» anula el prefijo api/revalorizaciones de la clase.
+        Assert.Equal("~/api/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes", get.Template);
     }
 }

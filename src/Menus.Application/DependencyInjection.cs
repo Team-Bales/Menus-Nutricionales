@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Application;
 
+/// <summary>Registro de la capa de aplicación en el contenedor de servicios.</summary>
 public static class DependencyInjection
 {
     /// <summary>

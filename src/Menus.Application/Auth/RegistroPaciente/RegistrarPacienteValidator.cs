@@ -7,6 +7,7 @@ namespace Menus.Application.Auth.RegistroPaciente;
 /// <summary>Validador para <see cref="RegistrarPacienteCommand"/>.</summary>
 public sealed class RegistrarPacienteValidator : AbstractValidator<RegistrarPacienteCommand>
 {
+    /// <summary>Declara las reglas de forma de la cuenta y de los datos del paciente.</summary>
     public RegistrarPacienteValidator()
     {
         RuleFor(x => x.Nombre)

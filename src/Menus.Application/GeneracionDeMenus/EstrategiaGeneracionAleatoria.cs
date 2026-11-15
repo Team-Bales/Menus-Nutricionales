@@ -12,6 +12,7 @@ namespace Menus.Application.GeneracionDeMenus;
 /// </summary>
 public sealed class EstrategiaGeneracionAleatoria : IEstrategiaGeneracionMenu
 {
+    /// <inheritdoc/>
     public IReadOnlyList<Guid> SeleccionarItems(
         IReadOnlyList<ItemAlimentario> itemsCompatibles,
         DistribucionTiposPreparacion distribucion,

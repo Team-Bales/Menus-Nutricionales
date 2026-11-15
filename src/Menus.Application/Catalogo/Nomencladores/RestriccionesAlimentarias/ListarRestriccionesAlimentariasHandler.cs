@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.RestriccionesAlimentarias;
 internal sealed class ListarRestriccionesAlimentariasHandler(INomencladorRepository<RestriccionAlimentaria> restricciones)
     : IHandler<ListarRestriccionesAlimentariasQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarRestriccionesAlimentariasQuery solicitud, CancellationToken ct)
     {
         var todas = await restricciones.ListAsync(ct);

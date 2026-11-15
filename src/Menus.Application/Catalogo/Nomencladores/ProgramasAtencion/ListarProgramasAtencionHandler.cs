@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.ProgramasAtencion;
 internal sealed class ListarProgramasAtencionHandler(INomencladorRepository<ProgramaAtencion> programas)
     : IHandler<ListarProgramasAtencionQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarProgramasAtencionQuery solicitud, CancellationToken ct)
     {
         var todos = await programas.ListAsync(ct);

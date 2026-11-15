@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.Especialidades;
 internal sealed class ListarEspecialidadesHandler(INomencladorRepository<Especialidad> especialidades)
     : IHandler<ListarEspecialidadesQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarEspecialidadesQuery solicitud, CancellationToken ct)
     {
         var todas = await especialidades.ListAsync(ct);

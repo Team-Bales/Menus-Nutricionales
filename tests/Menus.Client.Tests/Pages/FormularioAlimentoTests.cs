@@ -130,7 +130,7 @@ public sealed class FormularioAlimentoTests : BunitContext
 
         cut.Find("button.btn-outline-secondary").Click();
 
-        Assert.EndsWith("/catalogo/alimentos", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/alimentos", nav.Uri));
         Assert.Null(api.UltimaClasificacionCreada);
     }
 }

@@ -51,10 +51,10 @@ public sealed class FormularioPlatoTests : BunitContext
         Assert.Single(cut.FindAll(".row.g-2.align-items-end"));
 
         cut.Find("button.btn-outline-primary.btn-sm").Click();
-        Assert.Equal(2, cut.FindAll(".row.g-2.align-items-end").Count);
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".row.g-2.align-items-end").Count));
 
         cut.FindAll("button.btn-outline-danger")[0].Click();
-        Assert.Single(cut.FindAll(".row.g-2.align-items-end"));
+        cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".row.g-2.align-items-end")));
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public sealed class FormularioPlatoTests : BunitContext
         cut.Find("#alimento-0").Change(CatalogoApiFalsa.AlimentoId.ToString());
         cut.Find("#cantidad-0").Change("1");
         cut.Find("button.btn-outline-primary.btn-sm").Click();
-        cut.Find("#alimento-1").Change(CatalogoApiFalsa.AlimentoId.ToString());
+        cut.WaitForElement("#alimento-1").Change(CatalogoApiFalsa.AlimentoId.ToString());
         cut.Find("#cantidad-1").Change("1");
         cut.Find("form").Submit();
 

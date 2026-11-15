@@ -94,10 +94,10 @@ public sealed class CatalogoAlimentosTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Avena", cut.Markup));
 
         cut.Find("button.btn-primary").Click();
-        Assert.EndsWith("/catalogo/alimentos/nuevo", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/alimentos/nuevo", nav.Uri));
 
         cut.Find("button.btn-outline-primary.me-2").Click();
-        Assert.EndsWith($"/catalogo/alimentos/{CatalogoApiFalsa.AlimentoId}/editar", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith($"/catalogo/alimentos/{CatalogoApiFalsa.AlimentoId}/editar", nav.Uri));
     }
 
     [Fact]

@@ -88,13 +88,13 @@ public sealed class CatalogoPlatosTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Avena con leche", cut.Markup));
 
         cut.Find("button.btn-primary").Click();
-        Assert.EndsWith("/catalogo/platos/nuevo", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/platos/nuevo", nav.Uri));
 
         cut.Find("button.btn-outline-secondary.me-1").Click();
-        Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}", nav.Uri));
 
         cut.Find("button.btn-outline-primary.me-1").Click();
-        Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}/editar", nav.Uri);
+        cut.WaitForAssertion(() => Assert.EndsWith($"/catalogo/platos/{CatalogoApiFalsa.PlatoId}/editar", nav.Uri));
     }
 
     [Fact]

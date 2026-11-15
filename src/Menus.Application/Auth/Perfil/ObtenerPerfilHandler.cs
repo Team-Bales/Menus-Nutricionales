@@ -11,6 +11,9 @@ public sealed class ObtenerPerfilHandler : IHandler<ObtenerPerfilQuery, PerfilDt
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IIdentidadAutenticada _identidadAutenticada;
 
+    /// <summary>Crea el manejador con sus dependencias.</summary>
+    /// <param name="usuarioRepository">Usuarios, para buscar la cuenta.</param>
+    /// <param name="identidadAutenticada">Identidad del usuario que hace la petición, tomada del token.</param>
     public ObtenerPerfilHandler(
         IUsuarioRepository usuarioRepository,
         IIdentidadAutenticada identidadAutenticada)
@@ -19,6 +22,7 @@ public sealed class ObtenerPerfilHandler : IHandler<ObtenerPerfilQuery, PerfilDt
         _identidadAutenticada = identidadAutenticada;
     }
 
+    /// <exception cref="NoEncontradoException">Si la cuenta del token ya no existe.</exception>
     public async Task<PerfilDto> HandleAsync(ObtenerPerfilQuery solicitud, CancellationToken ct)
     {
         var usuario = await _usuarioRepository.GetByIdAsync(_identidadAutenticada.UsuarioId, ct);

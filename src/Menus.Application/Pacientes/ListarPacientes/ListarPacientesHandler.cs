@@ -7,6 +7,7 @@ namespace Menus.Application.Pacientes.ListarPacientes;
 internal sealed class ListarPacientesHandler(IPacienteRepository pacientes)
     : IHandler<ListarPacientesQuery, ResultadoPaginado<PacienteDto>>
 {
+    /// <inheritdoc/>
     public async Task<ResultadoPaginado<PacienteDto>> HandleAsync(ListarPacientesQuery solicitud, CancellationToken ct)
     {
         var (pagina, total) = await pacientes.BuscarAsync(

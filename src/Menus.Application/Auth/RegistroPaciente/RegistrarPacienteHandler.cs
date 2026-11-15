@@ -18,6 +18,12 @@ public sealed class RegistrarPacienteHandler : IHandler<RegistrarPacienteCommand
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
 
+    /// <summary>Crea el manejador con sus dependencias.</summary>
+    /// <param name="usuarioRepository">Usuarios, para comprobar el email y crear la cuenta.</param>
+    /// <param name="pacienteRepository">Pacientes, para crear la entidad de la cuenta.</param>
+    /// <param name="salaRepository">Salas, para comprobar que exista.</param>
+    /// <param name="unitOfWork">Confirma la cuenta y el paciente en una transacción.</param>
+    /// <param name="passwordHasher">Calcula el hash de la contraseña.</param>
     public RegistrarPacienteHandler(
         IUsuarioRepository usuarioRepository,
         IPacienteRepository pacienteRepository,
@@ -32,6 +38,8 @@ public sealed class RegistrarPacienteHandler : IHandler<RegistrarPacienteCommand
         _passwordHasher = passwordHasher;
     }
 
+    /// <exception cref="NoEncontradoException">Si la sala no existe.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si ya hay una cuenta con ese email.</exception>
     public async Task<IdCreadoDto> HandleAsync(RegistrarPacienteCommand solicitud, CancellationToken ct)
     {
         // Verificar que la sala existe

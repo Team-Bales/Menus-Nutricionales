@@ -9,6 +9,9 @@ namespace Menus.Application.Catalogo.Dietas.RegistrarDieta;
 internal sealed class RegistrarDietaHandler(IDietaRepository dietas, IUnitOfWork unidadDeTrabajo)
     : IHandler<RegistrarDietaCommand, IdCreadoDto>
 {
+    /// <exception cref="Menus.Domain.Excepciones.ReglaDeNegocioException">
+    /// Si un grupo o una restricción se repiten (lo comprueba el dominio, en <see cref="Dieta"/>).
+    /// </exception>
     public async Task<IdCreadoDto> HandleAsync(RegistrarDietaCommand solicitud, CancellationToken ct)
     {
         var dieta = new Dieta(Guid.NewGuid(), solicitud.Nombre.Trim(), solicitud.ProgramaAtencionId);

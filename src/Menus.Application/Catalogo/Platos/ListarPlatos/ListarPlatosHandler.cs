@@ -10,6 +10,7 @@ namespace Menus.Application.Catalogo.Platos.ListarPlatos;
 internal sealed class ListarPlatosHandler(IPlatoRepository platos)
     : IHandler<ListarPlatosQuery, ResultadoPaginado<PlatoDto>>
 {
+    /// <inheritdoc/>
     public async Task<ResultadoPaginado<PlatoDto>> HandleAsync(ListarPlatosQuery solicitud, CancellationToken ct)
     {
         var (pagina, total) = await platos.BuscarAsync(

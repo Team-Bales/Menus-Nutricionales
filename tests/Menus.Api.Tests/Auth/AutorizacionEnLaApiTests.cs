@@ -82,6 +82,7 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/pacientes/{id:guid}/dietas"] = NutricionistaOAdmin,
         ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
         ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
+        ["GET api/pacientes/{id:guid}/consumos"] = PacientePropioOPersonal,
 
         ["POST api/dietas/{dietaId:guid}/menus/generacion-automatica"] = SoloNutricionista,
         ["GET api/menus"] = SoloNutricionista,
@@ -89,6 +90,7 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/menus/{id:guid}/validar"] = SoloNutricionista,
         ["POST api/menus/{id:guid}/reemplazo"] = SoloNutricionista,
         ["POST api/menus/{id:guid}/asignaciones"] = SoloNutricionista,
+        ["POST api/menus/{id:guid}/asignaciones/{pacienteId:guid}/servicios"] = SoloNutricionista,
 
         ["POST api/valoraciones"] = SoloNutricionista,
         ["GET api/valoraciones/{id:guid}"] = SoloNutricionista,
@@ -202,6 +204,26 @@ public sealed class AutorizacionEnLaApiTests
 
         Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
         Assert.Equal(RespuestaDeAutorizacion.SinPermisos, (await respuesta.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
+    }
+
+    [Fact]
+    public async Task Un_paciente_que_pide_el_historico_de_consumo_de_otro_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}/consumos", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_paciente_no_registra_servicios_y_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Post,
+            $"/api/menus/{Guid.NewGuid()}/asignaciones/{Guid.NewGuid()}/servicios",
+            ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
     }
 
     [Fact]

@@ -6,6 +6,7 @@ using Menus.Application.GestionDeMenus.AsignarMenu;
 using Menus.Application.GestionDeMenus.ListarMenus;
 using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
+using Menus.Application.GestionDeMenus.RegistrarServicio;
 using Menus.Application.GestionDeMenus.ValidarMenu;
 using Menus.Domain.Entidades;
 using Microsoft.AspNetCore.Authorization;
@@ -14,8 +15,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Menus.Api.Controladores;
 
 /// <summary>
-/// Menús: generación automática (#98), listado por dieta, detalle, dictamen, menú de reemplazo (#80) y asignación a
-/// pacientes (#84). Cada acción arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los
+/// Menús: generación automática (#98), listado por dieta, detalle, dictamen, menú de reemplazo (#80), asignación a
+/// pacientes (#84) y servicio con su consumo (#85). Cada acción arma el comando o la consulta y lo envía al despachador (ADR-010, §8); los errores los
 /// traduce el manejador global.
 /// </summary>
 /// <remarks>
@@ -151,6 +152,34 @@ public sealed class MenusController(IDespachador despachador) : ControllerBase
     public async Task<IActionResult> Asignar(Guid id, AsignacionDeMenu cuerpo, CancellationToken ct)
     {
         await despachador.EnviarAsync(new AsignarMenuCommand(id, cuerpo.PacienteId), ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Registra que el menú asignado se le sirvió al paciente ese día y, en el mismo paso, si aceptó o rechazó cada ítem.
+    /// Lo registra cualquier nutricionista.
+    /// </summary>
+    /// <response code="204">Registrado.</response>
+    /// <response code="404">El menú o el paciente no existen.</response>
+    /// <response code="409">
+    /// El menú no es final o no está asignado al paciente, ya se le sirvió ese día (RC-17), o un ítem no está en el menú
+    /// (RX-01).
+    /// </response>
+    /// <response code="422">
+    /// Falta el día, un ítem se repite (RC-14), o el día es futuro o anterior a la aprobación del menú (RS-14).
+    /// </response>
+    [HttpPost("{id:guid}/asignaciones/{pacienteId:guid}/servicios")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RegistrarServicio(Guid id, Guid pacienteId, ServicioDeMenu cuerpo, CancellationToken ct)
+    {
+        // Un elemento nulo en la lista llega como un consumo sin ítem, para que el validador responda 422 y no un 500.
+        IReadOnlyList<ConsumoDelServicio> consumos =
+            [.. (cuerpo.Consumos ?? []).Select(c => new ConsumoDelServicio(c?.ItemId ?? Guid.Empty, c?.Aceptacion ?? false))];
+
+        await despachador.EnviarAsync(new RegistrarServicioCommand(id, pacienteId, cuerpo.Fecha, consumos), ct);
         return NoContent();
     }
 }

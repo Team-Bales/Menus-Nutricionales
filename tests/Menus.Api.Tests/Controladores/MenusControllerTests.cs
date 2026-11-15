@@ -6,6 +6,7 @@ using Menus.Application.GestionDeMenus.AsignarMenu;
 using Menus.Application.GestionDeMenus.ListarMenus;
 using Menus.Application.GestionDeMenus.ObtenerMenu;
 using Menus.Application.GestionDeMenus.RegistrarReemplazo;
+using Menus.Application.GestionDeMenus.RegistrarServicio;
 using Menus.Application.GestionDeMenus.ValidarMenu;
 using Menus.Domain.Entidades;
 using Microsoft.AspNetCore.Mvc;
@@ -137,6 +138,46 @@ public sealed class MenusControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new AsignarMenuCommand(id, paciente), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task RegistrarServicio_arma_el_comando_con_el_menu_y_el_paciente_de_la_ruta_y_responde_204()
+    {
+        var (menu, paciente, item) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        _despachador.Resultado = Unidad.Valor;
+
+        var respuesta = await Controlador.RegistrarServicio(
+            menu, paciente, new ServicioDeMenu(hoy, [new ConsumoDeItem(item, false)]), CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(respuesta);
+        var comando = Assert.IsType<RegistrarServicioCommand>(_despachador.Recibida);
+        Assert.Equal((menu, paciente, hoy), (comando.MenuId, comando.PacienteId, comando.Fecha));
+        Assert.Equal([new ConsumoDelServicio(item, false)], comando.Consumos);
+    }
+
+    [Fact]
+    public async Task RegistrarServicio_sin_consumos_manda_la_lista_vacia()
+    {
+        _despachador.Resultado = Unidad.Valor;
+
+        await Controlador.RegistrarServicio(
+            Guid.NewGuid(), Guid.NewGuid(), new ServicioDeMenu(DateOnly.FromDateTime(DateTime.UtcNow), null), CancellationToken.None);
+
+        Assert.Empty(Assert.IsType<RegistrarServicioCommand>(_despachador.Recibida).Consumos);
+    }
+
+    [Fact]
+    public async Task RegistrarServicio_un_consumo_nulo_llega_sin_item_para_que_lo_rechace_el_validador()
+    {
+        _despachador.Resultado = Unidad.Valor;
+
+        await Controlador.RegistrarServicio(
+            Guid.NewGuid(), Guid.NewGuid(), new ServicioDeMenu(DateOnly.FromDateTime(DateTime.UtcNow), [null!]), CancellationToken.None);
+
+        Assert.Equal(
+            [new ConsumoDelServicio(Guid.Empty, false)],
+            Assert.IsType<RegistrarServicioCommand>(_despachador.Recibida).Consumos);
     }
 
     /// <summary>Guarda la solicitud recibida y devuelve el resultado preparado.</summary>

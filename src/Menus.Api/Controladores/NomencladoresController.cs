@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Catalogo.Nomencladores;
 using Menus.Application.Catalogo.Nomencladores.Especialidades;
 using Menus.Application.Catalogo.Nomencladores.GruposNutricionales;
@@ -6,6 +7,7 @@ using Menus.Application.Catalogo.Nomencladores.ProgramasAtencion;
 using Menus.Application.Catalogo.Nomencladores.RestriccionesAlimentarias;
 using Menus.Application.Catalogo.Nomencladores.TiposPreparacion;
 using Menus.Application.Comun;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -55,6 +57,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="201">Creado.</response>
     /// <response code="409">Ya existe un grupo con ese nombre (RD-08).</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("grupos-nutricionales")]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -69,6 +72,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="204">Eliminado.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Está en uso.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("grupos-nutricionales/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -92,6 +96,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="201">Creada.</response>
     /// <response code="409">Ya existe una restricción con ese nombre (RD-08).</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("restricciones-alimentarias")]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -107,6 +112,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="204">Eliminada.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Está en uso.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("restricciones-alimentarias/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -130,6 +136,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="201">Creado.</response>
     /// <response code="409">Ya existe un programa con ese nombre (RD-08).</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("programas-atencion")]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -144,6 +151,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="204">Eliminado.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Tiene dietas (RR-12).</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("programas-atencion/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -167,6 +175,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="201">Creada.</response>
     /// <response code="409">Ya existe una especialidad con ese nombre (RD-08).</response>
     /// <response code="422">La entrada no es válida.</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpPost("especialidades")]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -181,6 +190,7 @@ public sealed class NomencladoresController(IDespachador despachador) : Controll
     /// <response code="204">Eliminada.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Tiene nutricionistas (RR-12).</response>
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("especialidades/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

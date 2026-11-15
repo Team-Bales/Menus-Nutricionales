@@ -220,10 +220,10 @@ public sealed class ConciliacionHostedServiceTests
 
         var cts = new CancellationTokenSource();
         var tcsFirstCall = new TaskCompletionSource<ResultadoConciliacion>();
-        var tcsSecondCall = new TaskCompletionSource<ResultadoConciliacion>();
+        var segundaLlamadaEmpezo = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var callCount = 0;
 
-        // Primera llamada: se completa cuando lo decidamos. Segunda: espera cancelación.
+        // Primera llamada: se completa cuando lo decidamos. Segunda: avisa que empezó y espera la cancelación.
         _conciliadorMock
             .Setup(c => c.ConciliarAsync(It.IsAny<CancellationToken>()))
             .Returns<CancellationToken>(ct =>
@@ -233,32 +233,24 @@ public sealed class ConciliacionHostedServiceTests
                 {
                     return tcsFirstCall.Task;
                 }
-                // Segunda llamada: esperar a que se cancele el token, luego lanzar
-                return ct.IsCancellationRequested
-                    ? Task.FromException<ResultadoConciliacion>(new OperationCanceledException(ct))
-                    : Task.Delay(Timeout.Infinite, ct).ContinueWith<ResultadoConciliacion>(_ =>
-                        throw new OperationCanceledException(ct), ct);
+
+                segundaLlamadaEmpezo.TrySetResult();
+                return Task.Delay(Timeout.Infinite, ct).ContinueWith<ResultadoConciliacion>(
+                    _ => throw new OperationCanceledException(ct), CancellationToken.None);
             });
 
         var servicio = CrearServicio(opciones);
         await servicio.StartAsync(cts.Token);
 
-        // Esperar a que pase el retraso inicial y la primera llamada a ConciliarAsync haya comenzado
-        await Task.Delay(100);
-
-        // Completar la primera llamada con éxito
+        // Completar la primera llamada con éxito; si todavía no empezó, la recibe ya completa.
         tcsFirstCall.SetResult(new ResultadoConciliacion(0, 0, 0, 0));
 
-        // Esperar a que la primera ejecución termine y la segunda llamada a ConciliarAsync comience
-        await Task.Delay(200);
-
-        // Ahora cancelar el token - la segunda llamada a ConciliarAsync debería lanzar
+        // Cancelar recién cuando la segunda llamada está en curso, y no tras un tiempo fijo: en un runner lento, la
+        // cancelación llegaba mientras el servicio esperaba el temporizador y no se registraba el log que se verifica.
+        await segundaLlamadaEmpezo.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await cts.CancelAsync();
 
-        // Esperar a que el servicio procese la cancelación
-        await Task.Delay(200);
-
-        // StopAsync no debe lanzar
+        // StopAsync espera a que termine ExecuteAsync, y no debe lanzar.
         await servicio.StopAsync(CancellationToken.None);
 
         // Verificar que se logueó "cancelada por token de parada"

@@ -100,6 +100,25 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByPacienteAsync_trae_los_items_y_solo_la_asignacion_de_ese_paciente()
+    {
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var repositorio = new MenuRepository(ctx);
+            (await repositorio.GetByIdAsync(_e.FinalId))!.AsignarPaciente(_e.P2);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var consulta = _fixture.CrearContexto();
+        var menu = Assert.Single(await new MenuRepository(consulta).GetByPacienteAsync(_e.P2));
+
+        Assert.Equal([_e.AlimentoId], menu.Items.Select(i => i.ItemId));
+        Assert.Equal([_e.P2], menu.Asignaciones.Select(a => a.PacienteId));
+        Assert.NotEmpty(menu.Distribuciones);
+        Assert.Empty(consulta.ChangeTracker.Entries());
+    }
+
+    [Fact]
     public async Task GetByIdAsync_carga_el_agregado_completo()
     {
         await using var ctx = _fixture.CrearContexto();

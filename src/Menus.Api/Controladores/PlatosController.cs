@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Catalogo.Platos;
 using Menus.Application.Catalogo.Platos.ActualizarPlato;
 using Menus.Application.Catalogo.Platos.AgregarIngrediente;
@@ -7,6 +8,7 @@ using Menus.Application.Catalogo.Platos.ObtenerPlato;
 using Menus.Application.Catalogo.Platos.QuitarIngrediente;
 using Menus.Application.Catalogo.Platos.RegistrarPlato;
 using Menus.Application.Comun;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Controladores;
@@ -26,6 +28,7 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
     /// Ya hay un ítem con ese nombre (RC-01), o un ingrediente no existe (RR-02) o es un plato (RS-12).
     /// </response>
     /// <response code="422">La entrada no es válida (por ejemplo, sin ingredientes o con una cantidad no positiva).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPost]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -71,6 +74,7 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
     /// <response code="404">No existe.</response>
     /// <response code="409">El actor no es quien describió el plato (RS-02).</response>
     /// <response code="422">La clasificación no es válida.</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -88,6 +92,7 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
     /// <response code="204">Eliminado.</response>
     /// <response code="404">No existe.</response>
     /// <response code="409">Figura en algún menú (RR-22).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -106,6 +111,7 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
     /// composición.
     /// </response>
     /// <response code="422">La entrada no es válida (por ejemplo, una cantidad no positiva).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpPost("{id:guid}/ingredientes")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -121,6 +127,7 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
     /// <response code="204">Quitado.</response>
     /// <response code="404">El plato no existe, o el alimento no está en su composición.</response>
     /// <response code="409">El actor no describió el plato (RS-02), o es el único ingrediente (RK-03).</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
     [HttpDelete("{id:guid}/ingredientes/{alimentoId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

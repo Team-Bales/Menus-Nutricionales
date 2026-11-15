@@ -52,9 +52,9 @@ public interface IMenuRepository : IRepository<Menu, Guid>
     Task<IReadOnlyList<Menu>> GetByNutricionistaCreadorAsync(Guid nutricionistaId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Devuelve los menús asignados a un paciente, a través de sus asignaciones (agregación <c>Asignación</c>),
-    /// con los servicios y los consumos de cada asignación: de ahí sale el historial de consumo del paciente
-    /// (issue #85).
+    /// Devuelve, del más reciente al más antiguo y sin rastrear, los menús asignados a un paciente (agregación
+    /// <c>Asignación</c>), con sus ítems y su parametrización (#84). De las asignaciones trae solo la de ese paciente,
+    /// con sus servicios y sus consumos: de ahí sale su historial de consumo (#85).
     /// </summary>
     /// <param name="pacienteId">Identificador del paciente.</param>
     /// <param name="cancellationToken">Token de cancelación.</param>

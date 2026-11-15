@@ -57,7 +57,7 @@ public sealed class NutricionistasController(IDespachador despachador) : Control
     /// <response code="204">Actualizado.</response>
     /// <response code="401">No autenticado.</response>
     /// <response code="403">No es administrador.</response>
-    /// <response code="404">No existe.</response>
+    /// <response code="404">El nutricionista o la especialidad no existen.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]

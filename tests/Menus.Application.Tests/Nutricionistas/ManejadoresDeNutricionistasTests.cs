@@ -6,8 +6,10 @@ using Menus.Application.Nutricionistas.ListarNutricionistas;
 using Menus.Application.Nutricionistas.ObtenerNutricionista;
 using Menus.Application.Nutricionistas.RevocarDieta;
 using Menus.Application.Tests.Catalogo.Dietas;
+using Menus.Application.Tests.Catalogo.Nomencladores;
 using Menus.Domain;
 using Menus.Domain.Excepciones;
+using Menus.Domain.Nomenclators;
 
 namespace Menus.Application.Tests.Nutricionistas;
 
@@ -16,6 +18,13 @@ public sealed class ManejadoresDeNutricionistasTests
 {
     private readonly BancoDeNutricionistasFalso _banco = new();
     private readonly BancoDeDietasFalso _dietas = new();
+    private readonly BancoDeNomencladoresFalso _nomencladores = new();
+
+    public ManejadoresDeNutricionistasTests()
+    {
+        _nomencladores.Especialidades.Add(new Especialidad(BancoDeNutricionistasFalso.EspecialidadClinica, "Clínica"));
+        _nomencladores.Especialidades.Add(new Especialidad(BancoDeNutricionistasFalso.EspecialidadDeportiva, "Deportiva"));
+    }
 
     // ---- Listar ----
 
@@ -107,6 +116,16 @@ public sealed class ManejadoresDeNutricionistasTests
     }
 
     [Fact]
+    public async Task Obtener_sin_entidad_id_en_el_token_no_puede_ver_el_detalle()
+    {
+        var nutricionista = _banco.Agregar("Ana");
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Obtener(RolesUsuario.Nutricionista, null).HandleAsync(
+                new ObtenerNutricionistaQuery(nutricionista.Id), CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Obtener_un_nutricionista_que_no_existe_da_404()
     {
         var id = Guid.NewGuid();
@@ -118,10 +137,13 @@ public sealed class ManejadoresDeNutricionistasTests
         Assert.Equal(id, error.Id);
     }
 
-    private ObtenerNutricionistaHandler Obtener(string rol, Guid entidadId)
+    private ObtenerNutricionistaHandler Obtener(string rol, Guid? entidadId)
         => new(_banco.NutricionistasRepo, new IdentidadFalsa(rol, entidadId));
 
     // ---- Actualizar ----
+
+    private ActualizarNutricionistaHandler Actualizar()
+        => new(_banco.NutricionistasRepo, _nomencladores.EspecialidadesRepo, _banco.UnidadDeTrabajo);
 
     [Fact]
     public async Task Actualizar_cambia_el_nombre_y_la_especialidad()
@@ -129,7 +151,7 @@ public sealed class ManejadoresDeNutricionistasTests
         var nutricionista = _banco.Agregar("Ana", BancoDeNutricionistasFalso.EspecialidadClinica);
         var nuevaEspecialidad = BancoDeNutricionistasFalso.EspecialidadDeportiva;
 
-        await new ActualizarNutricionistaHandler(_banco.NutricionistasRepo, _banco.UnidadDeTrabajo).HandleAsync(
+        await Actualizar().HandleAsync(
             new ActualizarNutricionistaCommand(nutricionista.Id, "  Ana Gómez  ", nuevaEspecialidad), CancellationToken.None);
 
         Assert.Equal("Ana Gómez", nutricionista.Nombre);
@@ -141,11 +163,26 @@ public sealed class ManejadoresDeNutricionistasTests
     public async Task Actualizar_un_nutricionista_que_no_existe_da_404()
     {
         var id = Guid.NewGuid();
-        var handler = new ActualizarNutricionistaHandler(_banco.NutricionistasRepo, _banco.UnidadDeTrabajo);
 
-        await Assert.ThrowsAsync<NoEncontradoException>(
-            () => handler.HandleAsync(new ActualizarNutricionistaCommand(id, "Ana", Guid.NewGuid()), CancellationToken.None));
+        var error = await Assert.ThrowsAsync<NoEncontradoException>(
+            () => Actualizar().HandleAsync(
+                new ActualizarNutricionistaCommand(id, "Ana", BancoDeNutricionistasFalso.EspecialidadClinica), CancellationToken.None));
 
+        Assert.Equal("nutricionista", error.Recurso);
+        Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Fact]
+    public async Task Actualizar_con_una_especialidad_que_no_existe_da_404()
+    {
+        var nutricionista = _banco.Agregar("Ana");
+        var especialidadInexistente = Guid.NewGuid();
+
+        var error = await Assert.ThrowsAsync<NoEncontradoException>(
+            () => Actualizar().HandleAsync(
+                new ActualizarNutricionistaCommand(nutricionista.Id, "Ana", especialidadInexistente), CancellationToken.None));
+
+        Assert.Equal("especialidad", error.Recurso);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
     }
 
@@ -304,7 +341,7 @@ public sealed class ManejadoresDeNutricionistasTests
             () => handler.HandleAsync(new AsignarRolJefeCommand(Guid.NewGuid()), CancellationToken.None));
     }
 
-    private sealed class IdentidadFalsa(string rol, Guid entidadId) : IIdentidadAutenticada
+    private sealed class IdentidadFalsa(string rol, Guid? entidadId) : IIdentidadAutenticada
     {
         public Guid UsuarioId { get; } = Guid.NewGuid();
         public Guid? EntidadId { get; } = entidadId;

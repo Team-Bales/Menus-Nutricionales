@@ -239,3 +239,13 @@ internal sealed class ActorFalso(Guid id) : IActorActual
 {
     public Guid Id { get; } = id;
 }
+
+/// <summary>La identidad del token, con el rol y la entidad que pida cada prueba.</summary>
+internal sealed class IdentidadFalsa(string rol, Guid? entidadId) : IIdentidadAutenticada
+{
+    public Guid UsuarioId { get; } = Guid.NewGuid();
+
+    public Guid? EntidadId { get; } = entidadId;
+
+    public string Rol { get; } = rol;
+}

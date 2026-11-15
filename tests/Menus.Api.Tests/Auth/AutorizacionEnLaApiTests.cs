@@ -22,6 +22,7 @@ public sealed class AutorizacionEnLaApiTests
     private const string Autenticado = "Autenticado";
     private const string SoloAdmin = Politicas.SoloAdmin;
     private const string SoloNutricionista = Politicas.SoloNutricionista;
+    private const string SoloPaciente = Politicas.SoloPaciente;
     private const string NutricionistaOAdmin = Politicas.NutricionistaOAdmin;
     private const string PacientePropioOPersonal = Politicas.PacientePropioOPersonal;
 
@@ -116,7 +117,7 @@ public sealed class AutorizacionEnLaApiTests
         ["GET api/dietas/{dietaId:guid}/valoraciones"] = SoloNutricionista,
         ["GET api/pacientes/{pacienteId:guid}/valoraciones"] = SoloNutricionista,
 
-        ["POST api/revalorizaciones"] = Autenticado,
+        ["POST api/revalorizaciones"] = SoloPaciente,
         ["GET api/revalorizaciones/{id:guid}"] = Autenticado,
         ["POST api/revalorizaciones/{id:guid}/resultado"] = SoloNutricionista,
         ["GET api/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes"] = SoloNutricionista,
@@ -241,6 +242,15 @@ public sealed class AutorizacionEnLaApiTests
             HttpMethod.Post,
             $"/api/menus/{Guid.NewGuid()}/asignaciones/{Guid.NewGuid()}/servicios",
             ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_nutricionista_no_solicita_revalorizaciones_y_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Post, "/api/revalorizaciones", ApiEnMemoria.Token(RolesUsuario.Nutricionista, Guid.NewGuid()));
 
         Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
     }

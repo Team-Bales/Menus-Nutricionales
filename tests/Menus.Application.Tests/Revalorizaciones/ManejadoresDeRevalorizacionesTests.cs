@@ -2,7 +2,9 @@ using Menus.Application.Comun;
 using Menus.Application.Revalorizaciones.ListarPendientes;
 using Menus.Application.Revalorizaciones.RegistrarResultadoRevalorizacion;
 using Menus.Application.Revalorizaciones.SolicitarRevalorizacion;
+using Menus.Application.Tests.Catalogo;
 using Menus.Application.Tests.Revalorizaciones;
+using Menus.Domain;
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
 using Menus.Domain.Nomenclators;
@@ -14,6 +16,22 @@ public sealed class ManejadoresDeRevalorizacionesTests
 {
     private readonly RevalorizacionesFalso _banco = new();
 
+    /// <summary>El manejador de la solicitud, con la identidad de un paciente: por defecto, el de la valoración revisada.</summary>
+    private SolicitarRevalorizacionHandler Solicitar(string rol = RolesUsuario.Paciente, Guid? entidadId = null)
+        => new(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.NutricionistasRepo, _banco.UnidadDeTrabajo,
+            new IdentidadFalsa(rol, entidadId ?? RevalorizacionesFalso.Paciente));
+
+    private ObtenerRevalorizacionHandler Obtener(string rol, Guid? entidadId)
+        => new(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, new IdentidadFalsa(rol, entidadId));
+
+    private Revalorizacion NuevaRevalorizacion()
+    {
+        var revalorizacion = new Revalorizacion(
+            Guid.NewGuid(), DateTime.UtcNow, RevalorizacionesFalso.NutricionistaEjecutor, RevalorizacionesFalso.ValoracionRevisada);
+        _banco.Revalorizaciones.Add(revalorizacion);
+        return revalorizacion;
+    }
+
     // ---- SolicitarRevalorizacion ----
 
     [Fact]
@@ -21,7 +39,7 @@ public sealed class ManejadoresDeRevalorizacionesTests
     {
         _banco.Sembrar();
         var comando = new SolicitarRevalorizacionCommand(RevalorizacionesFalso.ValoracionRevisada, RevalorizacionesFalso.NutricionistaEjecutor);
-        var handler = new SolicitarRevalorizacionHandler(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.NutricionistasRepo, _banco.UnidadDeTrabajo);
+        var handler = Solicitar();
 
         var creado = await handler.HandleAsync(comando, CancellationToken.None);
 
@@ -39,7 +57,7 @@ public sealed class ManejadoresDeRevalorizacionesTests
     {
         _banco.Sembrar();
         var comando = new SolicitarRevalorizacionCommand(Guid.NewGuid(), RevalorizacionesFalso.NutricionistaEjecutor);
-        var handler = new SolicitarRevalorizacionHandler(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.NutricionistasRepo, _banco.UnidadDeTrabajo);
+        var handler = Solicitar();
 
         var ex = await Assert.ThrowsAsync<NoEncontradoException>(() => handler.HandleAsync(comando, CancellationToken.None));
 
@@ -53,7 +71,7 @@ public sealed class ManejadoresDeRevalorizacionesTests
     {
         _banco.Sembrar();
         var comando = new SolicitarRevalorizacionCommand(RevalorizacionesFalso.ValoracionRevisada, Guid.NewGuid());
-        var handler = new SolicitarRevalorizacionHandler(_banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.NutricionistasRepo, _banco.UnidadDeTrabajo);
+        var handler = Solicitar();
 
         var ex = await Assert.ThrowsAsync<NoEncontradoException>(() => handler.HandleAsync(comando, CancellationToken.None));
 
@@ -208,7 +226,7 @@ public sealed class ManejadoresDeRevalorizacionesTests
         var revalorizacion = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, RevalorizacionesFalso.NutricionistaEjecutor, RevalorizacionesFalso.ValoracionRevisada);
         _banco.Revalorizaciones.Add(revalorizacion);
 
-        var handler = new ObtenerRevalorizacionHandler(_banco.RevalorizacionesRepo);
+        var handler = Obtener(RolesUsuario.Nutricionista, Guid.NewGuid());
         var dto = await handler.HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None);
 
         Assert.Equal(revalorizacion.Id, dto.Id);
@@ -222,11 +240,117 @@ public sealed class ManejadoresDeRevalorizacionesTests
     public async Task Obtener_inexistente_lanza_NoEncontrado()
     {
         _banco.Sembrar();
-        var handler = new ObtenerRevalorizacionHandler(_banco.RevalorizacionesRepo);
+        var handler = Obtener(RolesUsuario.Nutricionista, Guid.NewGuid());
 
         var ex = await Assert.ThrowsAsync<NoEncontradoException>(
             () => handler.HandleAsync(new ObtenerRevalorizacionQuery(Guid.NewGuid()), CancellationToken.None));
 
         Assert.Equal("revalorización", ex.Recurso);
+    }
+
+    // ---- RS-09: quién solicita y quién consulta (#267) ----
+
+    [Fact]
+    public async Task Solicitar_la_revalorizacion_de_la_valoracion_de_otro_paciente_lanza_AccesoDenegado_y_no_guarda()
+    {
+        _banco.Sembrar();
+        var comando = new SolicitarRevalorizacionCommand(RevalorizacionesFalso.ValoracionRevisada, RevalorizacionesFalso.NutricionistaEjecutor);
+
+        var ex = await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Solicitar(entidadId: Guid.NewGuid()).HandleAsync(comando, CancellationToken.None));
+
+        Assert.Contains("RS-09", ex.Message);
+        Assert.Empty(_banco.Revalorizaciones);
+        Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
+    }
+
+    [Theory]
+    [InlineData(RolesUsuario.Nutricionista)]
+    [InlineData(RolesUsuario.Admin)]
+    public async Task Solicitar_sin_ser_paciente_lanza_AccesoDenegado_aunque_coincida_la_entidad(string rol)
+    {
+        _banco.Sembrar();
+        var comando = new SolicitarRevalorizacionCommand(RevalorizacionesFalso.ValoracionRevisada, RevalorizacionesFalso.NutricionistaEjecutor);
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Solicitar(rol, RevalorizacionesFalso.Paciente).HandleAsync(comando, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Solicitar_un_paciente_sin_entidad_en_el_token_lanza_AccesoDenegado()
+    {
+        _banco.Sembrar();
+        var comando = new SolicitarRevalorizacionCommand(RevalorizacionesFalso.ValoracionRevisada, RevalorizacionesFalso.NutricionistaEjecutor);
+        var handler = new SolicitarRevalorizacionHandler(
+            _banco.RevalorizacionesRepo, _banco.ValoracionesRepo, _banco.NutricionistasRepo, _banco.UnidadDeTrabajo,
+            new IdentidadFalsa(RolesUsuario.Paciente, null));
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(() => handler.HandleAsync(comando, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Solicitar_sobre_una_valoracion_inexistente_da_404_antes_que_403()
+    {
+        _banco.Sembrar();
+        var comando = new SolicitarRevalorizacionCommand(Guid.NewGuid(), RevalorizacionesFalso.NutricionistaEjecutor);
+
+        await Assert.ThrowsAsync<NoEncontradoException>(
+            () => Solicitar(entidadId: Guid.NewGuid()).HandleAsync(comando, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtener_lo_ve_el_paciente_de_la_valoracion_revisada()
+    {
+        _banco.Sembrar();
+        var revalorizacion = NuevaRevalorizacion();
+
+        var dto = await Obtener(RolesUsuario.Paciente, RevalorizacionesFalso.Paciente)
+            .HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None);
+
+        Assert.Equal(revalorizacion.Id, dto.Id);
+    }
+
+    [Fact]
+    public async Task Obtener_lo_ve_el_administrador()
+    {
+        _banco.Sembrar();
+        var revalorizacion = NuevaRevalorizacion();
+
+        var dto = await Obtener(RolesUsuario.Admin, null)
+            .HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None);
+
+        Assert.Equal(revalorizacion.Id, dto.Id);
+    }
+
+    [Fact]
+    public async Task Obtener_otro_paciente_lanza_AccesoDenegado()
+    {
+        _banco.Sembrar();
+        var revalorizacion = NuevaRevalorizacion();
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Obtener(RolesUsuario.Paciente, Guid.NewGuid())
+                .HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtener_un_paciente_sin_entidad_en_el_token_lanza_AccesoDenegado()
+    {
+        _banco.Sembrar();
+        var revalorizacion = NuevaRevalorizacion();
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Obtener(RolesUsuario.Paciente, null)
+                .HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtener_si_falta_la_valoracion_revisada_se_niega_a_un_paciente()
+    {
+        var revalorizacion = NuevaRevalorizacion(); // sin Sembrar: la valoración revisada no está
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Obtener(RolesUsuario.Paciente, RevalorizacionesFalso.Paciente)
+                .HandleAsync(new ObtenerRevalorizacionQuery(revalorizacion.Id), CancellationToken.None));
     }
 }

@@ -59,6 +59,25 @@ public sealed class EstrategiaGeneracionAleatoriaTests
     }
 
     [Fact]
+    public void Selecciona_items_de_todos_los_grupos_a_cubrir_cuando_hay_suficientes()
+    {
+        var deCereales = NuevoAlimento(GrupoCereales, TipoPreparacion.Entrante.Id);
+        var deProteinas = NuevoAlimento(GrupoProteinas, TipoPreparacion.Entrante.Id);
+        var deOtroGrupo = Enumerable.Range(0, 5).Select(_ => NuevoAlimento(Guid.NewGuid(), TipoPreparacion.Entrante.Id)).ToList();
+        IReadOnlyList<ItemAlimentario> disponibles = [deCereales, deProteinas, .. deOtroGrupo];
+
+        var distribucion = DistribucionTiposPreparacion.CrearDesdeTuplas([(TipoPreparacion.Entrante.Id, 1m)]);
+        var cobertura = CoberturaGruposNutricionales.Crear([GrupoCereales, GrupoProteinas]);
+        var cantidad = CantidadTotalAlimentos.Crear(2);
+
+        var seleccionados = _estrategia.SeleccionarItems(disponibles, distribucion, cobertura, cantidad);
+
+        Assert.Equal(2, seleccionados.Count);
+        Assert.Contains(deCereales.Id, seleccionados);
+        Assert.Contains(deProteinas.Id, seleccionados);
+    }
+
+    [Fact]
     public void No_repite_items_entre_los_seleccionados()
     {
         IReadOnlyList<ItemAlimentario> disponibles =

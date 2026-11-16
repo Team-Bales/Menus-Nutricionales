@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Salas;
 using Menus.Application.Salas.ActualizarSala;
@@ -23,7 +24,7 @@ public sealed class SalasController(IDespachador despachador) : ControllerBase
     /// <response code="200">Las salas.</response>
     /// <response code="401">No autenticado.</response>
     [HttpGet]
-    [Authorize(Roles = "Admin,Nutricionista")]
+    [Authorize(Policy = Politicas.NutricionistaOAdmin)]
     [ProducesResponseType<IReadOnlyList<SalaDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public Task<IReadOnlyList<SalaDto>> Listar(CancellationToken ct)
@@ -34,7 +35,7 @@ public sealed class SalasController(IDespachador despachador) : ControllerBase
     /// <response code="401">No autenticado.</response>
     /// <response code="404">No existe.</response>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin,Nutricionista")]
+    [Authorize(Policy = Politicas.NutricionistaOAdmin)]
     [ProducesResponseType<SalaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -48,7 +49,7 @@ public sealed class SalasController(IDespachador despachador) : ControllerBase
     /// <response code="409">Ya existe una sala con ese nombre.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -68,7 +69,7 @@ public sealed class SalasController(IDespachador despachador) : ControllerBase
     /// <response code="409">Ya existe otra sala con ese nombre.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -88,7 +89,7 @@ public sealed class SalasController(IDespachador despachador) : ControllerBase
     /// <response code="404">No existe.</response>
     /// <response code="409">Tiene pacientes asignados.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

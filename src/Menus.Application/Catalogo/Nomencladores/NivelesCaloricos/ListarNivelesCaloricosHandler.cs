@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.NivelesCaloricos;
 /// </summary>
 internal sealed class ListarNivelesCaloricosHandler : IHandler<ListarNivelesCaloricosQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarNivelesCaloricosQuery solicitud, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<NomencladorDto>>([.. NivelCalorico.Todos.Select(NomencladorDto.Desde)]);
 }

@@ -18,6 +18,12 @@ public sealed class LoginHandler : IHandler<LoginCommand, LoginResult>
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenEmitter _tokenEmitter;
 
+    /// <summary>Crea el manejador con sus dependencias.</summary>
+    /// <param name="usuarioRepository">Usuarios, para buscar la cuenta por email.</param>
+    /// <param name="nutricionistaRepository">Nutricionistas, para los datos que van en el token.</param>
+    /// <param name="especialidadRepository">Especialidades, para el nombre que va en el token.</param>
+    /// <param name="passwordHasher">Verifica la contraseña contra su hash.</param>
+    /// <param name="tokenEmitter">Emite el JWT.</param>
     public LoginHandler(
         IUsuarioRepository usuarioRepository,
         INutricionistaRepository nutricionistaRepository,
@@ -32,6 +38,10 @@ public sealed class LoginHandler : IHandler<LoginCommand, LoginResult>
         _tokenEmitter = tokenEmitter;
     }
 
+    /// <exception cref="CredencialesInvalidasException">
+    /// Si no hay una cuenta con ese email o la contraseña no coincide. Se responde igual en los dos casos, y con el
+    /// mismo tiempo, para no revelar qué emails existen.
+    /// </exception>
     public async Task<LoginResult> HandleAsync(LoginCommand solicitud, CancellationToken ct)
     {
         var emailNormalizado = Usuario.NormalizarEmail(solicitud.Email);

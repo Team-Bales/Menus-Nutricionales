@@ -8,6 +8,7 @@ using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Menus.Infrastructure.Tests;
@@ -16,7 +17,11 @@ public sealed class DependencyInjectionTests
 {
     private const string Key = "clave-de-prueba-con-mas-de-32-bytes-1234567890";
 
-    private static IConfiguration CreateConfiguration(string? jwtKey = Key, string? mongo = null, string? redis = null)
+    private static IConfiguration CreateConfiguration(
+        string? jwtKey = Key,
+        string? mongo = null,
+        string? redis = null,
+        bool? conciliacionHabilitada = null)
     {
         var valores = new Dictionary<string, string?>
         {
@@ -36,6 +41,11 @@ public sealed class DependencyInjectionTests
             valores["ConnectionStrings:Redis"] = redis;
         }
 
+        if (conciliacionHabilitada is not null)
+        {
+            valores["Conciliacion:Habilitada"] = conciliacionHabilitada.Value ? "true" : "false";
+        }
+
         return new ConfigurationBuilder()
             .AddInMemoryCollection(valores)
             .Build();
@@ -53,6 +63,7 @@ public sealed class DependencyInjectionTests
 
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<INutricionistaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IPacienteRepository>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<ISalaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IRepository<Sala, Guid>>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IItemAlimentarioRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IAlimentoRepository>());
@@ -154,5 +165,22 @@ public sealed class DependencyInjectionTests
         using var scope = provider.CreateScope();
 
         Assert.IsType<CacheNula>(scope.ServiceProvider.GetRequiredService<ICache>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConMongo_YConciliacionHabilitada_RegistraElServicioHospedado()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(); // el servicio hospedado pide un ILogger<ConciliacionHostedService>
+
+        services.AddInfrastructure(CreateConfiguration(
+            mongo: "mongodb://localhost:27017/menus_prueba",
+            conciliacionHabilitada: true));
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Contains(
+            provider.GetServices<IHostedService>(),
+            servicio => servicio is ConciliacionHostedService);
     }
 }

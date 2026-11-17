@@ -1,3 +1,4 @@
+using Menus.Api.Auth;
 using Menus.Application.Auth;
 using Menus.Application.Auth.Login;
 using Menus.Application.Auth.Perfil;
@@ -36,7 +37,7 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
     /// <response code="409">Ya existe un usuario con ese email.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPost("registro/nutricionista")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -56,7 +57,7 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
     /// <response code="409">Ya existe un usuario con ese email.</response>
     /// <response code="422">La entrada no es válida.</response>
     [HttpPost("registro/paciente")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

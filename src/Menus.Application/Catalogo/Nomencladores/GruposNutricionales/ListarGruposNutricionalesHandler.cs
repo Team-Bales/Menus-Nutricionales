@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.GruposNutricionales;
 internal sealed class ListarGruposNutricionalesHandler(INomencladorRepository<GrupoNutricional> grupos)
     : IHandler<ListarGruposNutricionalesQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarGruposNutricionalesQuery solicitud, CancellationToken ct)
     {
         var todos = await grupos.ListAsync(ct);

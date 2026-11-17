@@ -7,6 +7,7 @@ namespace Menus.Application.Catalogo.Dietas.ListarDietas;
 internal sealed class ListarDietasHandler(IDietaRepository dietas)
     : IHandler<ListarDietasQuery, ResultadoPaginado<DietaResumenDto>>
 {
+    /// <inheritdoc/>
     public async Task<ResultadoPaginado<DietaResumenDto>> HandleAsync(ListarDietasQuery solicitud, CancellationToken ct)
     {
         var (pagina, total) = await dietas.BuscarAsync(solicitud.ProgramaAtencionId, solicitud.Page, solicitud.Size, ct);

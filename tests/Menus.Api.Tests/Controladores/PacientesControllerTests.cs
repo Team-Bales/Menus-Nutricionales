@@ -1,5 +1,8 @@
 using Menus.Api.Controladores;
 using Menus.Application.Comun;
+using Menus.Application.GestionDeMenus;
+using Menus.Application.GestionDeMenus.ListarConsumosDePaciente;
+using Menus.Application.GestionDeMenus.ListarMenusDePaciente;
 using Menus.Application.Pacientes;
 using Menus.Application.Pacientes.ActualizarPaciente;
 using Menus.Application.Pacientes.DesinscribirDieta;
@@ -92,6 +95,32 @@ public sealed class PacientesControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new DesinscribirDietaCommand(id, Dieta), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task ListarConsumos_arma_la_consulta_con_el_paciente_de_la_ruta()
+    {
+        var id = Guid.NewGuid();
+        IReadOnlyList<ServicioDto> servicios = [];
+        _despachador.Resultado = servicios;
+
+        var respuesta = await Controlador.ListarConsumos(id, CancellationToken.None);
+
+        Assert.Same(servicios, respuesta);
+        Assert.Equal(new ListarConsumosDePacienteQuery(id), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task ListarMenus_arma_la_consulta_con_el_paciente_de_la_ruta()
+    {
+        var id = Guid.NewGuid();
+        IReadOnlyList<MenuDetalleDto> menus = [];
+        _despachador.Resultado = menus;
+
+        var respuesta = await Controlador.ListarMenus(id, CancellationToken.None);
+
+        Assert.Same(menus, respuesta);
+        Assert.Equal(new ListarMenusDePacienteQuery(id), _despachador.Recibida);
     }
 
     [Fact]

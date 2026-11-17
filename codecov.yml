@@ -1,6 +1,11 @@
-coverage:
-  ignore:
-    # Program.cs de Menus.Client arranca el host real de Blazor WebAssembly (RunAsync) y depende del runtime
-    # del navegador (interop JS); no se puede ejercitar desde xUnit sin un navegador real, a diferencia del
-    # Program.cs de Menus.Api, que sí se cubre con WebApplicationFactory en las pruebas de integración.
-    - "src/Menus.Client/Program.cs"
+# Qué no mide Codecov. La lista va en la clave «ignore» de primer nivel, que es la que documenta Codecov.
+ignore:
+  # Los proyectos de prueba no son código a cubrir: SonarCloud ya los separa con sonar.tests=tests.
+  # Hace falta porque coverlet instrumenta todo ensamblado del proyecto que no sea el de la propia corrida. Desde
+  # que tests/Menus.Application.Tests.Auth referencia a tests/Menus.Application.Tests, el informe de esa corrida
+  # incluye Menus.Application.Tests.dll, y Codecov contaba sus líneas como código sin cubrir.
+  - "tests/**"
+  # Program.cs de Menus.Client arranca el host real de Blazor WebAssembly (RunAsync) y depende del runtime
+  # del navegador (interop JS); no se puede ejercitar desde xUnit sin un navegador real, a diferencia del
+  # Program.cs de Menus.Api, que sí se cubre con WebApplicationFactory en las pruebas de integración.
+  - "src/Menus.Client/Program.cs"

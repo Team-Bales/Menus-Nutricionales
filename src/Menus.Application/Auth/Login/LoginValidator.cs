@@ -7,6 +7,7 @@ namespace Menus.Application.Auth.Login;
 /// <summary>Validador para <see cref="LoginCommand"/>.</summary>
 public sealed class LoginValidator : AbstractValidator<LoginCommand>
 {
+    /// <summary>Declara las reglas de forma del email y la contraseña.</summary>
     public LoginValidator()
     {
         RuleFor(x => x.Email)

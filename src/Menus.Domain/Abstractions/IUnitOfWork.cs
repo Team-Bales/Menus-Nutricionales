@@ -8,5 +8,11 @@ namespace Menus.Domain.Abstractions;
 /// </summary>
 public interface IUnitOfWork
 {
+    /// <summary>
+    /// Confirma en una transacción todos los cambios pendientes de los repositorios del caso de uso. Si una
+    /// restricción de la base los rechaza, no se guarda ninguno.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Cantidad de filas escritas.</returns>
     Task<int> CommitAsync(CancellationToken cancellationToken = default);
 }

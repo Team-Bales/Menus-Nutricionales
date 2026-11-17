@@ -122,8 +122,8 @@ else if (_pagina is not null)
         await CargarPagina(1);
     }
 
-    private Task PaginaAnterior() => CargarPagina(Math.Max(1, (_pagina?.Page ?? 2) - 1));
-    private Task PaginaSiguiente() => CargarPagina((_pagina?.Page ?? 0) + 1);
+    private Task PaginaAnterior() => CargarPagina(Math.Max(1, _pagina!.Page - 1));
+    private Task PaginaSiguiente() => CargarPagina(_pagina!.Page + 1);
     private void VerDetalle(Guid id) => Navegacion.NavigateTo($"/catalogo/dietas/{id}");
     private string NombrePrograma(Guid id) => _programas.FirstOrDefault(p => p.Id == id)?.Nombre ?? "—";
 }

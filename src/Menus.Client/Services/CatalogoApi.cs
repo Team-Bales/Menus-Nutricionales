@@ -13,11 +13,44 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
     public Task<IReadOnlyList<Nomenclador>> ListarGruposAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/grupos-nutricionales", ct);
 
+    public Task<IReadOnlyList<Nomenclador>> ListarRestriccionesAsync(CancellationToken ct = default)
+        => ObtenerListaAsync("api/nomencladores/restricciones-alimentarias", ct);
+
+    public Task<IReadOnlyList<Nomenclador>> ListarProgramasAsync(CancellationToken ct = default)
+        => ObtenerListaAsync("api/nomencladores/programas-atencion", ct);
+
+    public Task<IReadOnlyList<Nomenclador>> ListarEspecialidadesAsync(CancellationToken ct = default)
+        => ObtenerListaAsync("api/nomencladores/especialidades", ct);
+
     public Task<IReadOnlyList<Nomenclador>> ListarTiposPreparacionAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/tipos-preparacion", ct);
 
     public Task<IReadOnlyList<Nomenclador>> ListarNivelesCaloricosAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/niveles-caloricos", ct);
+
+    public async Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default)
+        => (await EnviarAsync<IdCreado>(HttpMethod.Post, RutaNomenclador(tipo), formulario, ct)).Id;
+
+    public Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Delete, $"{RutaNomenclador(tipo)}/{id}", null, ct);
+
+    public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
+        => ObtenerAsync<Pagina<Dieta>>(RutaPaginada("api/dietas", "programa", programa, page, size), ct);
+
+    public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default)
+        => ObtenerAsync<DietaDetalle>($"api/dietas/{id}", ct);
+
+    public Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Post, $"api/dietas/{dietaId}/grupos", grupo, ct);
+
+    public Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/dietas/{dietaId}/grupos/{grupoId}", null, ct);
+
+    public Task AgregarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Post, $"api/dietas/{dietaId}/restricciones", new { RestriccionAlimentariaId = restriccionId }, ct);
+
+    public Task QuitarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/dietas/{dietaId}/restricciones/{restriccionId}", null, ct);
 
     public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Alimento>>(RutaPaginada("api/alimentos", grupo, tipo, nivel, page, size), ct);
@@ -148,6 +181,15 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         item.NivelCaloricoId
     };
 
+    private static string RutaNomenclador(TipoDeNomenclador tipo) => tipo switch
+    {
+        TipoDeNomenclador.GruposNutricionales => "api/nomencladores/grupos-nutricionales",
+        TipoDeNomenclador.RestriccionesAlimentarias => "api/nomencladores/restricciones-alimentarias",
+        TipoDeNomenclador.ProgramasAtencion => "api/nomencladores/programas-atencion",
+        TipoDeNomenclador.Especialidades => "api/nomencladores/especialidades",
+        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "El nomenclador no es administrable."),
+    };
+
     private static string RutaPaginada(string route, Guid? grupo, Guid? tipo, Guid? nivel, int page, int size)
     {
         var query = new List<string> { $"page={page}", $"size={size}" };
@@ -165,6 +207,17 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         {
             query.Add($"nivel={nivel}");
         }
+        return $"{route}?{string.Join("&", query)}";
+    }
+
+    private static string RutaPaginada(string route, string nombreDeFiltro, Guid? filtro, int page, int size)
+    {
+        var query = new List<string> { $"page={page}", $"size={size}" };
+        if (filtro is not null)
+        {
+            query.Add($"{nombreDeFiltro}={filtro}");
+        }
+
         return $"{route}?{string.Join("&", query)}";
     }
 

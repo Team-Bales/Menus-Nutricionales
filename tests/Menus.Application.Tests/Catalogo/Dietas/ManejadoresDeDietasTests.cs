@@ -269,7 +269,10 @@ public sealed class ManejadoresDeDietasTests
         Assert.Equal(3, resultado.Total);
         Assert.Equal(2, resultado.Page);
         Assert.Equal(2, resultado.Size);
-        Assert.Equal("Dieta C", Assert.Single(resultado.Data).Nombre);
+        var dieta = Assert.Single(resultado.Data);
+        Assert.Equal("Dieta C", dieta.Nombre);
+        Assert.Equal(1, dieta.CantidadDeGrupos);
+        Assert.Equal(0, dieta.CantidadDeRestricciones);
     }
 
     [Fact]

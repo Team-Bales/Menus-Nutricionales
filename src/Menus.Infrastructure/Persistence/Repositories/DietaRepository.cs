@@ -57,6 +57,32 @@ public sealed class DietaRepository : Repository<Dieta, Guid>, IDietaRepository
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyDictionary<Guid, ConteosDeDieta>> ContarRelacionesAsync(
+        IReadOnlyCollection<Guid> dietaIds,
+        CancellationToken cancellationToken = default)
+    {
+        var grupos = await Context.DietasGruposNutricionales
+            .AsNoTracking()
+            .Where(g => dietaIds.Contains(g.DietaId))
+            .GroupBy(g => g.DietaId)
+            .Select(g => new { DietaId = g.Key, Cantidad = g.Count() })
+            .ToDictionaryAsync(g => g.DietaId, g => g.Cantidad, cancellationToken);
+
+        var restricciones = await Context.DietasRestricciones
+            .AsNoTracking()
+            .Where(r => dietaIds.Contains(r.DietaId))
+            .GroupBy(r => r.DietaId)
+            .Select(g => new { DietaId = g.Key, Cantidad = g.Count() })
+            .ToDictionaryAsync(g => g.DietaId, g => g.Cantidad, cancellationToken);
+
+        return dietaIds.ToDictionary(
+            id => id,
+            id => new ConteosDeDieta(
+                grupos.GetValueOrDefault(id),
+                restricciones.GetValueOrDefault(id)));
+    }
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<Dieta>> GetByIdsAsync(
         IReadOnlyCollection<Guid> ids,
         CancellationToken cancellationToken = default)

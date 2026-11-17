@@ -290,6 +290,21 @@ internal sealed class NutricionistasFalsos(BancoDeDietasFalso banco) : INutricio
     public Task<IReadOnlyList<Nutricionista>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Nutricionista>>(
             [.. banco.Nutricionistas.Where(n => n.DietasAutorizadas.Any(d => d.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(
+        Guid? especialidadId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Nutricionistas
+            .Where(n => especialidadId is null || n.EspecialidadId == especialidadId)
+            .OrderBy(n => n.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        IReadOnlyList<Nutricionista> enLaPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enLaPagina, filtrados.Count));
+    }
 }
 
 internal sealed class UnidadDeTrabajoFalsaDeDietas : IUnitOfWork

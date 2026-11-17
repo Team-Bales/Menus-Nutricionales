@@ -52,4 +52,15 @@ internal sealed class NutricionistasFalsos : INutricionistaRepository
     public Task<IReadOnlyList<Nutricionista>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Nutricionista>>(
             [.. Nutricionistas.Where(n => n.DietasAutorizadas.Any(a => a.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(
+        Guid? especialidadId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = Nutricionistas.Where(n => especialidadId is null || n.EspecialidadId == especialidadId).ToList();
+        IReadOnlyList<Nutricionista> enLaPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enLaPagina, filtrados.Count));
+    }
 }

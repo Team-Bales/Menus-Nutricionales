@@ -123,6 +123,13 @@ internal sealed class NutricionistasFalsoRepo(RevalorizacionesFalso banco) : INu
 
     public Task<IReadOnlyList<Nutricionista>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Nutricionista>>([]);
+
+    public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(
+        Guid? especialidadId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)>(([], 0));
 }
 
 internal sealed class UnidadDeTrabajoFalsa : IUnitOfWork

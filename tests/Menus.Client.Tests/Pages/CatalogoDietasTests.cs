@@ -56,7 +56,8 @@ public sealed class CatalogoDietasTests : BunitContext
 
         cut.FindAll("button").Single(button => button.TextContent == "Ver detalle").Click();
 
-        Assert.EndsWith($"/catalogo/dietas/{CatalogoApiFalsa.DietaId}", nav.Uri);
+        cut.WaitForAssertion(() =>
+            Assert.EndsWith($"/catalogo/dietas/{CatalogoApiFalsa.DietaId}", nav.Uri));
     }
 
     [Fact]

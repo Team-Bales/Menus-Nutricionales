@@ -13,6 +13,8 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 /// <summary>
 /// Pruebas contra PostgreSQL real de lo que hacen los casos de uso de Pacientes (#73) con EF: el listado filtrado y
 /// paginado, actualizar y trasladar a un paciente rastreado, inscribirlo y desinscribirlo, y el nombre de sus dietas.
+/// También <see cref="PacienteRepository.GetBySalaAsync"/> y <see cref="PacienteRepository.GetByDietaAsync"/> (#78),
+/// que usan <c>EliminarSalaHandler</c> y <c>EliminarDietaHandler</c> para no borrar una sala o dieta en uso.
 /// </summary>
 [Collection("PostgreSQL")]
 public sealed class GestionDePacientesTests : IAsyncLifetime
@@ -133,6 +135,35 @@ public sealed class GestionDePacientesTests : IAsyncLifetime
         await using var ctx2 = _fixture.CrearContexto();
         var recuperado = (await new PacienteRepository(ctx2).GetByIdAsync(paciente.Id))!;
         Assert.Equal([blanda], recuperado.Dietas.Select(d => d.DietaId));
+    }
+
+    [Fact]
+    public async Task GetBySalaAsync_devuelve_solo_los_de_esa_sala()
+    {
+        var salaA = await _s.SalaAsync();
+        var salaB = await _s.SalaAsync();
+        var deA = await GuardarAsync("Ana", salaA);
+        await GuardarAsync("Beto", salaB);
+
+        await using var ctx = _fixture.CrearContexto();
+        var resultado = await new PacienteRepository(ctx).GetBySalaAsync(salaA);
+
+        Assert.Equal([deA.Id], resultado.Select(p => p.Id));
+    }
+
+    [Fact]
+    public async Task GetByDietaAsync_devuelve_solo_los_inscritos()
+    {
+        var sala = await _s.SalaAsync();
+        var renal = await _s.DietaAsync();
+        var blanda = await _s.DietaAsync();
+        var inscrito = await GuardarAsync("Ana", sala, renal);
+        await GuardarAsync("Beto", sala, blanda);
+
+        await using var ctx = _fixture.CrearContexto();
+        var resultado = await new PacienteRepository(ctx).GetByDietaAsync(renal);
+
+        Assert.Equal([inscrito.Id], resultado.Select(p => p.Id));
     }
 
     [Fact]

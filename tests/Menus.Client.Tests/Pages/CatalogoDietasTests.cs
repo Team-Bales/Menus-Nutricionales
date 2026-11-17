@@ -107,6 +107,24 @@ public sealed class CatalogoDietasTests : BunitContext
     }
 
     [Fact]
+    public void Dieta_sin_programa_conocido_muestra_un_guion()
+    {
+        var api = new CatalogoApiFalsa
+        {
+            Dietas = [new(Guid.NewGuid(), "Dieta sin programa", Guid.NewGuid(), 0, 0)]
+        };
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<CatalogoDietas>();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Dieta sin programa", cut.Markup);
+            Assert.Contains("—", cut.Markup);
+        });
+    }
+
+    [Fact]
     public void Error_al_cargar_las_dietas_se_muestra_de_forma_legible()
     {
         Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa

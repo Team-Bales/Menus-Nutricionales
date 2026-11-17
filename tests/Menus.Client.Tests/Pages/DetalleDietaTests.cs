@@ -114,4 +114,40 @@ public sealed class DetalleDietaTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("No se pudo cargar la dieta.", cut.Markup));
     }
+
+    [Fact]
+    public void Muestra_el_tipo_restringido_y_vuelve_al_catalogo()
+    {
+        var api = new CatalogoApiFalsa
+        {
+            DietaDetalle = new(
+                CatalogoApiFalsa.DietaId,
+                "Dieta basal",
+                CatalogoApiFalsa.Programa,
+                [new(CatalogoApiFalsa.Grupo, TipoCobertura.Restringido)],
+                [])
+        };
+        Services.AddSingleton<ICatalogoApi>(api);
+        var nav = Services.GetRequiredService<Bunit.TestDoubles.BunitNavigationManager>();
+
+        var cut = Render<DetalleDieta>(ps => ps.Add(p => p.Id, CatalogoApiFalsa.DietaId));
+        cut.WaitForAssertion(() => Assert.Contains("Restringido", cut.Markup));
+
+        cut.FindAll("button").Single(button => button.TextContent == "Volver a dietas").Click();
+
+        Assert.EndsWith("/catalogo/dietas", nav.Uri);
+    }
+
+    [Fact]
+    public void Agregar_sin_elegir_restriccion_muestra_el_error_de_validacion()
+    {
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<DetalleDieta>(ps => ps.Add(p => p.Id, CatalogoApiFalsa.DietaId));
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+
+        cut.Find(".col-auto button").Click();
+
+        cut.WaitForAssertion(() => Assert.Contains("Selecciona una restricción alimentaria.", cut.Markup));
+    }
 }

@@ -22,6 +22,21 @@ public sealed class NomencladoresTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Sin gluten", cut.Markup));
     }
 
+    [Theory]
+    [InlineData("Programas de atención", "Atención primaria")]
+    [InlineData("Especialidades", "Nutrición clínica")]
+    public void Cambiar_seccion_cubre_los_demas_tipos_administrables(string seccion, string elemento)
+    {
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<Nomencladores>();
+        cut.WaitForAssertion(() => Assert.Contains("Cereales", cut.Markup));
+
+        cut.FindAll("button").Single(button => button.TextContent == seccion).Click();
+
+        cut.WaitForAssertion(() => Assert.Contains(elemento, cut.Markup));
+    }
+
     [Fact]
     public void Agregar_envia_el_nombre_y_refresca_la_seccion_actual()
     {

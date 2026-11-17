@@ -90,6 +90,31 @@ public sealed class CatalogoApiTests
         Assert.Equal(creado, id);
     }
 
+    [Theory]
+    [InlineData(TipoDeNomenclador.GruposNutricionales, "/api/nomencladores/grupos-nutricionales")]
+    [InlineData(TipoDeNomenclador.RestriccionesAlimentarias, "/api/nomencladores/restricciones-alimentarias")]
+    [InlineData(TipoDeNomenclador.Especialidades, "/api/nomencladores/especialidades")]
+    public async Task CrearNomencladorAsync_resuelve_todas_las_rutas_administrables(
+        TipoDeNomenclador tipo,
+        string rutaEsperada)
+    {
+        var handler = new HandlerFalso(req => Json(req, $$"""{"id":"{{Guid.NewGuid()}}"}"""));
+
+        await Crear(handler).CrearNomencladorAsync(tipo, new NomencladorFormulario { Nombre = "Nombre" });
+
+        Assert.Equal(rutaEsperada, handler.Recibida!.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task CrearNomencladorAsync_rechaza_un_tipo_no_administrable()
+    {
+        var handler = new HandlerFalso(req => Json(req, "[]"));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Crear(handler).CrearNomencladorAsync(
+            (TipoDeNomenclador)999,
+            new NomencladorFormulario { Nombre = "Nombre" }));
+    }
+
     [Fact]
     public async Task EliminarNomencladorAsync_envia_delete_a_la_ruta_del_elemento()
     {
@@ -115,6 +140,16 @@ public sealed class CatalogoApiTests
         Assert.Contains($"programa={programa}", query);
         Assert.Contains("page=2", query);
         Assert.Contains("size=5", query);
+    }
+
+    [Fact]
+    public async Task ListarDietasAsync_no_incluye_programa_si_no_se_filtra()
+    {
+        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":1,"size":10}"""));
+
+        await Crear(handler).ListarDietasAsync(null, 1, 10);
+
+        Assert.DoesNotContain("programa=", handler.Recibida!.RequestUri!.Query);
     }
 
     [Fact]
@@ -418,6 +453,43 @@ public sealed class CatalogoApiTests
         var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("null", Encoding.UTF8, "application/json") });
 
         await Assert.ThrowsAsync<ApiException>(() => Crear(handler).ObtenerAlimentoAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task EnviarAsync_lanza_si_la_respuesta_exitosa_viene_vacia()
+    {
+        var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("null", Encoding.UTF8, "application/json")
+        });
+
+        await Assert.ThrowsAsync<ApiException>(() => Crear(handler).CrearAlimentoAsync(new ClasificacionFormulario()));
+    }
+
+    [Fact]
+    public async Task LanzarSiErrorAsync_conserva_el_mensaje_generico_si_detail_esta_vacio()
+    {
+        var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("""{"detail":" "}""", Encoding.UTF8, "application/problem+json")
+        });
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => Crear(handler).EliminarAlimentoAsync(Guid.NewGuid()));
+
+        Assert.Equal("La API respondió 400.", error.Message);
+    }
+
+    [Fact]
+    public async Task LanzarSiErrorAsync_conserva_el_mensaje_generico_si_no_hay_detail()
+    {
+        var handler = new HandlerFalso(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("{}", Encoding.UTF8, "application/problem+json")
+        });
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => Crear(handler).EliminarAlimentoAsync(Guid.NewGuid()));
+
+        Assert.Equal("La API respondió 400.", error.Message);
     }
 
     private static HttpResponseMessage Json(HttpRequestMessage _, string json)

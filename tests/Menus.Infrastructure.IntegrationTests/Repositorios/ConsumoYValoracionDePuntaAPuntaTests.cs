@@ -5,6 +5,7 @@ using Menus.Application.GestionDeMenus.RegistrarServicio;
 using Menus.Application.Revalorizaciones.RegistrarResultadoRevalorizacion;
 using Menus.Application.Revalorizaciones.SolicitarRevalorizacion;
 using Menus.Application.Valoraciones.RegistrarValoracion;
+using Menus.Domain;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.IntegrationTests.Datos;
@@ -24,10 +25,9 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 /// <c>Menus.Application</c> expone sus internos a este proyecto (<c>InternalsVisibleTo</c>) para llamar a los
 /// manejadores reales en vez de repetir su lógica a mano (revisión del #263 y el #277): así la prueba también
 /// comprueba sus propias validaciones (que el paciente exista para el servicio, que la asignación exista para la
-/// valoración, RK-11 al registrar el resultado de la revalorización), no solo que las tablas acepten los datos.
-/// <c>SolicitarRevalorizacionHandler</c>, en esta rama previa al #269 (RS-09), todavía no exige que el solicitante
-/// sea el paciente de la valoración revisada; por eso aquí no se comprueba esa regla, solo que la revalorización
-/// quede bien enlazada.
+/// valoración, RS-09 al solicitar la revalorización, RK-11 al registrar su resultado), no solo que las tablas
+/// acepten los datos. La solicitud la hace el propio paciente de la valoración revisada, con su identidad del token
+/// (#267): los casos en que la pide otro se prueban en <c>Menus.Application.Tests</c>.
 /// </remarks>
 [Collection("PostgreSQL")]
 public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
@@ -54,6 +54,16 @@ public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
     private sealed class ActorFijo(Guid id) : IActorActual
     {
         public Guid Id { get; } = id;
+    }
+
+    /// <summary>La identidad del token de un paciente: la solicitud de revalorización la hace él (RS-09, #267).</summary>
+    private sealed class PacienteDelToken(Guid pacienteId) : IIdentidadAutenticada
+    {
+        public Guid UsuarioId { get; } = Guid.NewGuid();
+
+        public Guid? EntidadId { get; } = pacienteId;
+
+        public string Rol => RolesUsuario.Paciente;
     }
 
     [Fact]
@@ -113,7 +123,8 @@ public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
                 new RevalorizacionRepository(ctx),
                 new ValoracionRepository(ctx),
                 new NutricionistaRepository(ctx),
-                new UnitOfWork(ctx));
+                new UnitOfWork(ctx),
+                new PacienteDelToken(paciente));
             var creada = await handler.HandleAsync(
                 new SolicitarRevalorizacionCommand(valoracionRevisada, ejecutor), CancellationToken.None);
             revalorizacionId = creada.Id;

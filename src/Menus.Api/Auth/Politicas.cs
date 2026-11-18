@@ -29,6 +29,12 @@ public static class Politicas
     /// </summary>
     public const string SoloNutricionista = "SoloNutricionista";
 
+    /// <summary>
+    /// Solo un paciente: lo que hace él mismo, como solicitar la revalorización de su valoración (RS-09, #267). Que el
+    /// recurso sea suyo lo comprueba el caso de uso.
+    /// </summary>
+    public const string SoloPaciente = "SoloPaciente";
+
     /// <summary>Un nutricionista o el administrador: la gestión de pacientes.</summary>
     public const string NutricionistaOAdmin = "NutricionistaOAdmin";
 
@@ -53,6 +59,7 @@ public static class Politicas
             .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
             .AddPolicy(SoloAdmin, p => p.RequireRole(RolesUsuario.Admin))
             .AddPolicy(SoloNutricionista, p => p.RequireRole(RolesUsuario.Nutricionista))
+            .AddPolicy(SoloPaciente, p => p.RequireRole(RolesUsuario.Paciente))
             .AddPolicy(NutricionistaOAdmin, p => p.RequireRole(RolesUsuario.Nutricionista, RolesUsuario.Admin))
             .AddPolicy(PacientePropioOPersonal, p => p.RequireAssertion(EsPersonalOElPropioPaciente));
 

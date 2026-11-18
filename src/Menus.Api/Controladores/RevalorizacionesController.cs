@@ -14,9 +14,10 @@ namespace Menus.Api.Controladores;
 /// y se listan las pendientes por nutricionista.
 /// </summary>
 /// <remarks>
-/// Registrar el resultado y listar las pendientes son para un nutricionista (#74). Solicitar y consultar piden solo un
-/// usuario autenticado: que solicite únicamente el paciente de la valoración revisada (RS-09) exige comprobarlo en el
-/// caso de uso, y queda para un issue aparte.
+/// Registrar el resultado y listar las pendientes son para un nutricionista (#74). Solicitar es solo para un paciente,
+/// y el caso de uso comprueba que la valoración revisada sea suya (RS-09, #267). Consultar lo pueden el personal y el
+/// paciente de la valoración revisada: como el id de la ruta es el de la revalorización, eso también lo comprueba el
+/// caso de uso.
 /// </remarks>
 [ApiController]
 [Route("api/revalorizaciones")]
@@ -25,10 +26,13 @@ public sealed class RevalorizacionesController(IDespachador despachador) : Contr
 {
     /// <summary>Solicita una revalorización indicando la valoración que se revisa y el nutricionista ejecutor.</summary>
     /// <response code="201">Creada; <c>Location</c> apunta a la revalorización.</response>
+    /// <response code="403">No es un paciente, o la valoración revisada es de otro paciente (RS-09).</response>
     /// <response code="404">La valoración revisada o el nutricionista no existen.</response>
     /// <response code="422">El cuerpo no es válido.</response>
+    [Authorize(Policy = Politicas.SoloPaciente)]
     [HttpPost]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<IdCreadoDto>> Solicitar(CuerpoDeSolicitudDeRevalorizacion cuerpo, CancellationToken ct)
@@ -40,9 +44,11 @@ public sealed class RevalorizacionesController(IDespachador despachador) : Contr
 
     /// <summary>Obtiene una revalorización por su identificador.</summary>
     /// <response code="200">La revalorización.</response>
+    /// <response code="403">La pide un paciente que no es el de la valoración revisada.</response>
     /// <response code="404">No existe.</response>
     [HttpGet("{id:guid}")]
     [ProducesResponseType<RevalorizacionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<RevalorizacionDto> Obtener(Guid id, CancellationToken ct)
         => despachador.EnviarAsync(new ObtenerRevalorizacionQuery(id), ct);

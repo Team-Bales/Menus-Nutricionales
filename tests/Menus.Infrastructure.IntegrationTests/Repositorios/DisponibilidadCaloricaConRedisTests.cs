@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Menus.Application.Catalogo.Dietas.DisponibilidadCalorica;
-using Menus.Application.Comun;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Cache;
@@ -17,16 +16,12 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
 /// Prueba de integración de punta a punta del cache-aside de la disponibilidad calórica (#89; informe, «Consultas
-/// recurrentes»): la misma orquestación de <c>DisponibilidadCaloricaHandler</c> contra PostgreSQL y Redis reales a
-/// la vez.
+/// recurrentes»): el propio <see cref="DisponibilidadCaloricaHandler"/> contra PostgreSQL y Redis reales a la vez.
 /// </summary>
 /// <remarks>
-/// <para>
-/// No pasa por <c>DisponibilidadCaloricaHandler</c> ni por <c>CacheDeDisponibilidadCalorica</c>: son
-/// <c>internal</c> de <c>Menus.Application</c>, visibles solo para <c>Menus.Application.Tests</c>. Aquí se repite
-/// la misma orquestación —clave de caché, lectura antes de tocar la base, cálculo y guardado— contra la base y la
-/// caché reales.
-/// </para>
+/// <c>Menus.Application</c> expone sus internos a este proyecto (<c>InternalsVisibleTo</c>) para que esta prueba
+/// llame al manejador real, no a una copia de su orquestación (revisión del #263 y el #277): si el manejador
+/// cambia la clave de caché, deja de leerla o no guarda el resultado, esta prueba lo nota.
 /// <para>
 /// No hay forma directa de contar las consultas a PostgreSQL desde fuera, así que la prueba lo infiere: cambia el
 /// banco de alimentos por fuera de la orquestación, sin invalidar la caché, y comprueba que una segunda consulta no
@@ -60,34 +55,15 @@ public sealed class DisponibilidadCaloricaConRedisTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _conexion.DisposeAsync();
 
-    private static string Clave(Guid dietaId) => $"dieta:{dietaId}:disponibilidad-calorica";
-
-    /// <summary>Misma orquestación que <c>DisponibilidadCaloricaHandler.HandleAsync</c>, con repositorios reales.</summary>
     private async Task<DisponibilidadCaloricaDto> ConsultarAsync(Guid dietaId)
     {
-        var clave = Clave(dietaId);
-        var cacheado = await _cache.ObtenerAsync<DisponibilidadCaloricaDto>(clave);
-        if (cacheado is not null)
-        {
-            return cacheado;
-        }
-
         await using var ctx = _postgres.CrearContexto();
         IDietaRepository dietas = new DietaRepository(ctx);
         IItemAlimentarioRepository items = new ItemAlimentarioRepository(ctx);
         IMenuRepository menus = new MenuRepository(ctx);
 
-        var gruposProhibidos = await dietas.GetGruposProhibidosAsync(dietaId);
-        var delBanco = await items.ContarPorNivelCaloricoAsync(gruposProhibidos);
-        var deMenusFinales = await menus.ContarItemsFinalesPorNivelCaloricoAsync(dietaId);
-
-        var porNivel = NivelCalorico.Todos
-            .Select(n => new DisponibilidadPorNivelDto(n.Id, n.Nombre, delBanco.GetValueOrDefault(n.Id), deMenusFinales.GetValueOrDefault(n.Id)))
-            .ToList();
-
-        var resultado = new DisponibilidadCaloricaDto(dietaId, porNivel);
-        await _cache.GuardarAsync(clave, resultado, TimeSpan.FromHours(1)); // mismo TTL que CacheDeDisponibilidadCalorica.TiempoDeVida
-        return resultado;
+        var handler = new DisponibilidadCaloricaHandler(dietas, items, menus, _cache);
+        return await handler.HandleAsync(new DisponibilidadCaloricaQuery(dietaId), CancellationToken.None);
     }
 
     private static int ItemsDelBancoEnNivelMedio(DisponibilidadCaloricaDto disponibilidad)
@@ -110,7 +86,7 @@ public sealed class DisponibilidadCaloricaConRedisTests : IAsyncLifetime
         Assert.Equal(conteoPrimera, ItemsDelBancoEnNivelMedio(segunda));
 
         // Control: invalidada la caché, la tercera consulta sí refleja el ítem agregado.
-        await _cache.InvalidarAsync(Clave(dieta));
+        await CacheDeDisponibilidadCalorica.InvalidarAsync(_cache, dieta);
 
         var tercera = await ConsultarAsync(dieta);
         Assert.Equal(conteoPrimera + 1, ItemsDelBancoEnNivelMedio(tercera));

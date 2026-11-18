@@ -1,7 +1,12 @@
 using System;
 using System.Threading.Tasks;
-using Menus.Domain.Entidades;
+using Menus.Application.Comun;
+using Menus.Application.GestionDeMenus.RegistrarServicio;
+using Menus.Application.Revalorizaciones.RegistrarResultadoRevalorizacion;
+using Menus.Application.Revalorizaciones.SolicitarRevalorizacion;
+using Menus.Application.Valoraciones.RegistrarValoracion;
 using Menus.Domain.Nomenclators;
+using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.IntegrationTests.Datos;
 using Menus.Infrastructure.IntegrationTests.Fixtures;
 using Menus.Infrastructure.Persistence.Repositories;
@@ -12,13 +17,17 @@ namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 
 /// <summary>
 /// Prueba de integración de punta a punta (#89): asigna un menú, registra su servicio y el consumo de un ítem
-/// (#85), valora al paciente (#86) y revaloriza esa valoración (#87), todo contra PostgreSQL real.
+/// (#85), valora al paciente (#86) y revaloriza esa valoración (#87) llamando a los manejadores reales, todo
+/// contra PostgreSQL real.
 /// </summary>
 /// <remarks>
-/// Cada paso repite lo que hace su propio manejador (ya probado por separado con repositorios falsos y, el de
-/// asignación y validación, también contra esta misma base en <see cref="GeneracionYValidacionDeMenusTests"/>),
-/// para comprobar que la cadena completa persiste y se puede volver a leer sin romper ninguna restricción de la
-/// base entre un paso y el siguiente.
+/// <c>Menus.Application</c> expone sus internos a este proyecto (<c>InternalsVisibleTo</c>) para llamar a los
+/// manejadores reales en vez de repetir su lógica a mano (revisión del #263 y el #277): así la prueba también
+/// comprueba sus propias validaciones (que el paciente exista para el servicio, que la asignación exista para la
+/// valoración, RK-11 al registrar el resultado de la revalorización), no solo que las tablas acepten los datos.
+/// <c>SolicitarRevalorizacionHandler</c>, en esta rama previa al #269 (RS-09), todavía no exige que el solicitante
+/// sea el paciente de la valoración revisada; por eso aquí no se comprueba esa regla, solo que la revalorización
+/// quede bien enlazada.
 /// </remarks>
 [Collection("PostgreSQL")]
 public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
@@ -40,6 +49,12 @@ public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await _conexion.DisposeAsync();
+
+    /// <summary>El actor actual, fijo para la prueba: los manejadores de valoración y revalorización lo necesitan.</summary>
+    private sealed class ActorFijo(Guid id) : IActorActual
+    {
+        public Guid Id { get; } = id;
+    }
 
     [Fact]
     public async Task Asignacion_consumo_valoracion_y_revalorizacion_de_punta_a_punta()
@@ -64,14 +79,28 @@ public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
         // Consumo (#85): el menú asignado se sirve, con la aceptación del ítem.
         await using (var ctx = _fixture.CrearContexto())
         {
-            var menuDb = (await new MenuRepository(ctx).GetByIdAsync(menu))!;
-            menuDb.RegistrarServicio(paciente, hoy);
-            menuDb.RegistrarConsumo(paciente, hoy, item, aceptacion: true);
-            await new UnitOfWork(ctx).CommitAsync();
+            var handler = new RegistrarServicioHandler(
+                new MenuRepository(ctx), new PacienteRepository(ctx), new UnitOfWork(ctx));
+            await handler.HandleAsync(
+                new RegistrarServicioCommand(menu, paciente, hoy, [new ConsumoDelServicio(item, Aceptacion: true)]),
+                CancellationToken.None);
         }
 
-        // Valoración (#86): el nutricionista valora al paciente por ese menú.
-        var valoracionRevisada = await _s.ValorarAsync(menu, paciente, creador);
+        // Valoración (#86): el nutricionista que creó el menú lo valora (un nutricionista autorizado en la dieta
+        // cualquiera podría, según el handler; se usa el creador porque ya está a mano en la prueba).
+        Guid valoracionRevisada;
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var handler = new RegistrarValoracionHandler(
+                new MenuRepository(ctx),
+                new ValoracionRepository(ctx),
+                new UnitOfWork(ctx),
+                new ActorFijo(creador),
+                new CacheNula());
+            var creada = await handler.HandleAsync(
+                new RegistrarValoracionCommand(menu, paciente, ResultadoNutricional.Normal.Id), CancellationToken.None);
+            valoracionRevisada = creada.Id;
+        }
 
         // Revalorización (#87): el paciente pide revisar esa valoración, y otro nutricionista la ejecuta.
         var ejecutor = await _s.NutricionistaAsync();
@@ -80,28 +109,29 @@ public sealed class ConsumoYValoracionDePuntaAPuntaTests : IAsyncLifetime
         Guid revalorizacionId;
         await using (var ctx = _fixture.CrearContexto())
         {
-            var revalorizacion = new Revalorizacion(Guid.NewGuid(), DateTime.UtcNow, ejecutor, valoracionRevisada);
-            await new RevalorizacionRepository(ctx).AddAsync(revalorizacion);
-            await new UnitOfWork(ctx).CommitAsync();
-            revalorizacionId = revalorizacion.Id;
+            var handler = new SolicitarRevalorizacionHandler(
+                new RevalorizacionRepository(ctx),
+                new ValoracionRepository(ctx),
+                new NutricionistaRepository(ctx),
+                new UnitOfWork(ctx));
+            var creada = await handler.HandleAsync(
+                new SolicitarRevalorizacionCommand(valoracionRevisada, ejecutor), CancellationToken.None);
+            revalorizacionId = creada.Id;
         }
 
         Guid valoracionGenerada;
         await using (var ctx = _fixture.CrearContexto())
         {
-            var repositorioRevalorizaciones = new RevalorizacionRepository(ctx);
-            var repositorioValoraciones = new ValoracionRepository(ctx);
-
-            var revalorizacion = (await repositorioRevalorizaciones.GetByIdAsync(revalorizacionId))!;
-            var revisada = (await repositorioValoraciones.GetByIdAsync(revalorizacion.ValoracionRevisadaId))!;
-
-            var generada = new ValoracionNutricional(
-                Guid.NewGuid(), revisada.MenuId, revisada.PacienteId, ejecutor, ResultadoNutricional.Buena.Id, DateTime.UtcNow);
-            revalorizacion.RegistrarValoracionGenerada(generada.Id);
-
-            await repositorioValoraciones.AddAsync(generada);
-            await new UnitOfWork(ctx).CommitAsync();
-            valoracionGenerada = generada.Id;
+            var handler = new RegistrarResultadoRevalorizacionHandler(
+                new RevalorizacionRepository(ctx),
+                new ValoracionRepository(ctx),
+                new UnitOfWork(ctx),
+                new ActorFijo(ejecutor),
+                new CacheNula());
+            var creada = await handler.HandleAsync(
+                new RegistrarResultadoRevalorizacionCommand(revalorizacionId, ResultadoNutricional.Buena.Id),
+                CancellationToken.None);
+            valoracionGenerada = creada.Id;
         }
 
         // Comprobación de punta a punta, todo releído desde cero.

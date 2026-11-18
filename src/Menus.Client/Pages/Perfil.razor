@@ -1,0 +1,49 @@
+@page "/perfil"
+@attribute [Authorize]
+@inject IAutenticacionApi Api
+@inject ISesionAutenticada Sesion
+@inject NavigationManager Navegacion
+
+<PageTitle>Mi perfil</PageTitle>
+
+<h1 class="h2 mb-3">Mi perfil</h1>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+else if (_perfil is null)
+{
+    <p class="text-muted">Cargando perfil…</p>
+}
+else
+{
+    <dl class="row">
+        <dt class="col-sm-3">Correo</dt><dd class="col-sm-9">@_perfil.Email</dd>
+        <dt class="col-sm-3">Rol</dt><dd class="col-sm-9">@_perfil.Rol</dd>
+    </dl>
+    <button class="btn btn-outline-danger" @onclick="CerrarSesion">Cerrar sesión</button>
+}
+
+@code {
+    private PerfilUsuario? _perfil;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _perfil = await Api.ObtenerPerfilAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task CerrarSesion()
+    {
+        await Sesion.CerrarSesionAsync();
+        Navegacion.NavigateTo("/login");
+    }
+}

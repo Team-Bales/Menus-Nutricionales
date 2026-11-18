@@ -100,6 +100,50 @@ public sealed class MenuRepositoryTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetByPacienteAsync_trae_los_items_y_solo_la_asignacion_de_ese_paciente()
+    {
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var repositorio = new MenuRepository(ctx);
+            (await repositorio.GetByIdAsync(_e.FinalId))!.AsignarPaciente(_e.P2);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var consulta = _fixture.CrearContexto();
+        var menu = Assert.Single(await new MenuRepository(consulta).GetByPacienteAsync(_e.P2));
+
+        Assert.Equal([_e.AlimentoId], menu.Items.Select(i => i.ItemId));
+        Assert.Equal([_e.P2], menu.Asignaciones.Select(a => a.PacienteId));
+        Assert.NotEmpty(menu.Distribuciones);
+        Assert.Empty(consulta.ChangeTracker.Entries());
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_trae_los_servicios_y_consumos_de_ese_paciente_y_no_los_de_otros()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var menu = (await new MenuRepository(ctx).GetByIdAsync(_e.FinalId))!;
+            menu.AsignarPaciente(_e.P2);
+            menu.RegistrarServicio(_e.P1, hoy.AddDays(-1));
+            menu.RegistrarConsumo(_e.P1, hoy.AddDays(-1), _e.AlimentoId, true);
+            menu.RegistrarServicio(_e.P1, hoy);
+            menu.RegistrarServicio(_e.P2, hoy);
+            menu.RegistrarConsumo(_e.P2, hoy, _e.AlimentoId, false);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using var consulta = _fixture.CrearContexto();
+        var asignacion = Assert.Single(Assert.Single(await new MenuRepository(consulta).GetByPacienteAsync(_e.P1)).Asignaciones);
+
+        Assert.Equal(_e.P1, asignacion.PacienteId);
+        Assert.Equal([hoy.AddDays(-1), hoy], asignacion.Servicios.Select(s => s.FechaServicio).Order());
+        var consumo = Assert.Single(asignacion.Servicios.SelectMany(s => s.Consumos));
+        Assert.True(consumo.Aceptacion);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_carga_el_agregado_completo()
     {
         await using var ctx = _fixture.CrearContexto();

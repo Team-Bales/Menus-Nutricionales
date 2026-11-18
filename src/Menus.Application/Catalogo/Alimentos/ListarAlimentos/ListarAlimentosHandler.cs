@@ -7,6 +7,7 @@ namespace Menus.Application.Catalogo.Alimentos.ListarAlimentos;
 internal sealed class ListarAlimentosHandler(IAlimentoRepository alimentos)
     : IHandler<ListarAlimentosQuery, ResultadoPaginado<AlimentoDto>>
 {
+    /// <inheritdoc/>
     public async Task<ResultadoPaginado<AlimentoDto>> HandleAsync(ListarAlimentosQuery solicitud, CancellationToken ct)
     {
         var (pagina, total) = await alimentos.BuscarAsync(

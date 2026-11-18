@@ -8,6 +8,7 @@ namespace Menus.Application.Catalogo.Nomencladores.TiposPreparacion;
 /// </summary>
 internal sealed class ListarTiposPreparacionHandler : IHandler<ListarTiposPreparacionQuery, IReadOnlyList<NomencladorDto>>
 {
+    /// <inheritdoc/>
     public Task<IReadOnlyList<NomencladorDto>> HandleAsync(ListarTiposPreparacionQuery solicitud, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<NomencladorDto>>([.. TipoPreparacion.Todos.Select(NomencladorDto.Desde)]);
 }

@@ -1,0 +1,111 @@
+@page "/catalogo/dietas/{Id:guid}"
+@inject ICatalogoApi Api
+@inject NavigationManager Navegacion
+
+<PageTitle>Detalle de dieta</PageTitle>
+
+@if (_dieta is not null)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div><h1 class="h2 mb-1">@_dieta.Nombre</h1><p class="text-muted mb-0">Programa: @Nombre(_programas, _dieta.ProgramaAtencionId)</p></div>
+        <button class="btn btn-outline-secondary" @onclick="Volver">Volver a dietas</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-danger" role="alert">@_error</div>
+    }
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100"><div class="card-body">
+                <h2 class="h5">Grupos nutricionales a cubrir</h2>
+                <table class="table align-middle"><thead><tr><th>Grupo</th><th>Tipo</th><th></th></tr></thead><tbody>
+                    @foreach (var grupo in _dieta.Grupos)
+                    {
+                        <tr><td>@Nombre(_grupos, grupo.GrupoNutricionalId)</td><td>@TextoTipo(grupo.Tipo)</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" @onclick="(() => QuitarGrupo(grupo.GrupoNutricionalId))">Quitar</button></td></tr>
+                    }
+                </tbody></table>
+                <div class="row g-2 align-items-end"><div class="col-sm-6"><label class="form-label" for="grupo">Grupo</label><select id="grupo" class="form-select" @bind="_nuevoGrupo.GrupoNutricionalId"><option value="@Guid.Empty">Selecciona un grupo</option>@foreach (var grupo in _grupos) { <option value="@grupo.Id">@grupo.Nombre</option> }</select></div><div class="col-sm-4"><label class="form-label" for="tipo-cobertura">Tipo</label><select id="tipo-cobertura" class="form-select" @bind="_nuevoGrupo.Tipo"><option value="@TipoCobertura.Requerido">Requerido</option><option value="@TipoCobertura.Restringido">Restringido</option></select></div><div class="col-sm-2"><button class="btn btn-primary w-100" @onclick="AgregarGrupo">Agregar</button></div></div>
+            </div></div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100"><div class="card-body">
+                <h2 class="h5">Restricciones alimentarias</h2>
+                <table class="table align-middle"><thead><tr><th>Restricción</th><th></th></tr></thead><tbody>
+                    @foreach (var restriccion in _dieta.Restricciones)
+                    {
+                        <tr><td>@Nombre(_restricciones, restriccion)</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" @onclick="(() => QuitarRestriccion(restriccion))">Quitar</button></td></tr>
+                    }
+                </tbody></table>
+                <div class="row g-2 align-items-end"><div class="col"><label class="form-label" for="restriccion">Restricción</label><select id="restriccion" class="form-select" @bind="_nuevaRestriccion"><option value="@Guid.Empty">Selecciona una restricción</option>@foreach (var restriccion in _restricciones) { <option value="@restriccion.Id">@restriccion.Nombre</option> }</select></div><div class="col-auto"><button class="btn btn-primary" @onclick="AgregarRestriccion">Agregar</button></div></div>
+            </div></div>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+else
+{
+    <p class="text-muted">Cargando dieta…</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private DietaDetalle? _dieta;
+    private IReadOnlyList<Nomenclador> _grupos = [];
+    private IReadOnlyList<Nomenclador> _restricciones = [];
+    private IReadOnlyList<Nomenclador> _programas = [];
+    private GrupoCubiertoFormulario _nuevoGrupo = new();
+    private Guid _nuevaRestriccion;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _error = null;
+        try
+        {
+            _grupos = await Api.ListarGruposAsync();
+            _restricciones = await Api.ListarRestriccionesAsync();
+            _programas = await Api.ListarProgramasAsync();
+            _dieta = await Api.ObtenerDietaAsync(Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task AgregarGrupo()
+    {
+        if (_nuevoGrupo.GrupoNutricionalId == Guid.Empty) { _error = "Selecciona un grupo nutricional."; return; }
+        await EjecutarYRecargar(() => Api.AgregarGrupoDietaAsync(Id, _nuevoGrupo));
+        _nuevoGrupo = new();
+    }
+
+    private Task QuitarGrupo(Guid grupoId) => EjecutarYRecargar(() => Api.QuitarGrupoDietaAsync(Id, grupoId));
+
+    private async Task AgregarRestriccion()
+    {
+        if (_nuevaRestriccion == Guid.Empty) { _error = "Selecciona una restricción alimentaria."; return; }
+        await EjecutarYRecargar(() => Api.AgregarRestriccionDietaAsync(Id, _nuevaRestriccion));
+        _nuevaRestriccion = Guid.Empty;
+    }
+
+    private Task QuitarRestriccion(Guid restriccionId) => EjecutarYRecargar(() => Api.QuitarRestriccionDietaAsync(Id, restriccionId));
+
+    private async Task EjecutarYRecargar(Func<Task> accion)
+    {
+        _error = null;
+        try { await accion(); await Cargar(); }
+        catch (ApiException ex) { _error = ex.Message; }
+    }
+
+    private void Volver() => Navegacion.NavigateTo("/catalogo/dietas");
+    private static string Nombre(IEnumerable<Nomenclador> nomencladores, Guid id) => nomencladores.FirstOrDefault(n => n.Id == id)?.Nombre ?? "—";
+    private static string TextoTipo(TipoCobertura tipo) => tipo == TipoCobertura.Requerido ? "Requerido" : "Restringido";
+}

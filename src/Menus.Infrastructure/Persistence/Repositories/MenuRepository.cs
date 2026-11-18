@@ -84,7 +84,13 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
 
     public async Task<IReadOnlyList<Menu>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default)
         => await Listado()
+            .Include(m => m.Items)
+            // Solo la asignación de este paciente: las de los demás pacientes del mismo menú no son suyas.
+            .Include(m => m.Asignaciones.Where(a => a.PacienteId == pacienteId))
+                .ThenInclude(a => a.Servicios).ThenInclude(s => s.Consumos)
             .Where(m => m.Asignaciones.Any(a => a.PacienteId == pacienteId))
+            .OrderByDescending(m => m.FechaCreacion)
+            .ThenBy(m => m.Id)
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)

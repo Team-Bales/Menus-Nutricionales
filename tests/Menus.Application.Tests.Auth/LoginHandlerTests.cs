@@ -136,6 +136,9 @@ public sealed class LoginHandlerTests
             => Task.FromResult<IReadOnlyList<Nutricionista>>(Nutricionistas.Values.ToList());
         public Task<IReadOnlyList<Nutricionista>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<Nutricionista>>([]);
+        public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(
+            Guid? especialidadId, int pagina, int tamano, CancellationToken cancellationToken)
+            => Task.FromResult<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)>(([], 0));
     }
 
     private sealed class FakeEspecialidadRepository : INomencladorRepository<Especialidad>

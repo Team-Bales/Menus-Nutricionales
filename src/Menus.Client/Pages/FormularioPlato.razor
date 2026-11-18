@@ -1,0 +1,110 @@
+@page "/catalogo/platos/nuevo"
+@page "/catalogo/platos/{Id:guid}/editar"
+@inject ICatalogoApi Api
+@inject NavigationManager Navegacion
+
+<PageTitle>@(_esEdicion ? "Editar plato" : "Nuevo plato")</PageTitle>
+
+<h1 class="h2 mb-4">@(_esEdicion ? "Editar plato" : "Nuevo plato")</h1>
+
+@if (_cargando) { <p class="text-muted">Cargando formulario…</p> }
+else
+{
+    @if (!string.IsNullOrWhiteSpace(_error)) { <div class="alert alert-danger" role="alert">@_error</div> }
+    <EditForm Model="_formulario" OnValidSubmit="Guardar" class="card shadow-sm formulario-catalogo">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="card-body">
+            @if (_esEdicion) { <div class="alert alert-info small">La API solo permite reclasificar el plato. La composición se administra desde su detalle.</div> }
+            <div class="mb-3"><label class="form-label" for="nombre">Nombre</label><InputText id="nombre" class="form-control" @bind-Value="_formulario.Nombre" disabled="@_esEdicion" /><ValidationMessage For="@(() => _formulario.Nombre)" /></div>
+            <div class="row g-3">
+                <div class="col-12 col-md-4"><label class="form-label" for="grupo">Grupo nutricional</label><InputSelect id="grupo" class="form-select" @bind-Value="_formulario.GrupoNutricionalId"><option value="@Guid.Empty">Selecciona un grupo</option>@foreach (var grupo in _grupos) { <option value="@grupo.Id">@grupo.Nombre</option> }</InputSelect><ValidationMessage For="@(() => _formulario.GrupoNutricionalId)" /></div>
+                <div class="col-12 col-md-4"><label class="form-label" for="tipo">Tipo de preparación</label><InputSelect id="tipo" class="form-select" @bind-Value="_formulario.TipoPreparacionId"><option value="@Guid.Empty">Selecciona un tipo</option>@foreach (var tipo in _tipos) { <option value="@tipo.Id">@tipo.Nombre</option> }</InputSelect><ValidationMessage For="@(() => _formulario.TipoPreparacionId)" /></div>
+                <div class="col-12 col-md-4"><label class="form-label" for="nivel">Nivel calórico</label><InputSelect id="nivel" class="form-select" @bind-Value="_formulario.NivelCaloricoId"><option value="@Guid.Empty">Selecciona un nivel</option>@foreach (var nivel in _niveles) { <option value="@nivel.Id">@nivel.Nombre</option> }</InputSelect><ValidationMessage For="@(() => _formulario.NivelCaloricoId)" /></div>
+            </div>
+
+            @if (!_esEdicion)
+            {
+                <hr class="my-4" />
+                <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="h5 mb-0">Ingredientes iniciales</h2><button type="button" class="btn btn-sm btn-outline-primary" @onclick="AgregarFila">Agregar ingrediente</button></div>
+                <p class="small text-muted">Un plato debe tener al menos un alimento y las cantidades deben ser mayores que cero.</p>
+                @for (var index = 0; index < _ingredientes.Count; index++)
+                {
+                    var ingrediente = _ingredientes[index];
+                    <div class="row g-2 align-items-end mb-2" @key="ingrediente">
+                        <div class="col-12 col-md-7"><label class="form-label" for="@($"alimento-{index}")">Alimento</label><select id="@($"alimento-{index}")" class="form-select" @bind="ingrediente.AlimentoId"><option value="@Guid.Empty">Selecciona un alimento</option>@foreach (var alimento in _alimentos) { <option value="@alimento.Id">@alimento.Nombre</option> }</select></div>
+                        <div class="col-8 col-md-3"><label class="form-label" for="@($"cantidad-{index}")">Cantidad</label><InputNumber id="@($"cantidad-{index}")" class="form-control" @bind-Value="ingrediente.Cantidad" /></div>
+                        <div class="col-4 col-md-2"><button type="button" class="btn btn-outline-danger w-100" disabled="@(_ingredientes.Count == 1)" @onclick="(() => QuitarFila(ingrediente))">Quitar</button></div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2"><button type="button" class="btn btn-outline-secondary" @onclick="Volver">Cancelar</button><button type="submit" class="btn btn-primary" disabled="@_guardando">@(_guardando ? "Guardando…" : "Guardar")</button></div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private readonly ClasificacionFormulario _formulario = new();
+    private readonly List<IngredienteFormulario> _ingredientes = [new()];
+    private IReadOnlyList<Nomenclador> _grupos = [];
+    private IReadOnlyList<Nomenclador> _tipos = [];
+    private IReadOnlyList<Nomenclador> _niveles = [];
+    private IReadOnlyList<Alimento> _alimentos = [];
+    private bool _cargando = true;
+    private bool _guardando;
+    private string? _error;
+    private bool _esEdicion => Id is not null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _cargando = true;
+        _error = null;
+        try
+        {
+            _grupos = await Api.ListarGruposAsync();
+            _tipos = await Api.ListarTiposPreparacionAsync();
+            _niveles = await Api.ListarNivelesCaloricosAsync();
+            if (Id is Guid id)
+            {
+                var plato = await Api.ObtenerPlatoAsync(id);
+                _formulario.Nombre = plato.Nombre;
+                _formulario.GrupoNutricionalId = plato.GrupoNutricionalId;
+                _formulario.TipoPreparacionId = plato.TipoPreparacionId;
+                _formulario.NivelCaloricoId = plato.NivelCaloricoId;
+            }
+            else
+            {
+                _alimentos = await Api.ListarTodosLosAlimentosAsync();
+            }
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+        finally { _cargando = false; }
+    }
+
+    private void AgregarFila() => _ingredientes.Add(new IngredienteFormulario());
+    private void QuitarFila(IngredienteFormulario ingrediente) => _ingredientes.Remove(ingrediente);
+
+    private async Task Guardar()
+    {
+        if (!_esEdicion && (_ingredientes.Count == 0 || _ingredientes.Any(i => i.AlimentoId == Guid.Empty || i.Cantidad <= 0) || _ingredientes.Select(i => i.AlimentoId).Distinct().Count() != _ingredientes.Count))
+        {
+            _error = "Añade al menos un alimento válido, sin repetir, con una cantidad mayor que cero.";
+            return;
+        }
+
+        _guardando = true;
+        _error = null;
+        try
+        {
+            if (Id is Guid id) await Api.ActualizarPlatoAsync(id, _formulario);
+            else await Api.CrearPlatoAsync(_formulario, _ingredientes);
+            Volver();
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+        finally { _guardando = false; }
+    }
+
+    private void Volver() => Navegacion.NavigateTo("/catalogo/platos");
+}

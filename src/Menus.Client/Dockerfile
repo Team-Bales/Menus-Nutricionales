@@ -10,4 +10,5 @@ RUN dotnet publish src/Menus.Client/Menus.Client.csproj -c Release -o /app/publi
 
 FROM nginx:alpine AS runtime
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
+COPY src/Menus.Client/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

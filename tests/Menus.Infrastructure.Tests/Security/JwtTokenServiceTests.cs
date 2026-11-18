@@ -1,4 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Menus.Domain.Abstractions.Security;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Options;
@@ -169,6 +171,31 @@ public sealed class JwtTokenServiceTests
         Assert.ThrowsAny<SecurityTokenException>(() => handler.ValidateToken(
             tokenEmitido.Token,
             JwtBearerConfiguration.CreateTokenValidationParameters(otherOptions),
+            out _));
+    }
+
+    [Fact]
+    public void Validar_token_expirado_lanza_SecurityTokenExpiredException()
+    {
+        var options = CreateOptions();
+        var credenciales = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key)),
+            SecurityAlgorithms.HmacSha256);
+
+        var ahora = DateTime.UtcNow;
+        var tokenExpirado = new JwtSecurityToken(
+            issuer: options.Issuer,
+            claims: [new Claim(JwtClaimTypes.Subject, Guid.NewGuid().ToString())],
+            notBefore: ahora.AddMinutes(-10),
+            expires: ahora.AddMinutes(-5), // más allá del ClockSkew de 1 minuto de JwtBearerConfiguration
+            signingCredentials: credenciales);
+        var token = new JwtSecurityTokenHandler().WriteToken(tokenExpirado);
+
+        var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
+
+        Assert.Throws<SecurityTokenExpiredException>(() => handler.ValidateToken(
+            token,
+            JwtBearerConfiguration.CreateTokenValidationParameters(options),
             out _));
     }
 

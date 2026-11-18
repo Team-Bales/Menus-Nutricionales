@@ -23,4 +23,25 @@ public sealed class SalaTests
     {
         Assert.Throws<DatoInvalidoException>(() => new Sala(Guid.NewGuid(), nombre));
     }
+
+    [Fact]
+    public void Actualizar_ValidArgs_CambiaElNombre()
+    {
+        var sala = new Sala(Guid.NewGuid(), "Sala A");
+
+        sala.Actualizar("Sala A - Pediatría");
+
+        Assert.Equal("Sala A - Pediatría", sala.Nombre);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Actualizar_NombreVacio_LanzaDatoInvalidoException(string nombre)
+    {
+        var sala = new Sala(Guid.NewGuid(), "Sala A");
+
+        Assert.Throws<DatoInvalidoException>(() => sala.Actualizar(nombre));
+        Assert.Equal("Sala A", sala.Nombre);
+    }
 }

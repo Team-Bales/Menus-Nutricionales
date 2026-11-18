@@ -96,6 +96,15 @@ public sealed class ManejadorDeExcepcionesTests
         Assert.Equal("Credenciales inválidas.", problema.Detail);
     }
 
+    [Fact]
+    public void AccesoDenegadoException_es_403()
+    {
+        var problema = ManejadorDeExcepciones.Traducir(new AccesoDenegadoException("Solo se puede consultar el propio perfil."));
+
+        Assert.Equal(StatusCodes.Status403Forbidden, problema.Status);
+        Assert.Equal("Solo se puede consultar el propio perfil.", problema.Detail);
+    }
+
     [Theory]
     [InlineData(PostgresErrorCodes.UniqueViolation, StatusCodes.Status409Conflict)]
     [InlineData(PostgresErrorCodes.ForeignKeyViolation, StatusCodes.Status409Conflict)]

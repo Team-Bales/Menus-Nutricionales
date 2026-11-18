@@ -49,7 +49,7 @@ internal static class ComposicionDelPlato
     /// </summary>
     /// <remarks>
     /// El dominio lo exige para reclasificar un ítem; la composición también es parte de la descripción del plato,
-    /// así que se aplica la misma regla (ADR-011). Lo comprueba el caso de uso porque <see cref="Plato.AgregarIngrediente"/> y
+    /// así que se aplica la misma regla (ADR-012). Lo comprueba el caso de uso porque <see cref="Plato.AgregarIngrediente"/> y
     /// <see cref="Plato.QuitarIngrediente"/> no reciben al actor.
     /// </remarks>
     /// <param name="plato">Plato que se modifica.</param>

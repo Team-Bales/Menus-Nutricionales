@@ -13,7 +13,7 @@ internal sealed class QuitarGrupoDietaHandler(IDietaRepository dietas, IUnitOfWo
     : IHandler<QuitarGrupoDietaCommand, Unidad>
 {
     /// <exception cref="NoEncontradoException">Si la dieta no existe.</exception>
-    /// <exception cref="ReglaDeNegocioException">Si es el único grupo requerido de la dieta (RK-07).</exception>
+    /// <exception cref="Menus.Domain.Excepciones.ReglaDeNegocioException">Si es el único grupo requerido de la dieta (RK-07).</exception>
     public async Task<Unidad> HandleAsync(QuitarGrupoDietaCommand solicitud, CancellationToken ct)
     {
         var dieta = await dietas.GetConGruposYRestriccionesAsync(solicitud.DietaId, ct)

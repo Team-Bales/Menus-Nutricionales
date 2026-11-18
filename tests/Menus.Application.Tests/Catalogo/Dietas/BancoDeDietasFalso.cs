@@ -24,6 +24,8 @@ internal sealed class BancoDeDietasFalso
 
     public List<Menu> Menus { get; } = [];
 
+    public List<Nutricionista> Nutricionistas { get; } = [];
+
     /// <summary>Grupos que excluye cada restricción alimentaria (#101: <see cref="DietasFalsas.GetGruposProhibidosAsync"/>).</summary>
     public Dictionary<Guid, List<Guid>> GruposExcluidosPorRestriccion { get; } = [];
 
@@ -37,6 +39,21 @@ internal sealed class BancoDeDietasFalso
     public PacientesFalsos PacientesRepo => new(this);
 
     public MenusFalsos MenusRepo => new(this);
+
+    public NutricionistasFalsos NutricionistasRepo => new(this);
+
+    /// <summary>Agrega un nutricionista autorizado para las dietas indicadas (#71, #98).</summary>
+    public Nutricionista AgregarNutricionista(params Guid[] dietasAutorizadas)
+    {
+        var nutricionista = new Nutricionista(Guid.NewGuid(), "Nutricionista Falso", Guid.NewGuid());
+        foreach (var dietaId in dietasAutorizadas)
+        {
+            nutricionista.AutorizarDieta(dietaId);
+        }
+
+        Nutricionistas.Add(nutricionista);
+        return nutricionista;
+    }
 
     /// <summary>Registra que una restricción alimentaria excluye un grupo nutricional.</summary>
     public void ExcluirGrupo(Guid restriccionAlimentariaId, Guid grupoNutricionalId)
@@ -116,6 +133,17 @@ internal sealed class DietasFalsas(BancoDeDietasFalso banco) : IDietaRepository
         IReadOnlyList<Dieta> enPagina = [.. filtradas.Skip((pagina - 1) * tamano).Take(tamano)];
         return Task.FromResult((enPagina, filtradas.Count));
     }
+
+    public Task<IReadOnlyDictionary<Guid, ConteosDeDieta>> ContarRelacionesAsync(
+        IReadOnlyCollection<Guid> dietaIds,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyDictionary<Guid, ConteosDeDieta>>(dietaIds.ToDictionary(
+            id => id,
+            id =>
+            {
+                var dieta = banco.Dietas.Single(d => d.Id == id);
+                return new ConteosDeDieta(dieta.GruposNutricionales.Count, dieta.Restricciones.Count);
+            }));
 
     public Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Dieta>>([.. banco.Dietas.Where(d => ids.Contains(d.Id))]);
@@ -228,7 +256,13 @@ internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.NutricionistaCreadorId == nutricionistaId)]);
 
     public Task<IReadOnlyList<Menu>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Menu>>([]);
+        => Task.FromResult<IReadOnlyList<Menu>>(
+        [
+            .. banco.Menus
+                .Where(m => m.Asignaciones.Any(a => a.PacienteId == pacienteId))
+                .OrderByDescending(m => m.FechaCreacion)
+                .ThenBy(m => m.Id),
+        ]);
 
     public Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Menu>>([.. banco.Menus.Where(m => m.DietaId == dietaId && m.EsFinal)]);
@@ -245,6 +279,42 @@ internal sealed class MenusFalsos(BancoDeDietasFalso banco) : IMenuRepository
             .GroupBy(nivelId => nivelId)
             .ToDictionary(g => g.Key, g => g.Count());
         return Task.FromResult(conteo);
+    }
+}
+
+internal sealed class NutricionistasFalsos(BancoDeDietasFalso banco) : INutricionistaRepository
+{
+    public Task<Nutricionista?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromResult(banco.Nutricionistas.Find(n => n.Id == id));
+
+    public Task<IReadOnlyList<Nutricionista>> ListAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Nutricionista>>([.. banco.Nutricionistas]);
+
+    public Task AddAsync(Nutricionista entity, CancellationToken cancellationToken = default)
+    {
+        banco.Nutricionistas.Add(entity);
+        return Task.CompletedTask;
+    }
+
+    public void Remove(Nutricionista entity) => banco.Nutricionistas.Remove(entity);
+
+    public Task<IReadOnlyList<Nutricionista>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Nutricionista>>(
+            [.. banco.Nutricionistas.Where(n => n.DietasAutorizadas.Any(d => d.DietaId == dietaId))]);
+
+    public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(
+        Guid? especialidadId,
+        int pagina,
+        int tamano,
+        CancellationToken cancellationToken = default)
+    {
+        var filtrados = banco.Nutricionistas
+            .Where(n => especialidadId is null || n.EspecialidadId == especialidadId)
+            .OrderBy(n => n.Nombre, StringComparer.Ordinal)
+            .ToList();
+
+        IReadOnlyList<Nutricionista> enLaPagina = [.. filtrados.Skip((pagina - 1) * tamano).Take(tamano)];
+        return Task.FromResult((enLaPagina, filtrados.Count));
     }
 }
 

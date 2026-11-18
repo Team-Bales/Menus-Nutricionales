@@ -8,23 +8,29 @@ namespace Menus.Domain.Nomenclators;
 /// </summary>
 public sealed class TipoPreparacion : Entity<Guid>
 {
+    /// <summary>Entrante del menú.</summary>
     public static readonly TipoPreparacion Entrante =
         new(new Guid("55555555-0000-0000-0000-000000000001"), "Entrante");
 
+    /// <summary>Plato fuerte del menú.</summary>
     public static readonly TipoPreparacion PlatoFuerte =
         new(new Guid("55555555-0000-0000-0000-000000000002"), "Plato fuerte");
 
+    /// <summary>Postre del menú.</summary>
     public static readonly TipoPreparacion Postre =
         new(new Guid("55555555-0000-0000-0000-000000000003"), "Postre");
 
+    /// <summary>Bebida del menú.</summary>
     public static readonly TipoPreparacion Bebida =
         new(new Guid("55555555-0000-0000-0000-000000000004"), "Bebida");
 
+    /// <summary>Los cuatro tipos del catálogo, en el orden en que se presentan.</summary>
     public static IReadOnlyList<TipoPreparacion> Todos { get; } =
         [Entrante, PlatoFuerte, Postre, Bebida];
 
     private TipoPreparacion(Guid id, string nombre) : base(id) => Nombre = nombre;
 
+    /// <summary>Nombre del tipo, tal como se muestra.</summary>
     public string Nombre { get; }
 
     /// <summary>Indica si el identificador corresponde a uno de los tipos de preparación del catálogo (RD-01).</summary>

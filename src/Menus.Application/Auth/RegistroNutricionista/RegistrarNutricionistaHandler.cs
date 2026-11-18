@@ -19,6 +19,12 @@ public sealed class RegistrarNutricionistaHandler : IHandler<RegistrarNutricioni
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
 
+    /// <summary>Crea el manejador con sus dependencias.</summary>
+    /// <param name="usuarioRepository">Usuarios, para comprobar el email y crear la cuenta.</param>
+    /// <param name="nutricionistaRepository">Nutricionistas, para crear la entidad de la cuenta.</param>
+    /// <param name="especialidadRepository">Especialidades, para comprobar que exista.</param>
+    /// <param name="unitOfWork">Confirma la cuenta y el nutricionista en una transacción.</param>
+    /// <param name="passwordHasher">Calcula el hash de la contraseña.</param>
     public RegistrarNutricionistaHandler(
         IUsuarioRepository usuarioRepository,
         INutricionistaRepository nutricionistaRepository,
@@ -33,6 +39,8 @@ public sealed class RegistrarNutricionistaHandler : IHandler<RegistrarNutricioni
         _passwordHasher = passwordHasher;
     }
 
+    /// <exception cref="NoEncontradoException">Si la especialidad no existe.</exception>
+    /// <exception cref="ReglaDeNegocioException">Si ya hay una cuenta con ese email.</exception>
     public async Task<IdCreadoDto> HandleAsync(RegistrarNutricionistaCommand solicitud, CancellationToken ct)
     {
         // Verificar que la especialidad existe

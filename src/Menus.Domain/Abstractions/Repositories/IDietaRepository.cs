@@ -36,6 +36,18 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
         int tamano,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Cuenta grupos nutricionales y restricciones de cada dieta solicitada en consultas separadas del detalle.</summary>
+    /// <remarks>
+    /// El listado del catálogo muestra ambos conteos (#66). Se obtienen por lote para que el cliente no tenga que
+    /// pedir el detalle de cada fila de la página.
+    /// </remarks>
+    /// <param name="dietaIds">Identificadores de las dietas de la página.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Los conteos de cada dieta solicitada, incluso si una relación tiene cantidad cero.</returns>
+    Task<IReadOnlyDictionary<Guid, ConteosDeDieta>> ContarRelacionesAsync(
+        IReadOnlyCollection<Guid> dietaIds,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Devuelve, sin rastrear y sin sus grupos ni restricciones, las dietas de esos identificadores que existen.
     /// </summary>
@@ -52,3 +64,8 @@ public interface IDietaRepository : IRepository<Dieta, Guid>
     /// <param name="cancellationToken">Token de cancelación.</param>
     Task<IReadOnlyList<Guid>> GetGruposProhibidosAsync(Guid dietaId, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Cantidades que el listado de dietas muestra para sus relaciones de cobertura y restricción.</summary>
+/// <param name="CantidadDeGrupos">Número de grupos nutricionales que la dieta cubre.</param>
+/// <param name="CantidadDeRestricciones">Número de restricciones alimentarias de la dieta.</param>
+public sealed record ConteosDeDieta(int CantidadDeGrupos, int CantidadDeRestricciones);

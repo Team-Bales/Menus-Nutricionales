@@ -259,7 +259,7 @@ public sealed class ManejadoresDeDietasTests
     {
         _banco.Agregar("Dieta A", programa: BancoDeDietasFalso.ProgramaPediatria);
         _banco.Agregar("Dieta B", programa: BancoDeDietasFalso.ProgramaPediatria);
-        _banco.Agregar("Dieta C", programa: BancoDeDietasFalso.ProgramaPediatria);
+        var dietaC = _banco.Agregar("Dieta C", programa: BancoDeDietasFalso.ProgramaPediatria);
         _banco.Agregar("Dieta D", programa: BancoDeDietasFalso.ProgramaOncologia);
 
         var resultado = await new ListarDietasHandler(_banco.DietasRepo).HandleAsync(
@@ -269,7 +269,12 @@ public sealed class ManejadoresDeDietasTests
         Assert.Equal(3, resultado.Total);
         Assert.Equal(2, resultado.Page);
         Assert.Equal(2, resultado.Size);
-        Assert.Equal("Dieta C", Assert.Single(resultado.Data).Nombre);
+        var dieta = Assert.Single(resultado.Data);
+        Assert.Equal(dietaC.Id, dieta.Id);
+        Assert.Equal("Dieta C", dieta.Nombre);
+        Assert.Equal(BancoDeDietasFalso.ProgramaPediatria, dieta.ProgramaAtencionId);
+        Assert.Equal(1, dieta.CantidadDeGrupos);
+        Assert.Equal(0, dieta.CantidadDeRestricciones);
     }
 
     [Fact]

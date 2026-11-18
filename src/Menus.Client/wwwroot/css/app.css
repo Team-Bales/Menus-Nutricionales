@@ -105,6 +105,10 @@ code {
     color: #c02d76;
 }
 
+.formulario-catalogo {
+    max-width: 900px;
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
     color: var(--bs-secondary-color);
     text-align: end;

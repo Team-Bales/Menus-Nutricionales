@@ -7,6 +7,7 @@ namespace Menus.Application.Auth.RegistroNutricionista;
 /// <summary>Validador para <see cref="RegistrarNutricionistaCommand"/>.</summary>
 public sealed class RegistrarNutricionistaValidator : AbstractValidator<RegistrarNutricionistaCommand>
 {
+    /// <summary>Declara las reglas de forma de la cuenta y de los datos del nutricionista.</summary>
     public RegistrarNutricionistaValidator()
     {
         RuleFor(x => x.Nombre)

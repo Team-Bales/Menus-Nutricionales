@@ -68,3 +68,15 @@ internal sealed class AutenticacionApiFalsa : IAutenticacionApi
         return Task.FromResult(Perfil ?? throw new InvalidOperationException("Configura el perfil."));
     }
 }
+
+internal sealed class AutenticacionApiPendiente : IAutenticacionApi
+{
+    private readonly TaskCompletionSource<PerfilUsuario> _perfil = new();
+
+    public Task<ResultadoLogin> IniciarSesionAsync(CredencialesLogin credenciales, CancellationToken ct = default)
+        => Task.FromException<ResultadoLogin>(new NotSupportedException());
+
+    public Task<PerfilUsuario> ObtenerPerfilAsync(CancellationToken ct = default) => _perfil.Task;
+
+    public void CompletarPerfil(PerfilUsuario perfil) => _perfil.SetResult(perfil);
+}

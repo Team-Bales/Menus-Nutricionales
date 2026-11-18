@@ -1,9 +1,11 @@
 using System.Net;
 using Bunit;
 using Bunit.TestDoubles;
+using Menus.Client.Layout;
 using Menus.Client.Pages;
 using Menus.Client.Services;
 using Menus.Client.Tests.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Client.Tests.Pages;
@@ -81,11 +83,34 @@ public sealed class AutenticacionPagesTests : BunitContext
     }
 
     [Fact]
+    public void Perfil_muestra_el_estado_de_carga_hasta_que_la_api_responde()
+    {
+        var api = new AutenticacionApiPendiente();
+        Servicios(api, new SesionAutenticadaFalsa());
+        var cut = Render<Perfil>();
+
+        Assert.Contains("Cargando perfil", cut.Markup);
+        api.CompletarPerfil(new PerfilUsuario("paciente@centro.test", "Paciente", Guid.NewGuid()));
+
+        cut.WaitForAssertion(() => Assert.Contains("paciente@centro.test", cut.Markup));
+    }
+
+    [Fact]
     public void RedirigirALogin_navega_a_la_pantalla_de_inicio_de_sesion()
     {
         Render<RedirigirALogin>();
 
         Assert.EndsWith("/login", Services.GetRequiredService<BunitNavigationManager>().Uri);
+    }
+
+    [Fact]
+    public void LayoutVacio_muestra_el_contenido_de_la_pagina()
+    {
+        RenderFragment contenido = builder => builder.AddMarkupContent(0, "<p>Inicio de sesión</p>");
+
+        var cut = Render<LayoutVacio>(parameters => parameters.Add(layout => layout.Body, contenido));
+
+        Assert.Contains("Inicio de sesión", cut.Markup);
     }
 
     private void Servicios(IAutenticacionApi api, ISesionAutenticada sesion)

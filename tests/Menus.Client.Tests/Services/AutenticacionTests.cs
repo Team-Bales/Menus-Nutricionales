@@ -109,6 +109,30 @@ public sealed class AutenticacionTests
     }
 
     [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_rechaza_un_payload_codificado_de_forma_invalida()
+    {
+        var proveedor = new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso("cabecera.! .firma".Replace(" ", string.Empty)));
+
+        var estado = await proveedor.GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_rechaza_un_payload_que_no_es_json()
+    {
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes("{"))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+        var proveedor = new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso($"cabecera.{payload}.firma"));
+
+        var estado = await proveedor.GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+    }
+
+    [Fact]
     public async Task IniciarSesionAsync_guarda_el_token_en_el_almacen()
     {
         var almacen = new AlmacenDeSesionFalso();

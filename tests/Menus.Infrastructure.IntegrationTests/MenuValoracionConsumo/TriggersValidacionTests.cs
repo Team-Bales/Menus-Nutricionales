@@ -182,17 +182,20 @@ public sealed class TriggersValidacionTests : IAsyncLifetime
     [Fact]
     public async Task Trg_r7_33_rechaza_update_de_la_validacion()
     {
-        var (dietaId, creadorId, menuId) = await ArmarMenuPendienteAsync();
+        var (dietaId, creadorId, _) = await ArmarMenuPendienteAsync();
         var revisorId = await _sembrador.NutricionistaAsync();
-        await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId); // deja la validación registrada
+        var menuId = await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId); // el menú que sí tiene validación
 
+        await using var tx = await _conexion.BeginTransactionAsync();
         await using var cmd = _conexion.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = "UPDATE validacion SET observaciones = 'x' WHERE menu_id = @menu_id";
         cmd.Parameters.AddWithValue("menu_id", menuId);
 
         var ex = await Assert.ThrowsAsync<PostgresException>(() => cmd.ExecuteNonQueryAsync());
         Assert.Equal("P0001", ex.SqlState);
         Assert.Contains("fn_r7_33", ex.Where);
+        await tx.RollbackAsync();
     }
 
     /// <summary>
@@ -201,16 +204,19 @@ public sealed class TriggersValidacionTests : IAsyncLifetime
     [Fact]
     public async Task Trg_r7_33_rechaza_delete_de_la_validacion()
     {
-        var (dietaId, creadorId, menuId) = await ArmarMenuPendienteAsync();
+        var (dietaId, creadorId, _) = await ArmarMenuPendienteAsync();
         var revisorId = await _sembrador.NutricionistaAsync();
-        await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId);
+        var menuId = await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId); // el menú que sí tiene validación
 
+        await using var tx = await _conexion.BeginTransactionAsync();
         await using var cmd = _conexion.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = "DELETE FROM validacion WHERE menu_id = @menu_id";
         cmd.Parameters.AddWithValue("menu_id", menuId);
 
         var ex = await Assert.ThrowsAsync<PostgresException>(() => cmd.ExecuteNonQueryAsync());
         Assert.Equal("P0001", ex.SqlState);
         Assert.Contains("fn_r7_33", ex.Where);
+        await tx.RollbackAsync();
     }
 }

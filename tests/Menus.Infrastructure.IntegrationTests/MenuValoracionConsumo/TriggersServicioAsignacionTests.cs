@@ -239,7 +239,8 @@ public sealed class TriggersServicioAsignacionTests : IAsyncLifetime
         var (dietaId, creadorId, revisorId, pacienteId) = await ArmarDietaAsync();
 
         var menu1 = await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId);
-        var menu2 = await _sembrador.MenuAprobadoAsync(dietaId, creadorId, revisorId);
+        var menu2 = await _sembrador.MenuAsync(dietaId, creadorId);
+        await _sembrador.ValidarAsync(menu2, revisorId, aprobado: true);
         await _sembrador.AsignarAsync(menu1, pacienteId);
         await _sembrador.AsignarAsync(menu2, pacienteId); // segunda asignación: otra valoración posible
 

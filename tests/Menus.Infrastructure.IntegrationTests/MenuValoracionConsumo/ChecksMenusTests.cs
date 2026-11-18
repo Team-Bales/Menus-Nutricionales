@@ -75,16 +75,39 @@ public sealed class ChecksMenusTests : IAsyncLifetime
         var creadorId = await _sembrador.NutricionistaAsync();
         await _sembrador.AutorizarAsync(creadorId, dietaId);
 
+        var menuId = Guid.NewGuid();
+        await using var tx = await _conexion.BeginTransactionAsync();
         await using var cmd = _conexion.CreateCommand();
+        cmd.Transaction = tx;
         cmd.CommandText = """
             INSERT INTO menus (id, dieta_id, nutricionista_creador_id, fecha_creacion, cantidad_total_alimentos, es_automatico)
             VALUES (@id, @dieta_id, @nutricionista_creador_id, NOW() - INTERVAL '1 day', 1, FALSE)
             """;
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        cmd.Parameters.AddWithValue("id", menuId);
         cmd.Parameters.AddWithValue("dieta_id", dietaId);
         cmd.Parameters.AddWithValue("nutricionista_creador_id", creadorId);
+        await cmd.ExecuteNonQueryAsync();
 
-        await cmd.ExecuteNonQueryAsync(); // No debe lanzar
+        // RK-09 es diferido: sin distribución ni grupos cubiertos, el menú se rechaza al confirmar
+        cmd.CommandText = """
+            INSERT INTO menu_distribucion (menu_id, tipo_preparacion_id, proporcion)
+            VALUES (@menu_id, @tipo_preparacion_id, 1.0)
+            """;
+        cmd.Parameters.Clear();
+        cmd.Parameters.AddWithValue("menu_id", menuId);
+        cmd.Parameters.AddWithValue("tipo_preparacion_id", Sembrador.TipoPlatoFuerteId);
+        await cmd.ExecuteNonQueryAsync();
+
+        cmd.CommandText = """
+            INSERT INTO menu_grupo_nutricional (menu_id, grupo_nutricional_id)
+            VALUES (@menu_id, @grupo_nutricional_id)
+            """;
+        cmd.Parameters.Clear();
+        cmd.Parameters.AddWithValue("menu_id", menuId);
+        cmd.Parameters.AddWithValue("grupo_nutricional_id", Sembrador.GrupoCerealesId);
+        await cmd.ExecuteNonQueryAsync();
+
+        await tx.CommitAsync(); // No debe lanzar
     }
 
     // =========================================================================

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Menus.Domain.Entidades;
+using Menus.Infrastructure.IntegrationTests.Datos;
 using Menus.Infrastructure.IntegrationTests.Fixtures;
 using Menus.Infrastructure.Persistence.Repositories;
 using Npgsql;
@@ -9,7 +10,11 @@ using Xunit;
 
 namespace Menus.Infrastructure.IntegrationTests.Repositorios;
 
-/// <summary>Pruebas contra PostgreSQL real de <see cref="NutricionistaRepository.BuscarAsync"/> (#71).</summary>
+/// <summary>
+/// Pruebas contra PostgreSQL real de <see cref="NutricionistaRepository.BuscarAsync"/> (#71) y
+/// <see cref="NutricionistaRepository.GetByDietaAsync"/> (#78), que usa <c>nutricionistas.GetByDietaAsync</c>
+/// para mostrar quién autorizó cada menú (<see cref="Menus.Application.GestionDeMenus.NombresDeNutricionistas"/>).
+/// </summary>
 [Collection("PostgreSQL")]
 public sealed class BusquedaDeNutricionistasTests : IAsyncLifetime
 {
@@ -18,6 +23,7 @@ public sealed class BusquedaDeNutricionistasTests : IAsyncLifetime
 
     private readonly PostgresFixture _fixture;
     private NpgsqlConnection _conexion = null!;
+    private Sembrador _s = null!;
 
     public BusquedaDeNutricionistasTests(PostgresFixture fixture)
     {
@@ -28,6 +34,7 @@ public sealed class BusquedaDeNutricionistasTests : IAsyncLifetime
     {
         await _fixture.ReiniciarAsync();
         _conexion = await _fixture.AbrirAsync();
+        _s = new Sembrador(_conexion);
     }
 
     public async Task DisposeAsync() => await _conexion.DisposeAsync();
@@ -74,5 +81,25 @@ public sealed class BusquedaDeNutricionistasTests : IAsyncLifetime
         Assert.Equal(["Carla"], pagina.Select(n => n.Nombre));
         Assert.Equal(3, total);
         Assert.Empty(ctx.ChangeTracker.Entries<Nutricionista>());
+    }
+
+    [Fact]
+    public async Task GetByDietaAsync_devuelve_solo_los_autorizados()
+    {
+        var dieta = await _s.DietaAsync();
+        var autorizado = await GuardarAsync("Autorizada", Clinica);
+        await GuardarAsync("Sin autorizar", Clinica);
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var rastreado = (await new NutricionistaRepository(ctx).GetByIdAsync(autorizado.Id))!;
+            rastreado.AutorizarDieta(dieta);
+            await new UnitOfWork(ctx).CommitAsync();
+        }
+
+        await using var ctx2 = _fixture.CrearContexto();
+        var resultado = await new NutricionistaRepository(ctx2).GetByDietaAsync(dieta);
+
+        Assert.Equal([autorizado.Id], resultado.Select(n => n.Id));
     }
 }

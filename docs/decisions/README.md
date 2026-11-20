@@ -44,3 +44,4 @@ alternativas consideradas y las consecuencias que implica.
 | [012](ADR-012-rs02-composicion-del-plato.md) | RS-02 también alcanza la composición del plato | Aceptado |
 | [013](ADR-013-cliente-catalogo-actor-header-nginx.md) | Cliente Blazor del catálogo: contrato `ICatalogoApi`, cabecera `X-Actor-Id` provisional y proxy Nginx | Aceptado |
 | [014](ADR-014-strategy-generacion-automatica-menu.md) | Patrón Strategy para la selección de ítems en la generación automática de menús | Aceptado |
+| [015](ADR-015-ia-generativa.md) | Integración de IA generativa opcional: proveedor OpenAI-compatible y separación por volumen de uso | Propuesto |

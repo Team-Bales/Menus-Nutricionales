@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 
 namespace Menus.Client.Services;
@@ -26,7 +27,7 @@ public sealed class AutenticacionApi(HttpClient http) : IAutenticacionApi
     public async Task<ResultadoLogin> IniciarSesionAsync(CredencialesLogin credenciales, CancellationToken ct = default)
     {
         using var response = await http.PostAsJsonAsync("api/auth/login", credenciales, ct);
-        await LanzarSiErrorAsync(response, ct);
+        await RespuestasDeApi.LanzarSiErrorAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<ResultadoLogin>(cancellationToken: ct)
             ?? throw new ApiException(response.StatusCode, "La API devolvió una respuesta vacía.");
     }
@@ -35,37 +36,9 @@ public sealed class AutenticacionApi(HttpClient http) : IAutenticacionApi
     public async Task<PerfilUsuario> ObtenerPerfilAsync(CancellationToken ct = default)
     {
         using var response = await http.GetAsync("api/auth/perfil", ct);
-        await LanzarSiErrorAsync(response, ct);
+        await RespuestasDeApi.LanzarSiErrorAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<PerfilUsuario>(cancellationToken: ct)
             ?? throw new ApiException(response.StatusCode, "La API devolvió una respuesta vacía.");
-    }
-
-    private static async Task LanzarSiErrorAsync(HttpResponseMessage response, CancellationToken ct)
-    {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var mensaje = $"La API respondió {(int)response.StatusCode}.";
-        var contenido = await response.Content.ReadAsStringAsync(ct);
-        if (!string.IsNullOrWhiteSpace(contenido))
-        {
-            try
-            {
-                using var documento = JsonDocument.Parse(contenido);
-                if (documento.RootElement.TryGetProperty("detail", out var detalle) && !string.IsNullOrWhiteSpace(detalle.GetString()))
-                {
-                    mensaje = detalle.GetString()!;
-                }
-            }
-            catch (JsonException)
-            {
-                // Se conserva el mensaje seguro cuando la respuesta no es ProblemDetails.
-            }
-        }
-
-        throw new ApiException(response.StatusCode, mensaje);
     }
 }
 
@@ -83,7 +56,12 @@ public sealed class CredencialesLogin
 }
 
 /// <summary>Resultado de un inicio de sesión exitoso.</summary>
-public sealed record ResultadoLogin(string Token, DateTime Expira, string Rol);
+/// <remarks>
+/// La API también devuelve <c>expira</c> y <c>rol</c>, pero el cliente no los necesita: los dos
+/// salen del propio token (claims <c>exp</c> y <c>role</c>), que es la única fuente de verdad.
+/// </remarks>
+/// <param name="Token">JWT emitido por la API.</param>
+public sealed record ResultadoLogin(string Token);
 
 /// <summary>Información de perfil disponible en el contrato actual de la API.</summary>
 public sealed record PerfilUsuario(string Email, string Rol, Guid? EntidadId);
@@ -101,19 +79,47 @@ public interface IAlmacenDeSesion
     ValueTask EliminarTokenAsync();
 }
 
-/// <summary>Almacena el JWT en <c>localStorage</c>.</summary>
+/// <summary>
+/// Almacena el JWT en <c>localStorage</c> y lo mantiene en memoria para no pasar por la
+/// interop de JavaScript en cada petición.
+/// </summary>
+/// <remarks>
+/// <c>localStorage</c> mantiene la sesión al recargar o abrir otra pestaña, a cambio de que un
+/// script inyectado (XSS) pueda leer el token. Se acepta para este proyecto; ver ADR-015.
+/// </remarks>
 public sealed class AlmacenDeSesion(IJSRuntime javascript) : IAlmacenDeSesion
 {
     private const string ClaveDelToken = "menus-nutricionales.token";
+    private string? _token;
+    private bool _cargado;
 
     /// <inheritdoc/>
-    public ValueTask<string?> ObtenerTokenAsync() => javascript.InvokeAsync<string?>("localStorage.getItem", ClaveDelToken);
+    public async ValueTask<string?> ObtenerTokenAsync()
+    {
+        if (!_cargado)
+        {
+            _token = await javascript.InvokeAsync<string?>("localStorage.getItem", ClaveDelToken);
+            _cargado = true;
+        }
+
+        return _token;
+    }
 
     /// <inheritdoc/>
-    public ValueTask GuardarTokenAsync(string token) => javascript.InvokeVoidAsync("localStorage.setItem", ClaveDelToken, token);
+    public async ValueTask GuardarTokenAsync(string token)
+    {
+        await javascript.InvokeVoidAsync("localStorage.setItem", ClaveDelToken, token);
+        _token = token;
+        _cargado = true;
+    }
 
     /// <inheritdoc/>
-    public ValueTask EliminarTokenAsync() => javascript.InvokeVoidAsync("localStorage.removeItem", ClaveDelToken);
+    public async ValueTask EliminarTokenAsync()
+    {
+        await javascript.InvokeVoidAsync("localStorage.removeItem", ClaveDelToken);
+        _token = null;
+        _cargado = true;
+    }
 }
 
 /// <summary>Operaciones de sesión que usan las páginas y el menú.</summary>
@@ -132,17 +138,30 @@ public sealed class ProveedorDeEstadoDeAutenticacion(IAlmacenDeSesion almacen) :
     private static readonly AuthenticationState Anonimo = new(new ClaimsPrincipal(new ClaimsIdentity()));
 
     /// <inheritdoc/>
+    /// <remarks>Un token caducado o mal formado se borra del almacén y cuenta como anónimo.</remarks>
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         var token = await almacen.ObtenerTokenAsync();
-        return CrearEstado(token);
+        var claims = TokenJwt.LeerClaimsVigentes(token);
+        if (claims is null)
+        {
+            if (token is not null)
+            {
+                await almacen.EliminarTokenAsync();
+            }
+
+            return Anonimo;
+        }
+
+        return Autenticado(claims);
     }
 
     /// <summary>Guarda el token y publica el usuario autenticado.</summary>
     public async Task IniciarSesionAsync(string token)
     {
         await almacen.GuardarTokenAsync(token);
-        NotifyAuthenticationStateChanged(Task.FromResult(CrearEstado(token)));
+        var claims = TokenJwt.LeerClaimsVigentes(token);
+        NotifyAuthenticationStateChanged(Task.FromResult(claims is null ? Anonimo : Autenticado(claims)));
     }
 
     /// <summary>Elimina el token y publica el estado anónimo.</summary>
@@ -152,69 +171,51 @@ public sealed class ProveedorDeEstadoDeAutenticacion(IAlmacenDeSesion almacen) :
         NotifyAuthenticationStateChanged(Task.FromResult(Anonimo));
     }
 
-    private static AuthenticationState CrearEstado(string? token)
-    {
-        if (string.IsNullOrWhiteSpace(token) || !IntentarLeerClaims(token, out var claims))
-        {
-            return Anonimo;
-        }
-
-        var expiracion = claims.FirstOrDefault(c => c.Type == "exp")?.Value;
-        if (!long.TryParse(expiracion, out var segundos) || DateTimeOffset.FromUnixTimeSeconds(segundos) <= DateTimeOffset.UtcNow)
-        {
-            return Anonimo;
-        }
-
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt", "name", "role")));
-    }
-
-    private static bool IntentarLeerClaims(string token, out List<Claim> claims)
-    {
-        claims = [];
-        var partes = token.Split('.');
-        if (partes.Length != 3)
-        {
-            return false;
-        }
-
-        try
-        {
-            var payload = partes[1].Replace('-', '+').Replace('_', '/');
-            payload = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
-            using var documento = JsonDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(payload)));
-            foreach (var propiedad in documento.RootElement.EnumerateObject())
-            {
-                if (propiedad.Value.ValueKind == JsonValueKind.String || propiedad.Value.ValueKind == JsonValueKind.Number)
-                {
-                    claims.Add(new Claim(propiedad.Name, propiedad.Value.ToString()));
-                }
-            }
-
-            return true;
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+    private static AuthenticationState Autenticado(IEnumerable<Claim> claims)
+        => new(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt", "name", "role")));
 }
 
-/// <summary>Agrega el JWT almacenado a cada llamada saliente de la API.</summary>
-public sealed class AutorizacionHandler(IAlmacenDeSesion almacen) : DelegatingHandler
+/// <summary>
+/// Agrega el JWT vigente a cada llamada saliente de la API y cierra la sesión si la API
+/// la rechaza con 401.
+/// </summary>
+/// <remarks>
+/// <see cref="ISesionAutenticada"/> y <see cref="NavigationManager"/> se resuelven en el momento
+/// de usarlos y no en el constructor, para no crear una dependencia circular si en el futuro el
+/// proveedor de estado necesita el <see cref="HttpClient"/>.
+/// </remarks>
+public sealed class AutorizacionHandler(IAlmacenDeSesion almacen, IServiceProvider servicios) : DelegatingHandler
 {
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var token = await almacen.ObtenerTokenAsync();
+        var enviaToken = false;
         if (!string.IsNullOrWhiteSpace(token))
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (TokenJwt.LeerClaimsVigentes(token) is null)
+            {
+                // Caducado o mal formado: no se manda y se borra para no arrastrarlo.
+                await almacen.EliminarTokenAsync();
+            }
+            else
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                enviaToken = true;
+            }
         }
 
-        return await base.SendAsync(request, cancellationToken);
+        var response = await base.SendAsync(request, cancellationToken);
+
+        // Solo cuenta como sesión caducada si se mandó un token: un 401 sin token es, por ejemplo,
+        // el de unas credenciales incorrectas en el login, y eso lo muestra la propia pantalla.
+        if (enviaToken && response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            await servicios.GetRequiredService<ISesionAutenticada>().CerrarSesionAsync();
+            var navegacion = servicios.GetRequiredService<NavigationManager>();
+            navegacion.NavigateTo(RutasDeSesion.LoginVolviendoAqui(navegacion));
+        }
+
+        return response;
     }
 }

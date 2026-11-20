@@ -1,5 +1,5 @@
 @page "/catalogo/alimentos"
-@attribute [Authorize]
+@attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api
 @inject NavigationManager Navegacion
 
@@ -10,7 +10,7 @@
         <h1 class="h2 mb-1">Alimentos</h1>
         <p class="text-muted mb-0">Banco de alimentos disponible para la elaboración de menús.</p>
     </div>
-    <button class="btn btn-primary" @onclick="Nuevo">Nuevo alimento</button>
+    <AuthorizeView Roles="@RolesDeUsuario.Nutricionista" Context="permiso"><button class="btn btn-primary" @onclick="Nuevo">Nuevo alimento</button></AuthorizeView>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(_error))
@@ -83,8 +83,10 @@ else if (_pagina is not null)
                         <td>@Nombre(_tipos, alimento.TipoPreparacionId)</td>
                         <td>@Nombre(_niveles, alimento.NivelCaloricoId)</td>
                         <td class="text-end text-nowrap">
-                            <button class="btn btn-sm btn-outline-primary me-2" @onclick="(() => Editar(alimento.Id))">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(alimento))">Eliminar</button>
+                            <AuthorizeView Roles="@RolesDeUsuario.Nutricionista" Context="permiso">
+                                <button class="btn btn-sm btn-outline-primary me-2" @onclick="(() => Editar(alimento.Id))">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(alimento))">Eliminar</button>
+                            </AuthorizeView>
                         </td>
                     </tr>
                 }

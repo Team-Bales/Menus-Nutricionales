@@ -35,6 +35,10 @@
 </div>
 
 @code {
+    /// <summary>Página a la que se vuelve tras iniciar sesión; solo se aceptan rutas locales.</summary>
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
     private readonly CredencialesLogin _credenciales = new();
     private bool _enviando;
     private string? _error;
@@ -47,11 +51,16 @@
         {
             var resultado = await Api.IniciarSesionAsync(_credenciales);
             await Sesion.IniciarSesionAsync(resultado.Token);
-            Navegacion.NavigateTo("/");
+            Navegacion.NavigateTo(RutasDeSesion.DestinoSeguro(ReturnUrl));
         }
         catch (ApiException ex)
         {
             _error = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            // API caída, sin red, CORS o tiempo de espera agotado.
+            _error = MensajesDeConexion.SinServidor;
         }
         finally
         {

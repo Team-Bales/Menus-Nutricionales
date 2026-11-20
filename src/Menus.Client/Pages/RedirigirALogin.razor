@@ -3,5 +3,7 @@
 <p class="text-muted">Redirigiendo al inicio de sesión…</p>
 
 @code {
-    protected override void OnInitialized() => Navegacion.NavigateTo("/login", replace: true);
+    // Recuerda la página pedida en returnUrl para volver a ella después de iniciar sesión.
+    protected override void OnInitialized()
+        => Navegacion.NavigateTo(RutasDeSesion.LoginVolviendoAqui(Navegacion), replace: true);
 }

@@ -2,7 +2,17 @@
     <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
-                <NotAuthorized><RedirigirALogin /></NotAuthorized>
+                <NotAuthorized Context="estado">
+                    @* Sin sesión: al login, recordando la página. Con sesión pero sin el rol: aviso, no login. *@
+                    @if (estado.User.Identity?.IsAuthenticated == true)
+                    {
+                        <AccesoDenegado />
+                    }
+                    else
+                    {
+                        <RedirigirALogin />
+                    }
+                </NotAuthorized>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>

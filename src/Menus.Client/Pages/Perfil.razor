@@ -39,11 +39,15 @@ else
         {
             _error = ex.Message;
         }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            _error = MensajesDeConexion.SinServidor;
+        }
     }
 
     private async Task CerrarSesion()
     {
         await Sesion.CerrarSesionAsync();
-        Navegacion.NavigateTo("/login");
+        Navegacion.NavigateTo(RutasDeSesion.Login);
     }
 }

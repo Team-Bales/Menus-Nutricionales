@@ -1,5 +1,5 @@
 @page "/catalogo/platos/nuevo"
-@attribute [Authorize]
+@attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
 @page "/catalogo/platos/{Id:guid}/editar"
 @inject ICatalogoApi Api
 @inject NavigationManager Navegacion

@@ -9,6 +9,12 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas del listado de dietas del issue #66.</summary>
 public sealed class CatalogoDietasTests : BunitContext
 {
+    /// <summary>Las páginas del catálogo exigen un rol; las pruebas entran como Admin.</summary>
+    public CatalogoDietasTests()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+    }
+
     [Fact]
     public void Muestra_los_datos_de_la_dieta_y_sus_conteos()
     {

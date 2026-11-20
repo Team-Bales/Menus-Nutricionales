@@ -9,6 +9,12 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas del detalle y la edición de relaciones de una dieta del issue #66.</summary>
 public sealed class DetalleDietaTests : BunitContext
 {
+    /// <summary>Las páginas del catálogo exigen un rol; las pruebas entran como Admin.</summary>
+    public DetalleDietaTests()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+    }
+
     [Fact]
     public void Muestra_los_grupos_y_las_restricciones_de_la_dieta()
     {

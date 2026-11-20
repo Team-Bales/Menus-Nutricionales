@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using Bunit;
+using Bunit.TestDoubles;
 using Menus.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
@@ -156,27 +157,161 @@ public sealed class AutenticacionTests
     }
 
     [Fact]
-    public async Task AutorizacionHandler_agrega_el_jwt_a_las_peticiones()
+    public async Task AutorizacionHandler_agrega_el_jwt_vigente_a_las_peticiones()
     {
-        var almacen = new AlmacenDeSesionFalso("jwt-de-prueba");
+        var token = CrearToken(DateTimeOffset.UtcNow.AddMinutes(5), "Admin");
+        using var contexto = new BunitContext();
         var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.OK));
-        using var cliente = new HttpClient(new AutorizacionHandler(almacen) { InnerHandler = interno }) { BaseAddress = new Uri("http://localhost/") };
+        using var cliente = CrearCliente(contexto, new AlmacenDeSesionFalso(token), new SesionAutenticadaFalsa(), interno);
 
         await cliente.GetAsync("api/auth/perfil");
 
         Assert.Equal("Bearer", interno.Recibida!.Headers.Authorization!.Scheme);
-        Assert.Equal("jwt-de-prueba", interno.Recibida.Headers.Authorization.Parameter);
+        Assert.Equal(token, interno.Recibida.Headers.Authorization.Parameter);
     }
 
     [Fact]
     public async Task AutorizacionHandler_no_agrega_cabecera_si_no_hay_sesion()
     {
+        using var contexto = new BunitContext();
         var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.OK));
-        using var cliente = new HttpClient(new AutorizacionHandler(new AlmacenDeSesionFalso()) { InnerHandler = interno }) { BaseAddress = new Uri("http://localhost/") };
+        using var cliente = CrearCliente(contexto, new AlmacenDeSesionFalso(), new SesionAutenticadaFalsa(), interno);
 
         await cliente.GetAsync("api/auth/perfil");
 
         Assert.Null(interno.Recibida!.Headers.Authorization);
+    }
+
+    [Fact]
+    public async Task AutorizacionHandler_no_manda_y_borra_un_token_caducado()
+    {
+        using var contexto = new BunitContext();
+        var almacen = new AlmacenDeSesionFalso(CrearToken(DateTimeOffset.UtcNow.AddMinutes(-1), "Admin"));
+        var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        using var cliente = CrearCliente(contexto, almacen, new SesionAutenticadaFalsa(), interno);
+
+        await cliente.GetAsync("api/alimentos");
+
+        Assert.Null(interno.Recibida!.Headers.Authorization);
+        Assert.Null(almacen.Token);
+    }
+
+    [Fact]
+    public async Task AutorizacionHandler_cierra_la_sesion_y_va_al_login_si_la_api_rechaza_el_token()
+    {
+        using var contexto = new BunitContext();
+        var sesion = new SesionAutenticadaFalsa();
+        var almacen = new AlmacenDeSesionFalso(CrearToken(DateTimeOffset.UtcNow.AddMinutes(5), "Admin"));
+        var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        using var cliente = CrearCliente(contexto, almacen, sesion, interno);
+        var navegacion = contexto.Services.GetRequiredService<BunitNavigationManager>();
+        navegacion.NavigateTo("/catalogo/dietas?page=2");
+
+        var respuesta = await cliente.GetAsync("api/dietas");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
+        Assert.True(sesion.SeCerro);
+        Assert.EndsWith("/login?returnUrl=%2Fcatalogo%2Fdietas%3Fpage%3D2", navegacion.Uri);
+    }
+
+    [Fact]
+    public async Task AutorizacionHandler_no_cierra_la_sesion_ante_un_401_sin_token()
+    {
+        using var contexto = new BunitContext();
+        var sesion = new SesionAutenticadaFalsa();
+        var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        using var cliente = CrearCliente(contexto, new AlmacenDeSesionFalso(), sesion, interno);
+        var navegacion = contexto.Services.GetRequiredService<BunitNavigationManager>();
+        navegacion.NavigateTo("/login");
+
+        await cliente.PostAsync("api/auth/login", null);
+
+        Assert.False(sesion.SeCerro);
+        Assert.EndsWith("/login", navegacion.Uri);
+    }
+
+    [Fact]
+    public async Task AutorizacionHandler_no_cierra_la_sesion_ante_un_403()
+    {
+        using var contexto = new BunitContext();
+        var sesion = new SesionAutenticadaFalsa();
+        var almacen = new AlmacenDeSesionFalso(CrearToken(DateTimeOffset.UtcNow.AddMinutes(5), "Nutricionista"));
+        var interno = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
+        using var cliente = CrearCliente(contexto, almacen, sesion, interno);
+
+        await cliente.PostAsync("api/dietas", null);
+
+        Assert.False(sesion.SeCerro);
+    }
+
+    [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_borra_del_almacen_un_token_caducado()
+    {
+        var almacen = new AlmacenDeSesionFalso(CrearToken(DateTimeOffset.UtcNow.AddMinutes(-1), "Paciente"));
+
+        await new ProveedorDeEstadoDeAutenticacion(almacen).GetAuthenticationStateAsync();
+
+        Assert.Null(almacen.Token);
+    }
+
+    [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_reconoce_varios_roles_en_un_array()
+    {
+        var token = CrearTokenConPayload($$"""{"exp":{{DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds()}},"role":["Admin","Nutricionista"],"jefe_nutricion":true}""");
+
+        var estado = await new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso(token)).GetAuthenticationStateAsync();
+
+        Assert.True(estado.User.IsInRole("Admin"));
+        Assert.True(estado.User.IsInRole("Nutricionista"));
+        Assert.Equal("True", estado.User.FindFirst("jefe_nutricion")!.Value);
+    }
+
+    [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_rechaza_un_payload_que_no_es_un_objeto()
+    {
+        var estado = await new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso(CrearTokenConPayload("[1,2]"))).GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task IniciarSesionAsync_con_un_token_invalido_publica_el_estado_anonimo()
+    {
+        var proveedor = new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso());
+        Task<Microsoft.AspNetCore.Components.Authorization.AuthenticationState>? publicado = null;
+        proveedor.AuthenticationStateChanged += estado => publicado = estado;
+
+        await proveedor.IniciarSesionAsync("no-es-un-jwt");
+
+        Assert.False((await publicado!).User.Identity!.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task IniciarSesionAsync_usa_un_mensaje_generico_si_detail_no_es_texto()
+    {
+        var handler = new HandlerDeMensajesFalso(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("""{"detail":42}""", Encoding.UTF8, "application/problem+json"),
+        });
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => CrearApi(handler).IniciarSesionAsync(new CredencialesLogin()));
+
+        Assert.Equal("La API respondió 400.", error.Message);
+    }
+
+    [Fact]
+    public async Task AlmacenDeSesion_lee_localStorage_una_sola_vez_y_despues_usa_la_memoria()
+    {
+        using var contexto = new BunitContext();
+        contexto.JSInterop.Setup<string?>("localStorage.getItem", _ => true).SetResult("token-almacenado");
+        var almacen = new AlmacenDeSesion(contexto.Services.GetRequiredService<IJSRuntime>());
+
+        var primero = await almacen.ObtenerTokenAsync();
+        var segundo = await almacen.ObtenerTokenAsync();
+
+        Assert.Equal("token-almacenado", primero);
+        Assert.Equal("token-almacenado", segundo);
+        Assert.Single(contexto.JSInterop.Invocations);
     }
 
     [Fact]
@@ -197,6 +332,7 @@ public sealed class AutenticacionTests
 
         Assert.Equal("token-almacenado", token);
         Assert.Equal(3, contexto.JSInterop.Invocations.Count);
+        Assert.Null(await almacen.ObtenerTokenAsync());
     }
 
     private static AutenticacionApi CrearApi(HttpMessageHandler handler)
@@ -206,10 +342,20 @@ public sealed class AutenticacionTests
         => new(HttpStatusCode.OK) { Content = new StringContent(contenido, Encoding.UTF8, "application/json") };
 
     private static string CrearToken(DateTimeOffset expira, string rol)
+        => CrearTokenConPayload($$"""{"exp":{{expira.ToUnixTimeSeconds()}},"role":"{{rol}}"}""");
+
+    private static string CrearTokenConPayload(string json)
     {
-        var cabecera = Convert.ToBase64String(Encoding.UTF8.GetBytes("{}"));
-        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes($$"""{"exp":{{expira.ToUnixTimeSeconds()}},"role":"{{rol}}"}"""));
-        return $"{cabecera.TrimEnd('=').Replace('+', '-').Replace('/', '_')}.{payload.TrimEnd('=').Replace('+', '-').Replace('/', '_')}.firma";
+        static string Base64Url(string texto) => Convert.ToBase64String(Encoding.UTF8.GetBytes(texto))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{Base64Url("{}")}.{Base64Url(json)}.firma";
+    }
+
+    private static HttpClient CrearCliente(BunitContext contexto, IAlmacenDeSesion almacen, ISesionAutenticada sesion, HttpMessageHandler interno)
+    {
+        contexto.Services.AddSingleton(sesion);
+        var handler = new AutorizacionHandler(almacen, contexto.Services) { InnerHandler = interno };
+        return new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
     }
 
     private sealed class HandlerDeMensajesFalso(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

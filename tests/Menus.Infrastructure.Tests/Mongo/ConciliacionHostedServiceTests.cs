@@ -178,11 +178,26 @@ public sealed class ConciliacionHostedServiceTests
             .Setup(c => c.ConciliarAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ResultadoConciliacion(0, 0, 0, 0));
 
+        // Avisa cuando ExecuteAsync ya arrancó: registra «iniciada» justo antes de esperar el retraso inicial.
+        var arranco = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _loggerMock
+            .Setup(l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("iniciada")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+            .Callback(new InvocationAction(_ => arranco.TrySetResult()));
+
         var servicio = CrearServicio(opciones);
         using var cts = new CancellationTokenSource();
 
         await servicio.StartAsync(cts.Token);
-        // Cancelar antes de que termine el retraso inicial
+
+        // Cancelar recién cuando ExecuteAsync está corriendo. Desde .NET 10, BackgroundService lo lanza en otra tarea,
+        // y si la cancelación llega antes de que empiece, no corre nada y no hay log que verificar (falló así en el CI
+        // del #280: «No invocations performed»).
+        await arranco.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await cts.CancelAsync();
 
         // StopAsync no debe lanzar

@@ -11,6 +11,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Menus.Application.Tests" />
+    <!-- Para que las pruebas de integración de punta a punta (#89) llamen a los manejadores reales en vez de
+         repetir su lógica a mano (revisión del #263 y el #277). -->
+    <InternalsVisibleTo Include="Menus.Infrastructure.IntegrationTests" />
   </ItemGroup>
 
   <PropertyGroup>

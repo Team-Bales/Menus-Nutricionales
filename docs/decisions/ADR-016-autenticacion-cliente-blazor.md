@@ -1,4 +1,4 @@
-# ADR-015: Autenticación en el cliente Blazor — JWT en `localStorage`, cierre de sesión ante 401 y roles alineados con la API
+# ADR-016: Autenticación en el cliente Blazor — JWT en `localStorage`, cierre de sesión ante 401 y roles alineados con la API
 
 **Estado:** Aceptado
 **Fecha:** 2026-11-20 (#75, PR #280)

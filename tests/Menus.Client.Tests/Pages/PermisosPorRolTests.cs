@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Menus.Client.Tests.Pages;
 
 /// <summary>
-/// La UI pide los mismos roles que las políticas de la API (#75, ADR-015): las páginas y los
+/// La UI pide los mismos roles que las políticas de la API (#75, ADR-016): las páginas y los
 /// botones de escritura no aparecen para quien la API respondería con 403.
 /// </summary>
 public sealed class PermisosPorRolTests : BunitContext

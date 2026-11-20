@@ -85,7 +85,7 @@ public interface IAlmacenDeSesion
 /// </summary>
 /// <remarks>
 /// <c>localStorage</c> mantiene la sesión al recargar o abrir otra pestaña, a cambio de que un
-/// script inyectado (XSS) pueda leer el token. Se acepta para este proyecto; ver ADR-015.
+/// script inyectado (XSS) pueda leer el token. Se acepta para este proyecto; ver ADR-016.
 /// </remarks>
 public sealed class AlmacenDeSesion(IJSRuntime javascript) : IAlmacenDeSesion
 {

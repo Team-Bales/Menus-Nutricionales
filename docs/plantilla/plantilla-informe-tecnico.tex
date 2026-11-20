@@ -1,0 +1,808 @@
+\documentclass[a4paper,11pt,spanish]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{verbatim}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codebg}{gray}{0.95}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+\geometry{margin=2.5cm}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=blue,
+    urlcolor=blue,
+    citecolor=blue,
+    pdftitle={Plantilla Informe Técnico de Software},
+    pdfauthor={},
+    pdfsubject={Documento Técnico / Informe Técnico de Software},
+    pdfkeywords={informe técnico, plantilla, software, documentación}
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection}{0.5em}{}
+
+\setlist[itemize]{leftmargin=*, topsep=0.3em, itemsep=0.2em}
+\setlist[enumerate]{leftmargin=*, topsep=0.3em, itemsep=0.2em}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    framerule=0.5pt,
+    backgroundcolor=\color{codebg},
+    numbers=left,
+    numberstyle=\tiny,
+    numbersep=5pt,
+    tabsize=2,
+    showstringspaces=false,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1 {Ü}{{\"U}}1 {¿}{{?`}}1 {¡}{{!`}}1
+}
+
+\captionsetup{labelfont=bf, textfont=it, skip=0.5em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{14pt}
+
+\begin{document}
+
+\thispagestyle{empty}
+
+\begin{center}
+    \vspace*{3cm}
+    {\LARGE \bfseries Documento Técnico}\\[0.5em]
+    {\LARGE \bfseries Informe Técnico de Software}\\[2cm]
+    
+    \begin{tabular}{ll}
+        \textbf{Proyecto:} & [Nombre del Sistema] vX.Y \\
+        \textbf{Organización:} & [Nombre de la organización] \\
+        \textbf{Fecha:} & [DD de mes de AAAA] \\
+        \textbf{Clasificación:} & [Interno / Confidencial / Público] \\
+    \end{tabular}
+    
+    \vfill
+    {\small Versión 1.0.0}
+\end{center}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Control de Versiones}
+
+\subsection*{Guía de llenado}
+
+\begin{itemize}
+    \item Registre cada cambio significativo en el documento con número de versión semántica (MAJOR.MINOR.PATCH).
+    \item Incluya autor, fecha y descripción detallada de modificaciones.
+    \item Mantenga trazabilidad con solicitudes de cambio o tickets relacionados.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Historial de cambios del documento}
+\label{tab:historial-cambios}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Versión} & \textbf{Fecha} & \textbf{Autor} & \textbf{Descripción del cambio} \\
+\midrule
+0.1.0 & [DD/MM/AAAA] & [Nombre] & Creación inicial del documento con estructura base \\
+0.2.0 & [DD/MM/AAAA] & [Nombre] & [Descripción] \\
+1.0.0 & [DD/MM/AAAA] & [Nombre] & [Descripción] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Herramientas recomendadas}
+
+\begin{itemize}
+    \item Control de versiones: Git con GitHub Flow.
+    \item Documentación colaborativa: Confluence, Notion, o Markdown en repositorio.
+    \item Revisión: Pull requests con revisores obligatorios.
+\end{itemize}
+
+\newpage
+
+\section{Resumen Ejecutivo}
+
+\subsection*{Qué incluir en esta sección}
+
+\begin{itemize}
+    \item Propósito principal del sistema y problema que resuelve (máximo 300 palabras).
+    \item Tecnologías clave utilizadas y arquitectura general.
+    \item Estado actual del proyecto (en desarrollo, en producción, etapa de pruebas).
+    \item Resultados principales alcanzados o esperados.
+    \item Público objetivo y beneficios de negocio.
+\end{itemize}
+
+\subsection*{Ejemplo}
+
+\begin{quote}
+``El Sistema de Gestión de Inventarios (SGI) es una aplicación web desarrollada para optimizar el control de stock en tiempo real para medianas empresas del sector retail. Construido con React en el frontend y Node.js en el backend, utiliza arquitectura de microservicios desplegada en AWS. Actualmente en fase de pruebas de usuario, ha demostrado reducir el tiempo de inventario en un 40\% y eliminar discrepancias de stock en un 95\%.''
+\end{quote}
+
+\vspace{1em}
+\noindent [Escriba aquí el resumen ejecutivo del proyecto...]
+
+\newpage
+
+\section{Alcance y Objetivos}
+
+\subsection{Propósito del sistema}
+
+\subsubsection*{Qué documentar}
+
+\begin{itemize}
+    \item Descripción clara de la necesidad de negocio que resuelve.
+    \item Contexto organizacional y motivación del proyecto.
+    \item Visión general de la solución propuesta.
+\end{itemize}
+
+\vspace{1em}
+\noindent [Describa el propósito y contexto del sistema...]
+
+\subsection{Alcance del proyecto}
+
+\subsubsection*{Elementos a definir}
+
+\begin{itemize}
+    \item \textbf{Alcance incluido:} Funcionalidades, módulos y características que entrega el sistema.
+    \item \textbf{Alcance excluido:} Lo que deliberadamente NO incluye el proyecto (evita expectativas).
+    \item \textbf{Supuestos:} Condiciones consideradas verdaderas para la planificación.
+    \item \textbf{Restricciones:} Limitaciones técnicas, presupuestarias o temporales.
+\end{itemize}
+
+\newpage
+
+\section{Requisitos del Sistema}
+
+\subsection{Requisitos funcionales}
+
+\subsubsection*{Cómo documentar RF}
+
+\begin{itemize}
+    \item Use formato: RF-XXX Prioridad: Descripción verificable.
+    \item Prioridades: Crítica / Alta / Media / Baja.
+    \item Cada requisito debe ser: Específico, Medible, Alcanzable, Relevante, con Tiempo definido.
+    \item Incluya criterios de aceptación para cada requisito.
+\end{itemize}
+
+\subsubsection*{Herramientas recomendadas:} Jira, Azure DevOps, Confluence, Notion.
+
+\begin{table}[H]
+\centering
+\caption{Requisitos funcionales}
+\label{tab:req-funcionales}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{ID} & \textbf{Requisito} & \textbf{Prioridad} \\
+\midrule
+RF-001 & El sistema debe permitir autenticación de usuarios mediante correo y contraseña & Crítica \\
+RF-002 & Describir funcionalidad & Prioridad \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Requisitos no funcionales}
+
+\subsubsection*{Categorías de RNF (ISO 25010)}
+
+\begin{itemize}
+    \item \textbf{Rendimiento:} Tiempos de respuesta, throughput, capacidad.
+    \item \textbf{Seguridad:} Confidencialidad, integridad, disponibilidad.
+    \item \textbf{Usabilidad:} Facilidad de aprendizaje, operabilidad, accesibilidad.
+    \item \textbf{Fiabilidad:} Disponibilidad, recuperación de errores.
+    \item \textbf{Escalabilidad:} Crecimiento de usuarios, datos, transacciones.
+    \item \textbf{Mantenibilidad:} Modularidad, reusabilidad, capacidad de prueba.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Requisitos no funcionales}
+\label{tab:req-no-funcionales}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{ID} & \textbf{Categoría} & \textbf{Descripción} & \textbf{Métrica objetivo} \\
+\midrule
+RNF-001 & Rendimiento & Tiempo de respuesta de consultas & $\le$200 ms (percentil 95) \\
+RNF-002 & Disponibilidad & Tiempo de actividad del sistema & 99.9\% uptime mensual \\
+RNF-003 & Seguridad & Cifrado de datos sensibles & AES-256 en tránsito y reposo \\
+RNF-004 & Usabilidad & Tiempo de aprendizaje & $\le$30 minutos para usuario nuevo \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Requisitos de entorno}
+
+\subsubsection*{Entornos a documentar:} Desarrollo, Pruebas (QA), Staging, Producción.
+
+\begin{table}[H]
+\centering
+\caption{Requisitos de entorno}
+\label{tab:req-entorno}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Componente} & \textbf{Desarrollo} & \textbf{QA} & \textbf{Producción} \\
+\midrule
+Servidor & Config local & Config QA & Config producción \\
+Base de datos & SQLite/Local & PostgreSQL staging & PostgreSQL cluster \\
+Red & Localhost & VPN interna & HTTPS + WAF \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Matriz de trazabilidad de requisitos}
+
+La matriz de trazabilidad vincula cada requisito con su diseño, implementación y prueba. Garantiza que nada se pierde y facilita el impacto de cambios.
+
+\subsubsection*{Herramientas:} Jira con Zephyr, TestRail, Azure DevOps Test Plans, o matrices en Excel/Sheets.
+
+\begin{table}[H]
+\centering
+\caption{Matriz de trazabilidad (extracto)}
+\label{tab:trazabilidad}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{ID Req} & \textbf{Descripción} & \textbf{Caso de uso} & \textbf{Componente} & \textbf{Caso de prueba} \\
+\midrule
+RF-001 & Login de usuario & CU-01 & AuthService & TP-001, TP-002 \\
+RF-002 & Descripción & CU & Componente & TP \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+\section{Contexto y Casos de Uso}
+
+\subsection{Descripción del sistema}
+
+\subsubsection*{Información requerida:}
+
+\begin{itemize}
+    \item Nombre completo del sistema, sigla/acrónimo, versión actual.
+    \item Tipo de aplicación: Web, móvil, escritorio, híbrida, microservicios.
+    \item Plataformas soportadas: Navegadores, sistemas operativos, dispositivos.
+    \item Modelo de negocio: B2B, B2C, interno, SaaS, on-premise.
+\end{itemize}
+
+\vspace{1em}
+\noindent Complete la información del sistema...
+
+\subsection{Usuarios objetivo}
+
+[Describa los perfiles de usuario y sus necesidades]
+
+\subsection{Diagrama de casos de uso}
+
+[Incluya diagrama de casos de uso]
+
+\subsection{Especificación de casos de uso principales}
+
+\subsubsection*{Ejemplo: CU-01 Autenticación de usuario}
+
+\begin{itemize}
+    \item \textbf{Actores:} Usuario (primario), Sistema de autenticación (secundario)
+    \item \textbf{Precondiciones:} El usuario está registrado y activo en el sistema
+    \item \textbf{Flujo normal:}
+    \begin{enumerate}
+        \item El usuario ingresa correo electrónico y contraseña.
+        \item El sistema valida formato de correo.
+        \item El sistema verifica credenciales contra base de datos.
+        \item El sistema genera token JWT y redirige al dashboard.
+    \end{enumerate}
+    \item \textbf{Flujo alternativo (3A -- Credenciales inválidas):} El sistema muestra mensaje de error genérico e incrementa contador de intentos.
+    \item \textbf{Postcondiciones:} Sesión iniciada, token activo, auditoría registrada.
+\end{itemize}
+
+\newpage
+
+\section{Arquitectura del Sistema}
+
+\subsection{Vista arquitectónica general}
+
+\subsubsection*{Vistas recomendadas (4+1 de Kruchten):}
+
+\begin{itemize}
+    \item \textbf{Vista lógica:} Componentes funcionales y sus relaciones.
+    \item \textbf{Vista de procesos:} Concurrencia, sincronización, rendimiento.
+    \item \textbf{Vista de desarrollo:} Organización del código, módulos, capas.
+    \item \textbf{Vista física:} Hardware, redes, topología de despliegue.
+    \item \textbf{Vista de escenarios:} Casos de uso que validan la arquitectura.
+\end{itemize}
+
+\subsubsection*{Herramientas:} Modelado C4 con Structurizr o PlantUML.
+
+\vspace{1em}
+\noindent [Incluya diagrama de arquitectura de alto nivel]
+
+\subsection{Componentes principales}
+
+\begin{table}[H]
+\centering
+\caption{Componentes principales}
+\label{tab:componentes}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad} & \textbf{Tecnología} & \textbf{Dependencias} \\
+\midrule
+API Gateway & Enrutamiento, autenticación, rate limiting & Kong / NGINX & Servicios internos \\
+Auth Service & Gestión de identidad y tokens & Node.js + Passport & Redis, PostgreSQL \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Patrones de diseño aplicados}
+
+\begin{table}[H]
+\centering
+\caption{Patrones aplicados}
+\label{tab:patrones}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Patrón} & \textbf{Categoría} & \textbf{Aplicación en el sistema} & \textbf{Justificación} \\
+\midrule
+Repository & Estructural & Capa de acceso a datos & Desacopla lógica de negocio de persistencia \\
+JWT & Seguridad & Módulo de autenticación & Stateless, escalable, compatible con microservicios \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comunicación entre componentes}
+
+Protocolos síncronos: REST API, gRPC, GraphQL. Protocolos asíncronos: Message queues (RabbitMQ, Kafka), Event-driven.
+
+\vspace{1em}
+\noindent [Describa los mecanismos de comunicación entre componentes...]
+
+\subsection{Diagrama de despliegue}
+
+[Incluya diagrama de despliegue físico/lógico]
+
+\newpage
+
+\section{Tecnologías y Dependencias}
+
+\subsection{Stack tecnológico}
+
+\begin{table}[H]
+\centering
+\caption{Stack tecnológico completo}
+\label{tab:stack}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Capa} & \textbf{Tecnología} & \textbf{Versión} & \textbf{Licencia} \\
+\midrule
+Frontend & React + TypeScript & 18.x & MIT \\
+Backend & Node.js + Express & 20.x / 4.x & MIT \\
+Base de datos & PostgreSQL & 15.x & PostgreSQL \\
+Cache & Redis & 7.x & BSD \\
+Contenedores & Docker & 24.x & Apache-2.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Dependencias externas}
+
+\begin{table}[H]
+\centering
+\caption{Dependencias principales}
+\label{tab:dependencias}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Paquete} & \textbf{Versión} & \textbf{Propósito} & \textbf{Licencia} \\
+\midrule
+express & \string^4.18.2 & Framework web & MIT \\
+jsonwebtoken & \string^9.0.2 & Generación/verificación JWT & MIT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Justificación técnica}
+
+Ejemplo: PostgreSQL vs MongoDB: Se eligió PostgreSQL por requerimientos de integridad referencial, transacciones ACID complejas, y capacidades JSON para flexibilidad. MongoDB fue descartado debido a la complejidad de joins y consistencia eventual en operaciones financieras críticas.
+
+\newpage
+
+\section{Estructura del Código Fuente}
+
+\subsection{Organización de directorios}
+
+\subsubsection*{Ejemplo de estructura feature-based:}
+
+\begin{lstlisting}
+src/
+features/
+  auth/
+    components/
+    hooks/
+    services/
+    types/
+  users/
+  orders/
+shared/
+  components/
+  utils/
+  types/
+config/
+App.tsx
+\end{lstlisting}
+
+\subsection{Convenciones de código}
+
+\begin{itemize}
+    \item \textbf{Nomenclatura:} PascalCase (clases), camelCase (variables/funciones), UPPER\_SNAKE\_CASE (constantes).
+    \item \textbf{Formato:} Prettier, ESLint, EditorConfig.
+    \item \textbf{Documentación:} JSDoc, TSDoc.
+    \item \textbf{Control de calidad:} Husky pre-commit hooks, lint-staged.
+\end{itemize}
+
+\subsection{Gestión de repositorio}
+
+\begin{itemize}
+    \item URL del repositorio y estructura de ramas (GitFlow, trunk-based).
+    \item Protección de ramas: code review obligatorio, CI passing.
+    \item Convención de commits: Conventional Commits.
+    \item Política de acceso: quién puede mergear, aprobar.
+\end{itemize}
+
+\newpage
+
+\section{Configuración y Entorno}
+
+\subsection{Requisitos de hardware}
+
+\begin{table}[H]
+\centering
+\caption{Requisitos de hardware}
+\label{tab:hardware}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Recurso} & \textbf{Mínimo} & \textbf{Recomendado} & \textbf{Producción} \\
+\midrule
+CPU & 2 cores & 4 cores & 8+ cores (cluster) \\
+RAM & 4 GB & 8 GB & 16+ GB \\
+Almacenamiento & 20 GB SSD & 50 GB SSD & 100+ GB SSD RAID \\
+Red & 100 Mbps & 1 Gbps & 1 Gbps redundante \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Variables de entorno}
+
+\subsubsection*{Buenas prácticas:}
+
+\begin{itemize}
+    \item Nunca hardcodee secrets; use variables de entorno o vaults.
+    \item Documente todas las variables requeridas con descripción y ejemplo.
+    \item Use archivos \texttt{.env.example} (sin valores reales) en repositorio.
+    \item Valide variables al inicio de la aplicación.
+\end{itemize}
+
+\subsection{Automatización de tareas}
+
+Documente scripts disponibles: build, test, lint, deploy, etc.
+
+\newpage
+
+\section{Modelo de Datos y Persistencia}
+
+\subsection{Diagrama entidad-relación}
+
+[Incluya diagrama ER del sistema]
+
+\subsection{Esquema de base de datos}
+
+\begin{table}[H]
+\centering
+\caption{Tabla: users}
+\label{tab:users}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Constraints} & \textbf{Descripción} \\
+\midrule
+id & UUID & PK, auto-generado & Identificador único \\
+email & VARCHAR(255) & UNIQUE, NOT NULL & Correo electrónico \\
+password hash & VARCHAR(255) & NOT NULL & Hash bcrypt de contraseña \\
+role & ENUM & NOT NULL, DEFAULT `user' & Rol del usuario \\
+created at & TIMESTAMP & DEFAULT NOW() & Fecha de creación \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Estrategia de respaldo}
+
+\begin{table}[H]
+\centering
+\caption{Plan de respaldo}
+\label{tab:respaldo}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{Tipo} & \textbf{Frecuencia} & \textbf{Retención} & \textbf{Ubicación} & \textbf{RTO} \\
+\midrule
+Completo & Diario (02:00) & 30 días & S3 + Local & 4 horas \\
+Incremental & Cada hora & 7 días & S3 & 1 hora \\
+Snapshot & Semanal & 12 semanas & Región alterna & 8 horas \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+\section{API e Integraciones}
+
+\subsection{Diseño de API}
+
+Estilos: REST, GraphQL, gRPC, WebSocket. Especificación: OpenAPI (Swagger), AsyncAPI.
+
+\subsection{Documentación de endpoints}
+
+\subsubsection*{Ejemplo: POST /api/v1/auth/login}
+
+\begin{lstlisting}
+Descripción: Autentica usuario y retorna token JWT
+Headers: Content-Type: application/json
+Body: {
+  "email": "usuario@ejemplo.com",
+  "password": "contrasenaSegura123"
+}
+Respuesta 200 OK: {
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "id": "uid", "email": "usuario@ejemplo.com", "role": "admin" }
+}
+Respuesta 401 Unauthorized: Credenciales invalidas
+\end{lstlisting}
+
+\subsection{Integraciones externas}
+
+\begin{table}[H]
+\centering
+\caption{Integraciones externas}
+\label{tab:integraciones}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Servicio} & \textbf{Tipo} & \textbf{Protocolo} & \textbf{Datos intercambiados} & \textbf{SLA} \\
+\midrule
+Auth0 & Autenticación & OAuth 2.0 / OIDC & Tokens, perfiles de usuario & 99.9\% \\
+Stripe & Pagos & REST API & Transacciones, webhooks & 99.99\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+\section{Pruebas y Calidad}
+
+\subsection{Estrategia de pruebas}
+
+\begin{table}[H]
+\centering
+\caption{Estrategia de pruebas}
+\label{tab:pruebas}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Tipo} & \textbf{Herramienta} & \textbf{Cobertura objetivo} & \textbf{Automatizado} \\
+\midrule
+Unitarias & Jest & 80\%+ & Sí (CI) \\
+Integración API & Supertest & Todos los endpoints & Sí (CI) \\
+E2E críticos & Cypress & Flujos principales & Sí (nightly) \\
+Accesibilidad & axe-core & WCAG 2.1 AA & Sí (CI) \\
+Rendimiento & k6 & Latencia p95 $\le$200 ms & Sí (staging) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cobertura de código}
+
+Reporte actual de cobertura por módulo...
+
+\subsection{Resultados y métricas}
+
+Herramientas de análisis: SonarQube, CodeClimate, ESLint, Snyk, Codacy.
+
+\newpage
+
+\section{Rendimiento y Escalabilidad}
+
+\subsection{Métricas de rendimiento}
+
+\begin{table}[H]
+\centering
+\caption{Objetivos de rendimiento (SLOs)}
+\label{tab:slo}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Métrica} & \textbf{Objetivo} & \textbf{Alerta} & \textbf{Crítico} \\
+\midrule
+Latencia p95 & $\le$200 ms & 300 ms & 500 ms \\
+RPS & 1000/s & 800/s & 500/s \\
+Disponibilidad & 99.9\% & 99.5\% & 99\% \\
+Tasa de error & $\le$0.1\% & 0.5\% & 1\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Estrategia de escalabilidad}
+
+Patrones: horizontal (agregar instancias), vertical (aumentar recursos), auto-scaling, sharding, read replicas, caché.
+
+\subsection{Pruebas de carga}
+
+Herramientas: k6, Artillery, Locust, JMeter. Escenarios: carga normal, spike, stress, soak.
+
+\vspace{1em}
+\noindent [Resultados de pruebas de carga realizadas...]
+
+\newpage
+
+\section{Seguridad}
+
+\subsection{Autenticación y autorización}
+
+\begin{table}[H]
+\centering
+\caption{Matriz de permisos (RBAC)}
+\label{tab:rbac}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Recurso/Acción} & \textbf{Admin} & \textbf{Editor} & \textbf{Viewer} & \textbf{Guest} \\
+\midrule
+Usuarios - Crear & Sí & No & No & No \\
+Usuarios - Ver & Sí & Sí & Sí & No \\
+Reportes - Editar & Sí & Sí & No & No \\
+Configuración & Sí & No & No & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Protección de datos}
+
+\begin{itemize}
+    \item \textbf{En tránsito:} TLS 1.2+, HSTS, certificados válidos.
+    \item \textbf{En reposo:} AES-256, cifrado a nivel de campo para datos sensibles.
+    \item \textbf{Hashing de contraseñas:} bcrypt, argon2, scrypt (con salt).
+    \item \textbf{Enmascaramiento:} Datos sensibles en logs y UI.
+\end{itemize}
+
+\subsection{Prevención de vulnerabilidades}
+
+OWASP Top 10 -- Medidas: validación de permisos, cifrado fuerte, queries parametrizadas, MFA, SCA tools.
+
+\subsection{Gestión de secretos}
+
+Buenas prácticas: nunca hardcodear secrets, usar vaults (HashiCorp Vault, AWS Secrets Manager), rotación automática, auditoría de acceso.
+
+\newpage
+
+\section{Gestión de Riesgos}
+
+\subsection{Identificación de riesgos}
+
+\begin{itemize}
+    \item \textbf{R001} -- Dependencia de librería mantenida por una sola persona.
+    \item \textbf{R002} -- Base de datos podría no escalar adecuadamente.
+    \item \textbf{R003} -- Fuga de datos por configuración incorrecta.
+    \item \textbf{R004} -- Dependencia de conocimiento tácito de un desarrollador clave.
+    \item \textbf{R005} -- Cambio inesperado en API de terceros.
+\end{itemize}
+
+\subsection{Planes de mitigación}
+
+Para cada riesgo se definen estrategias como evaluar alternativas, implementar read replicas, auditorías automáticas, documentación obligatoria, capa de abstracción, etc.
+
+\newpage
+
+\section{Limitaciones y Trabajo Futuro}
+
+\subsection{Limitaciones conocidas}
+
+\begin{table}[H]
+\centering
+\caption{Limitaciones del sistema}
+\label{tab:limitaciones}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{ID} & \textbf{Limitación} & \textbf{Categoría} & \textbf{Impacto} \\
+\midrule
+L001 & No soporta modo offline & Técnica & Alto \\
+L002 & Máximo 1000 usuarios concurrentes & Arquitectura & Medio \\
+L003 & Solo idioma español & Negocio & Medio \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Roadmap de mejoras}
+
+\begin{table}[H]
+\centering
+\caption{Backlog de mejoras}
+\label{tab:roadmap}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{ID} & \textbf{Mejora} & \textbf{Prioridad} & \textbf{Versión estimada} \\
+\midrule
+M001 & App móvil nativa (iOS/Android) & Alta & v2.0 \\
+M002 & Reportes personalizables & Media & v1.5 \\
+M003 & Integración con SAP & Baja & v2.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+\appendix
+
+\section{Manual de Instalación para Evaluadores}
+
+Requisitos previos detallados, comandos paso a paso, verificación, solución de problemas.
+
+\begin{lstlisting}
+# Verificacion de instalacion
+npm run health-check
+# Esperado: Database connected, Redis connected, API responding
+
+# Verificacion de endpoints
+curl http://localhost:3000/api/health
+# Esperado: {"status":"ok","version":"1.0.0"}
+\end{lstlisting}
+
+\newpage
+
+\section{Glosario de Términos Técnicos}
+
+\begin{table}[H]
+\centering
+\caption{Glosario}
+\label{tab:glosario}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Término} & \textbf{Definición} \\
+\midrule
+JWT & JSON Web Token -- estándar para tokens de autenticación compactos y seguros \\
+ORM & Object-Relational Mapping -- técnica para mapear objetos a tablas de base de datos \\
+CI/CD & Continuous Integration / Continuous Deployment -- automatización de integración y despliegue \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+\section{Referencias Bibliográficas y Normativas}
+
+\begin{enumerate}
+    \item OWASP Foundation. (2021). OWASP Top 10:2021. \url{https://owasp.org/Top10/}
+    \item Fielding, R. (2000). Architectural Styles and the Design of Network-based Software Architectures. Doctoral dissertation, University of California, Irvine.
+    \item Richardson, C. (2018). Microservices Patterns. Manning Publications.
+    \item W3C. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. \url{https://www.w3.org/WAI/WCAG21/quickref/}
+    \item ISO/IEC 25010:2011. Systems and software engineering -- Systems and software Quality Requirements and Evaluation (SQuaRE).
+    \item ISO/IEC 27001:2022. Information security management systems -- Requirements.
+    \item Reglamento (UE) 2016/679 (GDPR). Protección de datos personales.
+    \item Ley N°19.628 (Chile). Sobre protección de la vida privada.
+\end{enumerate}
+
+\end{document}

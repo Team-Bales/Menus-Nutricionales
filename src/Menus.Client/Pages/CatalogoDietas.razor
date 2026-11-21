@@ -1,4 +1,5 @@
 @page "/catalogo/dietas"
+@attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api
 @inject NavigationManager Navegacion
 

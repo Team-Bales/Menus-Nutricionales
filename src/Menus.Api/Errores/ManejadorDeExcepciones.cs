@@ -29,7 +29,8 @@ public sealed partial class ManejadorDeExcepciones(
         var problema = Traducir(exception);
         if (problema.Status == StatusCodes.Status500InternalServerError)
         {
-            logger.LogError(exception, "Error no previsto al atender {Metodo} {Ruta}", httpContext.Request.Method, httpContext.Request.Path);
+            logger.LogError("Error no previsto ({Tipo}) al atender {Metodo} {Ruta}",
+                exception.GetType().Name, httpContext.Request.Method, httpContext.Request.Path);
         }
 
         httpContext.Response.StatusCode = problema.Status!.Value;

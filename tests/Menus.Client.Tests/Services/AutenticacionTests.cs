@@ -300,6 +300,67 @@ public sealed class AutenticacionTests
     }
 
     [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_sin_token_es_anonimo_y_no_toca_el_almacen()
+    {
+        var almacen = new AlmacenDeSesionFalso();
+
+        var estado = await new ProveedorDeEstadoDeAutenticacion(almacen).GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+        Assert.Equal(0, almacen.Eliminaciones);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ProveedorDeEstadoDeAutenticacion_trata_un_token_vacio_como_anonimo_y_lo_borra(string token)
+    {
+        var almacen = new AlmacenDeSesionFalso(token);
+
+        var estado = await new ProveedorDeEstadoDeAutenticacion(almacen).GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+        Assert.Null(almacen.Token);
+    }
+
+    [Theory]
+    [InlineData("""{"role":"Admin"}""")]
+    [InlineData("""{"exp":"mañana","role":"Admin"}""")]
+    public async Task ProveedorDeEstadoDeAutenticacion_rechaza_y_borra_un_token_sin_exp_valido(string payload)
+    {
+        var almacen = new AlmacenDeSesionFalso(CrearTokenConPayload(payload));
+
+        var estado = await new ProveedorDeEstadoDeAutenticacion(almacen).GetAuthenticationStateAsync();
+
+        Assert.False(estado.User.Identity!.IsAuthenticated);
+        Assert.Null(almacen.Token);
+    }
+
+    [Fact]
+    public async Task ProveedorDeEstadoDeAutenticacion_ignora_los_claims_que_no_son_valores_simples()
+    {
+        var exp = DateTimeOffset.UtcNow.AddMinutes(5).ToUnixTimeSeconds();
+        var token = CrearTokenConPayload($$"""{"exp":{{exp}},"role":["Nutricionista",{"anidado":1},null],"perfil":{"sala":"A"},"vacio":null}""");
+
+        var estado = await new ProveedorDeEstadoDeAutenticacion(new AlmacenDeSesionFalso(token)).GetAuthenticationStateAsync();
+
+        Assert.True(estado.User.IsInRole("Nutricionista"));
+        Assert.Single(estado.User.FindAll("role"));
+        Assert.Null(estado.User.FindFirst("perfil"));
+        Assert.Null(estado.User.FindFirst("vacio"));
+    }
+
+    [Fact]
+    public async Task IniciarSesionAsync_rechaza_una_respuesta_exitosa_vacia()
+    {
+        var handler = new HandlerDeMensajesFalso(_ => Json("null"));
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => CrearApi(handler).IniciarSesionAsync(new CredencialesLogin()));
+
+        Assert.Equal("La API devolvió una respuesta vacía.", error.Message);
+    }
+
+    [Fact]
     public async Task AlmacenDeSesion_lee_localStorage_una_sola_vez_y_despues_usa_la_memoria()
     {
         using var contexto = new BunitContext();

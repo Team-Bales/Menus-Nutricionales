@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using Bunit;
 using Bunit.TestDoubles;
 using Menus.Client.Layout;
@@ -6,6 +7,7 @@ using Menus.Client.Pages;
 using Menus.Client.Services;
 using Menus.Client.Tests.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Client.Tests.Pages;
@@ -209,6 +211,28 @@ public sealed class AutenticacionPagesTests : BunitContext
         var cut = Render<LayoutVacio>(parameters => parameters.Add(layout => layout.Body, contenido));
 
         Assert.Contains("Inicio de sesión", cut.Markup);
+    }
+
+    [Fact]
+    public void App_con_un_usuario_sin_identidad_lo_trata_como_anonimo_y_va_al_login()
+    {
+        // ClaimsPrincipal sin identidades: User.Identity es null, un caso que el AddAuthorization de
+        // bUnit no produce. Se usa su servicio de autorización y se sustituye solo el estado.
+        AddAuthorization();
+        Services.AddSingleton<AuthenticationStateProvider>(new EstadoFijo(new ClaimsPrincipal()));
+        Servicios(new AutenticacionApiFalsa(), new SesionAutenticadaFalsa());
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+        Services.GetRequiredService<BunitNavigationManager>().NavigateTo("/perfil");
+
+        Render<App>();
+
+        Assert.EndsWith("/login?returnUrl=%2Fperfil", Services.GetRequiredService<BunitNavigationManager>().Uri);
+    }
+
+    private sealed class EstadoFijo(ClaimsPrincipal usuario) : AuthenticationStateProvider
+    {
+        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+            => Task.FromResult(new AuthenticationState(usuario));
     }
 
     private static void Enviar(IRenderedComponent<Login> cut)

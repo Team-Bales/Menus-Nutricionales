@@ -14,9 +14,12 @@ internal sealed class AlmacenDeSesionFalso(string? token = null) : IAlmacenDeSes
         return ValueTask.CompletedTask;
     }
 
+    public int Eliminaciones { get; private set; }
+
     public ValueTask EliminarTokenAsync()
     {
         Token = null;
+        Eliminaciones++;
         return ValueTask.CompletedTask;
     }
 }

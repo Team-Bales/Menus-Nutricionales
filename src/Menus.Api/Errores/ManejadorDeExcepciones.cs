@@ -15,8 +15,9 @@ namespace Menus.Api.Errores;
 /// </summary>
 /// <remarks>
 /// Además de los campos estándar, el cuerpo puede llevar <c>regla</c> (el código del informe, por ejemplo «RS-03») y
-/// <c>errores</c> (los errores por campo). Las respuestas 500 nunca llevan el mensaje de la excepción: se registra
-/// en el log y el cliente solo recibe un texto genérico.
+/// <c>errores</c> (los errores por campo). Las respuestas 500 nunca llevan el mensaje de la excepción: el cliente
+/// solo recibe un texto genérico. En el log se registran el tipo, los tipos internos y el <c>StackTrace</c>, pero
+/// nunca <see cref="Exception.Message"/>, que podría contener datos sensibles.
 /// </remarks>
 /// <param name="problemDetails">Servicio que escribe el cuerpo <c>application/problem+json</c>.</param>
 /// <param name="logger">Log para los errores no previstos.</param>
@@ -27,10 +28,25 @@ public sealed partial class ManejadorDeExcepciones(
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var problema = Traducir(exception);
+        problema.Extensions["traceId"] = httpContext.TraceIdentifier;
         if (problema.Status == StatusCodes.Status500InternalServerError)
         {
-            logger.LogError("Error no previsto ({Tipo}) al atender {Metodo} {Ruta}",
-                exception.GetType().Name, httpContext.Request.Method, httpContext.Request.Path);
+            var tiposInternos = new List<string>();
+            for (var interna = exception.InnerException; interna is not null; interna = interna.InnerException)
+            {
+                tiposInternos.Add(interna.GetType().FullName!);
+            }
+
+            // Se registran solo partes de la excepción que no contienen valores: el tipo, los tipos internos y el
+            // StackTrace (métodos y líneas). Message y ToString() se omiten a propósito: pueden llevar secretos.
+            logger.LogError(
+                "Error no previsto {Tipo} (TraceId={TraceId}, Internas={Internas}) al atender {Metodo} {Ruta}. {Stack}",
+                exception.GetType().FullName,
+                httpContext.TraceIdentifier,
+                string.Join(", ", tiposInternos),
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                exception.StackTrace);
         }
 
         httpContext.Response.StatusCode = problema.Status!.Value;

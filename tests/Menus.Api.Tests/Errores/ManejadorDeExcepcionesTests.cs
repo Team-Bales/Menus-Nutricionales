@@ -183,9 +183,9 @@ public sealed class ManejadorDeExcepcionesTests
     [Fact]
     public async Task TryHandleAsync_no_escribe_datos_sensibles_en_el_log_ni_en_la_respuesta()
     {
-        const string secreto = "ClaveSuperSecreta123 token=eyJhbGciOi paciente=diabetes-tipo-2";
+        string[] secretos = ["ClaveSuperSecreta123", "eyJhbGciOi", "diabetes-tipo-2"];
         var capturador = new LoggerQueCaptura();
-        var servicios = new ServiceCollection()
+        using var servicios = new ServiceCollection()
             .AddLogging(registro => registro.AddProvider(capturador))
             .AddProblemDetails()
             .BuildServiceProvider();
@@ -198,19 +198,40 @@ public sealed class ManejadorDeExcepcionesTests
             servicios.GetRequiredService<IProblemDetailsService>(),
             servicios.GetRequiredService<ILogger<ManejadorDeExcepciones>>());
 
-        var atendida = await manejador.TryHandleAsync(
-            contexto, new InvalidOperationException(secreto), CancellationToken.None);
+        // Se lanza y se captura para que la excepción tenga StackTrace, igual que en producción.
+        Exception excepcion;
+        try
+        {
+            throw new InvalidOperationException(
+                string.Join(" ", secretos),
+                new FormatException("excepcion interna sin datos sensibles"));
+        }
+        catch (Exception e)
+        {
+            excepcion = e;
+        }
+
+        var atendida = await manejador.TryHandleAsync(contexto, excepcion, CancellationToken.None);
 
         Assert.True(atendida);
         Assert.Equal(StatusCodes.Status500InternalServerError, contexto.Response.StatusCode);
 
         contexto.Response.Body.Position = 0;
         using var cuerpo = await JsonDocument.ParseAsync(contexto.Response.Body);
-        Assert.DoesNotContain(secreto, cuerpo.RootElement.GetRawText());
+        var cuerpoTexto = cuerpo.RootElement.GetRawText();
+        Assert.Equal(contexto.TraceIdentifier, cuerpo.RootElement.GetProperty("traceId").GetString());
 
         Assert.NotEmpty(capturador.Mensajes);
-        Assert.All(capturador.Mensajes, mensaje => Assert.DoesNotContain(secreto, mensaje));
-        Assert.Contains(capturador.Mensajes, mensaje => mensaje.Contains("InvalidOperationException"));
+        var logTexto = string.Join(Environment.NewLine, capturador.Mensajes);
+        Assert.Contains(typeof(InvalidOperationException).FullName!, logTexto);
+        Assert.Contains(typeof(FormatException).FullName!, logTexto);
+        Assert.Contains("   at ", logTexto); // StackTrace presente: se diagnosticó el 500 sin exponer valores.
+        Assert.Contains(contexto.TraceIdentifier, logTexto);
+        foreach (var secreto in secretos)
+        {
+            Assert.DoesNotContain(secreto, cuerpoTexto);
+            Assert.DoesNotContain(secreto, logTexto);
+        }
     }
 
     /// <summary>

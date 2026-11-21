@@ -5,7 +5,10 @@ using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.Mongo;
+using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -71,6 +74,19 @@ public sealed class DependencyInjectionTests
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IDietaRepository>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<JwtTokenService>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_NoHabilitaElLogDeDatosSensiblesDeEfCore()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        var opciones = provider.GetRequiredService<DbContextOptions<MenusDbContext>>();
+
+        Assert.False(opciones.FindExtension<CoreOptionsExtension>()!.IsSensitiveDataLoggingEnabled);
     }
 
     [Fact]

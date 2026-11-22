@@ -107,9 +107,9 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/menus/{id:guid}/asignaciones/{pacienteId:guid}/servicios"] = SoloNutricionista,
 
         ["POST api/valoraciones"] = SoloNutricionista,
-        ["GET api/valoraciones/{id:guid}"] = SoloNutricionista,
+        ["GET api/valoraciones/{id:guid}"] = Autenticado,
         ["GET api/dietas/{dietaId:guid}/valoraciones"] = SoloNutricionista,
-        ["GET api/pacientes/{pacienteId:guid}/valoraciones"] = SoloNutricionista,
+        ["GET api/pacientes/{id:guid}/valoraciones"] = PacientePropioOPersonal,
 
         ["POST api/revalorizaciones"] = SoloPaciente,
         ["GET api/revalorizaciones/{id:guid}"] = Autenticado,
@@ -236,6 +236,24 @@ public sealed class AutorizacionEnLaApiTests
             HttpMethod.Post,
             $"/api/menus/{Guid.NewGuid()}/asignaciones/{Guid.NewGuid()}/servicios",
             ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_paciente_que_pide_las_valoraciones_de_otro_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}/valoraciones", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_paciente_no_registra_valoraciones_y_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Post, "/api/valoraciones", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
 
         Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
     }

@@ -15,14 +15,28 @@ internal static class ApiEnMemoria
     private const string Clave = "clave-de-prueba-de-al-menos-treinta-y-dos-bytes";
     private const string Emisor = "pruebas";
 
-    /// <summary>Levanta la API en el entorno indicado.</summary>
+    /// <summary>Levanta la API en el entorno indicado, con ajustes de configuración adicionales.</summary>
     /// <param name="entorno"><c>Development</c> o <c>Production</c>.</param>
-    public static WebApplicationFactory<Program> Crear(string entorno = "Production") => new WebApplicationFactory<Program>()
-        .WithWebHostBuilder(builder => builder
-            .UseEnvironment(entorno)
-            .UseSetting("ConnectionStrings:Postgres", "Host=localhost;Database=sin_uso")
-            .UseSetting("Jwt:Key", Clave)
-            .UseSetting("Jwt:Issuer", Emisor));
+    /// <param name="ajustes">Pares clave–valor que sobreescriben <c>appsettings</c> (por ejemplo, el límite de peticiones).</param>
+    public static WebApplicationFactory<Program> Crear(
+        string entorno = "Production",
+        params (string Clave, string Valor)[] ajustes)
+        => new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder
+                    .UseEnvironment(entorno)
+                    .UseSetting("ConnectionStrings:Postgres", "Host=localhost;Database=sin_uso")
+                    .UseSetting("Jwt:Key", Clave)
+                    .UseSetting("Jwt:Issuer", Emisor)
+                    .UseSetting("RateLimiting:PermitLimit", "1000")
+                    .UseSetting("RateLimiting:WindowSeconds", "60");
+
+                foreach (var (clave, valor) in ajustes)
+                {
+                    builder.UseSetting(clave, valor);
+                }
+            });
 
     /// <summary>Un token que la API acepta, firmado con la clave de prueba.</summary>
     /// <param name="rol">Rol del usuario.</param>

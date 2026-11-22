@@ -68,7 +68,10 @@ public static class CabecerasDeSeguridad
         });
     }
 
-    private static string ArmarHsts(HstsOptions opciones)
+    /// <summary>
+    /// Arma el valor de <c>Strict-Transport-Security</c> a partir de las opciones registradas por <c>AddHsts</c>.
+    /// </summary>
+    internal static string ArmarHsts(HstsOptions opciones)
     {
         var maxAge = Convert.ToInt64(Math.Floor(opciones.MaxAge.TotalSeconds))
             .ToString(CultureInfo.InvariantCulture);

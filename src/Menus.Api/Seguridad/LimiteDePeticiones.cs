@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -55,7 +56,7 @@ public static class LimiteDePeticiones
             {
                 var limite = contexto.RequestServices
                     .GetRequiredService<IOptions<OpcionesDeLimiteDePeticiones>>().Value;
-                var origen = contexto.Connection.RemoteIpAddress?.ToString() ?? "sin-direccion";
+                var origen = ClaveDeOrigen(contexto.Connection.RemoteIpAddress);
 
                 return RateLimitPartition.GetFixedWindowLimiter(origen, _ => new FixedWindowRateLimiterOptions
                 {
@@ -73,9 +74,7 @@ public static class LimiteDePeticiones
 
                 contexto.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 contexto.HttpContext.Response.Headers.RetryAfter =
-                    contexto.Lease.TryGetMetadata(MetadataName.RetryAfter, out var espera)
-                        ? Math.Ceiling(espera.TotalSeconds).ToString(CultureInfo.InvariantCulture)
-                        : limite.WindowSeconds.ToString(CultureInfo.InvariantCulture);
+                    SegundosDeEspera(contexto.Lease, limite.WindowSeconds);
 
                 var problema = new ProblemDetails
                 {
@@ -95,4 +94,20 @@ public static class LimiteDePeticiones
 
         return services;
     }
+
+    /// <summary>
+    /// Clave de partición del límite: la IP de origen, o un valor fijo cuando la conexión no la informa (por ejemplo,
+    /// en las pruebas en memoria).
+    /// </summary>
+    internal static string ClaveDeOrigen(IPAddress? direccion)
+        => direccion?.ToString() ?? "sin-direccion";
+
+    /// <summary>
+    /// Segundos que se anuncian en <c>Retry-After</c>: los del arrendamiento si el limitador los informa y, si no, la
+    /// ventana completa, que es la espera máxima.
+    /// </summary>
+    internal static string SegundosDeEspera(RateLimitLease arrendamiento, int ventanaEnSegundos)
+        => arrendamiento.TryGetMetadata(MetadataName.RetryAfter, out var espera)
+            ? Math.Ceiling(espera.TotalSeconds).ToString(CultureInfo.InvariantCulture)
+            : ventanaEnSegundos.ToString(CultureInfo.InvariantCulture);
 }

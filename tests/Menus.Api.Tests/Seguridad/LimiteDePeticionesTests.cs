@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Threading.RateLimiting;
+using Menus.Api.Seguridad;
 using Menus.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -66,5 +68,31 @@ public sealed class LimiteDePeticionesTests
         using var rechazada = await cliente.PostAsJsonAsync(
             "/api/auth/login", new { email = "", password = "" });
         Assert.Equal(HttpStatusCode.TooManyRequests, rechazada.StatusCode);
+    }
+
+    [Fact]
+    public void La_clave_de_particion_usa_la_direccion_de_origen()
+    {
+        Assert.Equal("203.0.113.7", LimiteDePeticiones.ClaveDeOrigen(IPAddress.Parse("203.0.113.7")));
+        Assert.Equal("sin-direccion", LimiteDePeticiones.ClaveDeOrigen(null));
+    }
+
+    [Fact]
+    public void Sin_espera_en_el_arrendamiento_se_anuncia_la_ventana()
+    {
+        Assert.Equal("60", LimiteDePeticiones.SegundosDeEspera(new ArrendamientoSinEspera(), 60));
+    }
+
+    private sealed class ArrendamientoSinEspera : RateLimitLease
+    {
+        public override bool IsAcquired => false;
+
+        public override IEnumerable<string> MetadataNames => [];
+
+        public override bool TryGetMetadata(string metadataName, out object? metadata)
+        {
+            metadata = null;
+            return false;
+        }
     }
 }

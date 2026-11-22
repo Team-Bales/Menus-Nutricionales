@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Menus.Api.Seguridad;
 using Menus.Domain;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Menus.Api.Tests.Seguridad;
@@ -92,5 +94,42 @@ public sealed class CabecerasDeSeguridadTests
         using var respuesta = await cliente.GetAsync("/api/nomencladores/tipos-preparacion");
 
         Assert.Null(Cabecera(respuesta, "Strict-Transport-Security"));
+    }
+
+    [Fact]
+    public async Task Un_host_excluido_no_recibe_HSTS()
+    {
+        await using var api = ApiEnMemoria.Crear();
+        using var cliente = api.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            // localhost está en HstsOptions.ExcludedHosts por defecto.
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false,
+        });
+        cliente.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Admin));
+
+        using var respuesta = await cliente.GetAsync("/api/nomencladores/tipos-preparacion");
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Null(Cabecera(respuesta, "Strict-Transport-Security"));
+        Assert.Equal("nosniff", Cabecera(respuesta, "X-Content-Type-Options"));
+    }
+
+    [Theory]
+    [InlineData(365, true, false, "max-age=31536000; includeSubDomains")]
+    [InlineData(365, false, false, "max-age=31536000")]
+    [InlineData(365, true, true, "max-age=31536000; includeSubDomains; preload")]
+    [InlineData(365, false, true, "max-age=31536000; preload")]
+    public void El_valor_de_HSTS_respeta_las_opciones(int dias, bool subdominios, bool preload, string esperado)
+    {
+        var opciones = new HstsOptions
+        {
+            MaxAge = TimeSpan.FromDays(dias),
+            IncludeSubDomains = subdominios,
+            Preload = preload,
+        };
+
+        Assert.Equal(esperado, CabecerasDeSeguridad.ArmarHsts(opciones));
     }
 }

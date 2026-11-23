@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 
@@ -177,5 +178,86 @@ public sealed class ManejadorDeExcepcionesTests
         Assert.Equal(status, cuerpo.RootElement.GetProperty("status").GetInt32());
         Assert.Equal(!inesperada, cuerpo.RootElement.TryGetProperty("regla", out _));
         Assert.DoesNotContain("detalle interno", cuerpo.RootElement.GetRawText());
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_no_escribe_datos_sensibles_en_el_log_ni_en_la_respuesta()
+    {
+        string[] secretos = ["ClaveSuperSecreta123", "eyJhbGciOi", "diabetes-tipo-2"];
+        var capturador = new LoggerQueCaptura();
+        using var servicios = new ServiceCollection()
+            .AddLogging(registro => registro.AddProvider(capturador))
+            .AddProblemDetails()
+            .BuildServiceProvider();
+
+        var contexto = new DefaultHttpContext { RequestServices = servicios };
+        contexto.Request.Method = "POST";
+        contexto.Request.Path = "/api/auth/login";
+        contexto.Response.Body = new MemoryStream();
+        var manejador = new ManejadorDeExcepciones(
+            servicios.GetRequiredService<IProblemDetailsService>(),
+            servicios.GetRequiredService<ILogger<ManejadorDeExcepciones>>());
+
+        // Se lanza y se captura para que la excepción tenga StackTrace, igual que en producción.
+        Exception excepcion;
+        try
+        {
+            throw new InvalidOperationException(
+                string.Join(" ", secretos),
+                new FormatException("excepcion interna sin datos sensibles"));
+        }
+        catch (Exception e)
+        {
+            excepcion = e;
+        }
+
+        var atendida = await manejador.TryHandleAsync(contexto, excepcion, CancellationToken.None);
+
+        Assert.True(atendida);
+        Assert.Equal(StatusCodes.Status500InternalServerError, contexto.Response.StatusCode);
+
+        contexto.Response.Body.Position = 0;
+        using var cuerpo = await JsonDocument.ParseAsync(contexto.Response.Body);
+        var cuerpoTexto = cuerpo.RootElement.GetRawText();
+        Assert.Equal(contexto.TraceIdentifier, cuerpo.RootElement.GetProperty("traceId").GetString());
+
+        Assert.NotEmpty(capturador.Mensajes);
+        var logTexto = string.Join(Environment.NewLine, capturador.Mensajes);
+        Assert.Contains(typeof(InvalidOperationException).FullName!, logTexto);
+        Assert.Contains(typeof(FormatException).FullName!, logTexto);
+        Assert.Contains("   at ", logTexto); // StackTrace presente: se diagnosticó el 500 sin exponer valores.
+        Assert.Contains(contexto.TraceIdentifier, logTexto);
+        foreach (var secreto in secretos)
+        {
+            Assert.DoesNotContain(secreto, cuerpoTexto);
+            Assert.DoesNotContain(secreto, logTexto);
+        }
+    }
+
+    /// <summary>
+    /// Captura los mensajes que escribiría un logger real, incluido el texto de la excepción cuando se le pasa
+    /// como primer argumento. Así el test falla si alguien vuelve a loguear la excepción completa.
+    /// </summary>
+    private sealed class LoggerQueCaptura : ILoggerProvider, ILogger
+    {
+        public List<string> Mensajes { get; } = [];
+
+        public ILogger CreateLogger(string categoryName) => this;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => this;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            Mensajes.Add(formatter(state, exception));
+            if (exception is not null)
+            {
+                Mensajes.Add(exception.ToString() ?? string.Empty);
+            }
+        }
+
+        public void Dispose() { }
     }
 }

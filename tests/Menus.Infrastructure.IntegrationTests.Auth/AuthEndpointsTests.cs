@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
@@ -36,6 +37,7 @@ namespace Menus.Infrastructure.IntegrationTests.Auth;
 public sealed class AuthEndpointsTests : IAsyncLifetime
 {
     private readonly PostgresFixture _fixture;
+    private readonly LoggerQueCaptura _capturador = new();
     private WebApplicationFactory<Program> _factory = null!;
     private HttpClient _client = null!;
 
@@ -65,6 +67,9 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
 
                 builder.ConfigureTestServices(services =>
                 {
+                    // Capturar los logs de la API para comprobar que no filtran credenciales.
+                    services.AddSingleton<ILoggerProvider>(_capturador);
+
                     // Sobrescribir la configuración de BD para usar la del fixture
                     var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<MenusDbContext>));
                     if (descriptor != null)
@@ -194,6 +199,56 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         Assert.False(string.IsNullOrEmpty(result.Token));
         Assert.Equal(RolesUsuario.Admin, result.Rol);
         Assert.True(result.Expira > DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task Login_CredencialesInvalidas_NoEscribeLaPasswordEnLosLogs()
+    {
+        const string password = "passwordNoDebeAparecer123";
+        var request = new LoginCommand("noexiste@test.com", password);
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+
+        await AssertCredencialesInvalidasAsync(response);
+        Assert.DoesNotContain(password, Logs());
+    }
+
+    [Fact]
+    public async Task Login_CredencialesCorrectas_NoEscribeLaPasswordNiElTokenEnLosLogs()
+    {
+        const string password = "passwordCorrectoNoAparece123";
+        var usuarioId = Guid.NewGuid();
+        var passwordHash = new BCryptPasswordHasher().Hash(password);
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            ctx.Usuarios.Add(Usuario.Crear(usuarioId, "login-seguro@test.com", passwordHash, RolesUsuario.Admin, null));
+            await ctx.SaveChangesAsync();
+        }
+
+        var request = new LoginCommand("login-seguro@test.com", password);
+        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+        Assert.NotNull(result);
+
+        var logs = Logs();
+        Assert.DoesNotContain(password, logs);
+        Assert.DoesNotContain(result.Token, logs);
+    }
+
+    [Fact]
+    public async Task Login_PasswordCorta_Devuelve422SinRepetirLaPassword()
+    {
+        const string passwordCorta = "s3cr3t";
+        var request = new LoginCommand("login-corto@test.com", passwordCorta);
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.DoesNotContain(passwordCorta, await response.Content.ReadAsStringAsync());
+        Assert.DoesNotContain(passwordCorta, Logs());
     }
 
     [Fact]
@@ -376,5 +431,34 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<Menus.Api.Auth.AuthBootstrapService>();
         return services.BuildServiceProvider();
+    }
+
+    private string Logs() => string.Join(Environment.NewLine, _capturador.Mensajes);
+
+    /// <summary>
+    /// Captura los mensajes de log de la API, incluido el texto de la excepción cuando se le pasa como argumento,
+    /// igual que hace un proveedor real. Así la comprobación de secretos no da falsos negativos.
+    /// </summary>
+    private sealed class LoggerQueCaptura : ILoggerProvider, ILogger
+    {
+        public List<string> Mensajes { get; } = [];
+
+        public ILogger CreateLogger(string categoryName) => this;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => this;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            Mensajes.Add(formatter(state, exception));
+            if (exception is not null)
+            {
+                Mensajes.Add(exception.ToString() ?? string.Empty);
+            }
+        }
+
+        public void Dispose() { }
     }
 }

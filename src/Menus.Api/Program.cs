@@ -70,7 +70,7 @@ builder.Services.AddHsts(opciones =>
 // esquema original. Solo se aceptan proxies de las redes de Seguridad:RedesDeProxy, no de toda red privada: si la
 // API se expone en una red privada sin nginx delante, cualquiera en esa red podría falsear X-Forwarded-For y
 // saltarse el límite. Compose fija la subred de su red interna y la declara aquí.
-var redesDeProxy = builder.Configuration.GetSection("Seguridad:RedesDeProxy").Get<string[]>() ?? [];
+var redesDeProxy = builder.Configuration.GetSection("Seguridad:RedesDeProxy").Get<string[]>()!;
 var redesDeProxyValidas = new List<IPNetwork>(redesDeProxy.Length);
 foreach (var red in redesDeProxy)
 {

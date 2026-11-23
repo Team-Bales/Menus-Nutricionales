@@ -1,0 +1,70 @@
+@page "/login"
+@layout LayoutVacio
+@inject IAutenticacionApi Api
+@inject ISesionAutenticada Sesion
+@inject NavigationManager Navegacion
+
+<PageTitle>Iniciar sesión</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5">
+        <h1 class="h2 mb-3">Iniciar sesión</h1>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger" role="alert">@_error</div>
+        }
+
+        <EditForm Model="_credenciales" OnValidSubmit="IniciarSesion" class="card shadow-sm">
+            <DataAnnotationsValidator />
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label" for="email">Correo electrónico</label>
+                    <InputText id="email" class="form-control" @bind-Value="_credenciales.Email" />
+                    <ValidationMessage For="@(() => _credenciales.Email)" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <InputText id="password" class="form-control" type="password" @bind-Value="_credenciales.Password" />
+                    <ValidationMessage For="@(() => _credenciales.Password)" />
+                </div>
+                <button class="btn btn-primary" disabled="@_enviando" type="submit">Entrar</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    /// <summary>Página a la que se vuelve tras iniciar sesión; solo se aceptan rutas locales.</summary>
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private readonly CredencialesLogin _credenciales = new();
+    private bool _enviando;
+    private string? _error;
+
+    private async Task IniciarSesion()
+    {
+        _enviando = true;
+        _error = null;
+        try
+        {
+            var resultado = await Api.IniciarSesionAsync(_credenciales);
+            await Sesion.IniciarSesionAsync(resultado.Token);
+            Navegacion.NavigateTo(RutasDeSesion.DestinoSeguro(ReturnUrl));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            // API caída, sin red, CORS o tiempo de espera agotado.
+            _error = MensajesDeConexion.SinServidor;
+        }
+        finally
+        {
+            _enviando = false;
+        }
+    }
+}

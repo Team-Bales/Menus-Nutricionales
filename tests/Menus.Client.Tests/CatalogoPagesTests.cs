@@ -10,6 +10,12 @@ namespace Menus.Client.Tests;
 /// <summary>Pruebas de las pantallas del catálogo del issue #65.</summary>
 public sealed class CatalogoPagesTests : BunitContext
 {
+    /// <summary>Las páginas del catálogo exigen un rol; las pruebas entran como Nutricionista.</summary>
+    public CatalogoPagesTests()
+    {
+        AddAuthorization().SetAuthorized("nutricionista@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+    }
+
     [Fact]
     public void Alimentos_muestra_los_selectores_desde_el_cliente_y_la_pagina_de_resultados()
     {

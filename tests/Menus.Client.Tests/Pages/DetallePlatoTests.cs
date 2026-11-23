@@ -9,6 +9,12 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas de <see cref="DetallePlato"/>: composición y gestión de ingredientes (issue #65).</summary>
 public sealed class DetallePlatoTests : BunitContext
 {
+    /// <summary>Las páginas del catálogo exigen un rol; las pruebas entran como Nutricionista.</summary>
+    public DetallePlatoTests()
+    {
+        AddAuthorization().SetAuthorized("nutricionista@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+    }
+
     [Fact]
     public void Muestra_los_ingredientes_del_plato()
     {

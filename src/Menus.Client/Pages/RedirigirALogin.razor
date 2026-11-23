@@ -1,0 +1,9 @@
+@inject NavigationManager Navegacion
+
+<p class="text-muted">Redirigiendo al inicio de sesión…</p>
+
+@code {
+    // Recuerda la página pedida en returnUrl para volver a ella después de iniciar sesión.
+    protected override void OnInitialized()
+        => Navegacion.NavigateTo(RutasDeSesion.LoginVolviendoAqui(Navegacion), replace: true);
+}

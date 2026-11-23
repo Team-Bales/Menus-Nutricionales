@@ -10,6 +10,12 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas de <see cref="CatalogoAlimentos"/>: filtros, paginación y navegación (issue #65).</summary>
 public sealed class CatalogoAlimentosTests : BunitContext
 {
+    /// <summary>Las páginas del catálogo exigen un rol; las pruebas entran como Nutricionista.</summary>
+    public CatalogoAlimentosTests()
+    {
+        AddAuthorization().SetAuthorized("nutricionista@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+    }
+
     [Fact]
     public void Filtrar_pide_la_pagina_con_los_filtros_elegidos()
     {

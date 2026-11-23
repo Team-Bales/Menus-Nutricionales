@@ -120,7 +120,7 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
     private async Task<T> ObtenerAsync<T>(string route, CancellationToken ct)
     {
         using var response = await http.GetAsync(route, ct);
-        await LanzarSiErrorAsync(response, ct);
+        await RespuestasDeApi.LanzarSiErrorAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<T>(Json, ct)
             ?? throw new ApiException(response.StatusCode, "La API devolvió una respuesta vacía.");
     }
@@ -129,7 +129,7 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
     {
         using var request = new HttpRequestMessage(method, route) { Content = JsonContent.Create(body, options: Json) };
         using var response = await http.SendAsync(request, ct);
-        await LanzarSiErrorAsync(response, ct);
+        await RespuestasDeApi.LanzarSiErrorAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<T>(Json, ct)
             ?? throw new ApiException(response.StatusCode, "La API devolvió una respuesta vacía.");
     }
@@ -143,35 +143,7 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         }
 
         using var response = await http.SendAsync(request, ct);
-        await LanzarSiErrorAsync(response, ct);
-    }
-
-    private static async Task LanzarSiErrorAsync(HttpResponseMessage response, CancellationToken ct)
-    {
-        if (response.IsSuccessStatusCode)
-        {
-            return;
-        }
-
-        var message = $"La API respondió {(int)response.StatusCode}.";
-        var content = await response.Content.ReadAsStringAsync(ct);
-        if (!string.IsNullOrWhiteSpace(content))
-        {
-            try
-            {
-                using var document = JsonDocument.Parse(content);
-                if (document.RootElement.TryGetProperty("detail", out var detail) && !string.IsNullOrWhiteSpace(detail.GetString()))
-                {
-                    message = detail.GetString()!;
-                }
-            }
-            catch (JsonException)
-            {
-                // La respuesta no usa ProblemDetails; se conserva un mensaje genérico y seguro.
-            }
-        }
-
-        throw new ApiException(response.StatusCode, message);
+        await RespuestasDeApi.LanzarSiErrorAsync(response, ct);
     }
 
     private static object Clasificacion(ClasificacionFormulario item) => new

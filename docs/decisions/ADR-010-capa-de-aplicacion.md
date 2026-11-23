@@ -57,6 +57,7 @@ Este ADR fija esas convenciones para toda la capa. Recoge las decisiones D3, D6 
   - `regla`: el código del informe, cuando se conoce (por ejemplo «RS-03»);
   - `errores`: los errores de validación por campo.
 - **Ningún error 500 expone detalles internos.**
+- **La entrada malformada (JSON roto, tipo incorrecto, cuerpo vacío) responde 400 con un mensaje genérico,** no 422: detallar el fallo de enlace expone nombres de tipos y del binder (OWASP, §13.3). La UI muestra el `detail` tal cual («La solicitud no es válida.»); los errores por campo solo llegan con el 422.
 
 | Origen | Señal | HTTP |
 |---|---|---|

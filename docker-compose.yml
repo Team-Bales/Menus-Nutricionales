@@ -44,6 +44,8 @@ services:
       - redis
     env_file:
       - .env
+    environment:
+      Seguridad__RedesDeProxy__0: "172.28.0.0/24"
     ports:
       - "8080:8080"
 
@@ -61,3 +63,9 @@ services:
 volumes:
   postgres_data:
   mongo_data:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

@@ -197,6 +197,41 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Perfil_ConToken_DevuelveLosDatosDelUsuario()
+    {
+        var usuarioId = Guid.NewGuid();
+        var entidadId = Guid.NewGuid();
+        var passwordHasher = new BCryptPasswordHasher();
+
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var usuario = Usuario.Crear(
+                usuarioId,
+                "perfil@test.com",
+                passwordHasher.Hash("password123"),
+                RolesUsuario.Nutricionista,
+                entidadId);
+            ctx.Usuarios.Add(usuario);
+            await ctx.SaveChangesAsync();
+        }
+
+        var token = GenerarTokenNutricionista(usuarioId, entidadId);
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/auth/perfil");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var perfil = await response.Content.ReadFromJsonAsync<PerfilDto>();
+        Assert.NotNull(perfil);
+        Assert.Equal("perfil@test.com", perfil.Email);
+        Assert.Equal(RolesUsuario.Nutricionista, perfil.Rol);
+        Assert.Equal(entidadId, perfil.EntidadId);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+    }
+
+    [Fact]
     public async Task RegistroNutricionista_SinToken_Devuelve401()
     {
         var request = new RegistrarNutricionistaCommand("Dr. Nutri", "nutri@test.com", "password123", Guid.NewGuid());

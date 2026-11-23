@@ -266,8 +266,31 @@ public sealed class CatalogoApiTests
         Assert.Equal(idsPagina1.Concat(idsPagina2), alimentos.Select(a => a.Id));
     }
 
+    [Fact]
+    public async Task ListarTodasLasDietasAsync_junta_todas_las_paginas()
+    {
+        var idsPagina1 = Enumerable.Range(0, 100).Select(_ => Guid.NewGuid()).ToList();
+        var idsPagina2 = Enumerable.Range(0, 10).Select(_ => Guid.NewGuid()).ToList();
+        var peticiones = 0;
+        var handler = new HandlerFalso(req =>
+        {
+            peticiones++;
+            var esPrimera = req.RequestUri!.Query.Contains("page=1");
+            var data = string.Join(',', (esPrimera ? idsPagina1 : idsPagina2).Select(DietaJson));
+            return Json(req, $$"""{"data":[{{data}}],"total":110,"page":{{(esPrimera ? 1 : 2)}},"size":100}""");
+        });
+
+        var dietas = await Crear(handler).ListarTodasLasDietasAsync();
+
+        Assert.Equal(2, peticiones);
+        Assert.Equal(idsPagina1.Concat(idsPagina2), dietas.Select(d => d.Id));
+    }
+
     private static string AlimentoJson(Guid id)
         => $$"""{"id":"{{id}}","nombre":"Avena","grupoNutricionalId":"{{Guid.Empty}}","tipoPreparacionId":"{{Guid.Empty}}","nivelCaloricoId":"{{Guid.Empty}}","nutricionistaId":"{{Guid.Empty}}"}""";
+
+    private static string DietaJson(Guid id)
+        => $$"""{"id":"{{id}}","nombre":"Dieta basal","programaAtencionId":"{{Guid.Empty}}","cantidadDeGrupos":0,"cantidadDeRestricciones":0}""";
 
     [Fact]
     public async Task CrearAlimentoAsync_envia_post_con_el_formulario_y_devuelve_el_id()

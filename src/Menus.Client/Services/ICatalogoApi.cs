@@ -14,6 +14,7 @@ public interface ICatalogoApi
     Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default);
     Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default);
     Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default);
+    Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default);
     Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default);
     Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default);
     Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default);

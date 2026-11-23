@@ -1,0 +1,75 @@
+@page "/admin/salas"
+@attribute [Authorize(Roles = RolesDeUsuario.Admin)]
+@inject IAdministracionApi Api
+
+<PageTitle>Salas</PageTitle>
+
+<div class="mb-4"><h1 class="h2 mb-1">Salas</h1><p class="text-muted mb-0">Salas de hospitalización y sus pacientes asignados.</p></div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+<div class="card shadow-sm mb-4"><div class="card-body">
+    <h2 class="h5">@(_salaEditada is null ? "Nueva sala" : "Editar sala")</h2>
+    <EditForm Model="_formulario" OnValidSubmit="Guardar" class="row g-2 align-items-start">
+        <DataAnnotationsValidator />
+        <div class="col"><label class="form-label" for="nombre-sala">Nombre</label><InputText id="nombre-sala" class="form-control" @bind-Value="_formulario.Nombre" /><ValidationMessage For="@(() => _formulario.Nombre)" /></div>
+        <div class="col-auto pt-4 d-flex gap-2"><button class="btn btn-primary" type="submit">@(_salaEditada is null ? "Crear" : "Guardar")</button>@if (_salaEditada is not null) { <button class="btn btn-outline-secondary" type="button" @onclick="CancelarEdicion">Cancelar</button> }</div>
+    </EditForm>
+</div></div>
+
+@if (_cargando)
+{
+    <p class="text-muted">Cargando salas…</p>
+}
+else
+{
+    <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Nombre</th><th>Pacientes</th><th class="text-end">Acciones</th></tr></thead><tbody>
+        @if (_salas.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-4">No hay salas registradas.</td></tr> }
+        @foreach (var sala in _salas) { <tr><td>@sala.Nombre</td><td>@CantidadPacientes(sala.Id)</td><td class="text-end"><button class="btn btn-sm btn-outline-primary me-2" @onclick="(() => Editar(sala))">Editar</button><button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(sala.Id))">Eliminar</button></td></tr> }
+    </tbody></table></div>
+}
+
+@code {
+    private IReadOnlyList<Sala> _salas = [];
+    private Dictionary<Guid, int> _cantidadPacientes = [];
+    private SalaFormulario _formulario = new();
+    private Sala? _salaEditada;
+    private bool _cargando = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await Cargar();
+
+    private async Task Cargar()
+    {
+        _cargando = true; _error = null;
+        try
+        {
+            _salas = await Api.ListarSalasAsync();
+            var cantidades = await Task.WhenAll(_salas.Select(async sala => new KeyValuePair<Guid, int>(sala.Id, await Api.ContarPacientesEnSalaAsync(sala.Id))));
+            _cantidadPacientes = cantidades.ToDictionary(par => par.Key, par => par.Value);
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+        finally { _cargando = false; }
+    }
+
+    private async Task Guardar()
+    {
+        _error = null;
+        try
+        {
+            if (_salaEditada is null) { await Api.CrearSalaAsync(_formulario); }
+            else { await Api.ActualizarSalaAsync(_salaEditada.Id, _formulario); }
+            CancelarEdicion();
+            await Cargar();
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+    }
+
+    private void Editar(Sala sala) { _salaEditada = sala; _formulario = new SalaFormulario { Nombre = sala.Nombre }; }
+    private void CancelarEdicion() { _salaEditada = null; _formulario = new(); }
+    private async Task Eliminar(Guid id) { _error = null; try { await Api.EliminarSalaAsync(id); await Cargar(); } catch (ApiException ex) { _error = ex.Message; } }
+    private int CantidadPacientes(Guid id) => _cantidadPacientes.GetValueOrDefault(id);
+}

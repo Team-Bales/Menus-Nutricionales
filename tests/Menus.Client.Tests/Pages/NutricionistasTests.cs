@@ -103,6 +103,21 @@ public sealed class NutricionistasTests : BunitContext
     }
 
     [Fact]
+    public void Nutricionista_jefe_se_muestra_como_jefe()
+    {
+        var api = new AdministracionApiFalsa
+        {
+            Nutricionistas = [new(AdministracionApiFalsa.NutricionistaId, "Ana Pérez", CatalogoApiFalsa.Especialidad, true)],
+        };
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<Nutricionistas>();
+
+        cut.WaitForAssertion(() => Assert.Contains(">Sí<", cut.Markup));
+    }
+
+    [Fact]
     public void Error_al_cargar_se_muestra_de_forma_legible()
     {
         Services.AddSingleton<IAdministracionApi>(new AdministracionApiFalsa { Error = ErrorDePrueba.Conflicto("No se pudieron cargar los nutricionistas.") });
@@ -111,5 +126,21 @@ public sealed class NutricionistasTests : BunitContext
         var cut = Render<Nutricionistas>();
 
         cut.WaitForAssertion(() => Assert.Contains("No se pudieron cargar los nutricionistas.", cut.Markup));
+    }
+
+    [Fact]
+    public void Error_al_cargar_especialidades_se_muestra_sin_consultar_el_listado()
+    {
+        var api = new AdministracionApiFalsa();
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa
+        {
+            ErrorAlCargarNomencladores = ErrorDePrueba.Conflicto("No se pudieron cargar las especialidades."),
+        });
+
+        var cut = Render<Nutricionistas>();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudieron cargar las especialidades.", cut.Markup));
+        Assert.Null(api.UltimaConsultaNutricionistas);
     }
 }

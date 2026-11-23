@@ -29,7 +29,7 @@ else { <p class="text-muted">Cargando nutricionista…</p> }
     private IReadOnlyList<Dieta> _dietas = [];
     private Guid _dietaSeleccionada;
     private string? _error;
-    private IEnumerable<Dieta> DietasNoAutorizadas => _nutricionista is null ? [] : _dietas.Where(d => !_nutricionista.DietasAutorizadas.Any(a => a.DietaId == d.Id));
+    private IEnumerable<Dieta> DietasNoAutorizadas => _dietas.Where(d => !_nutricionista!.DietasAutorizadas.Any(a => a.DietaId == d.Id));
 
     protected override async Task OnParametersSetAsync() => await Cargar();
     private async Task Cargar()

@@ -27,6 +27,16 @@ public sealed class AdministracionApiTests
     }
 
     [Fact]
+    public async Task ListarNutricionistasAsync_omite_el_filtro_cuando_no_se_indica_especialidad()
+    {
+        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":1,"size":10}"""));
+
+        await Crear(handler).ListarNutricionistasAsync(null, 1, 10);
+
+        Assert.DoesNotContain("especialidadId=", handler.Recibida!.RequestUri!.Query);
+    }
+
+    [Fact]
     public async Task ObtenerNutricionistaAsync_deserializa_sus_dietas_autorizadas()
     {
         var nutricionista = Guid.NewGuid();
@@ -93,7 +103,8 @@ public sealed class AdministracionApiTests
     public async Task ContarPacientesEnSalaAsync_lee_el_total_de_la_pagina_filtrada()
     {
         var sala = Guid.NewGuid();
-        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":3,"page":1,"size":1}"""));
+        var paciente = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, $$"""{"data":[{"id":"{{paciente}}"}],"total":3,"page":1,"size":1}"""));
 
         var cantidad = await Crear(handler).ContarPacientesEnSalaAsync(sala);
 
@@ -101,6 +112,18 @@ public sealed class AdministracionApiTests
         Assert.Equal("/api/pacientes", handler.Recibida!.RequestUri!.AbsolutePath);
         Assert.Contains($"sala={sala}", handler.Recibida.RequestUri.Query);
         Assert.Contains("size=1", handler.Recibida.RequestUri.Query);
+    }
+
+    [Fact]
+    public async Task ListarSalasAsync_pide_la_ruta_y_deserializa_la_lista()
+    {
+        var sala = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, $$"""[{"id":"{{sala}}","nombre":"Sala 101"}]"""));
+
+        var salas = await Crear(handler).ListarSalasAsync();
+
+        Assert.Equal("/api/salas", handler.Recibida!.RequestUri!.AbsolutePath);
+        Assert.Equal(new Sala(sala, "Sala 101"), Assert.Single(salas));
     }
 
     [Fact]
@@ -117,8 +140,26 @@ public sealed class AdministracionApiTests
         Assert.Equal("La sala tiene pacientes asignados.", error.Message);
     }
 
+    [Fact]
+    public async Task Respuestas_exitosas_vacias_se_rechazan_en_consultas_y_creaciones()
+    {
+        var respuestas = new Queue<HttpResponseMessage>(
+        [
+            JsonNulo(),
+            JsonNulo(),
+        ]);
+        var handler = new HandlerFalso(_ => respuestas.Dequeue());
+        var api = Crear(handler);
+
+        await Assert.ThrowsAsync<ApiException>(() => api.ObtenerNutricionistaAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<ApiException>(() => api.CrearSalaAsync(new SalaFormulario { Nombre = "Sala 101" }));
+    }
+
     private static HttpResponseMessage Json(HttpRequestMessage _, string json)
         => new(HttpStatusCode.OK) { Content = JsonContent.Create(JsonDocument.Parse(json).RootElement) };
+
+    private static HttpResponseMessage JsonNulo()
+        => new(HttpStatusCode.OK) { Content = JsonContent.Create<object?>(null) };
 
     private sealed class HandlerFalso(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
     {

@@ -110,4 +110,19 @@ public sealed class DetalleNutricionistaTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("No se pudo cargar el nutricionista.", cut.Markup));
     }
+
+    [Fact]
+    public void Dieta_y_especialidad_desconocidas_se_muestran_con_guion()
+    {
+        var api = new AdministracionApiFalsa
+        {
+            Detalle = new(AdministracionApiFalsa.NutricionistaId, "Ana Pérez", Guid.NewGuid(), false, [new(Guid.NewGuid())]),
+        };
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<DetalleNutricionista>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.NutricionistaId));
+
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.Markup.Split('—').Length - 1));
+    }
 }

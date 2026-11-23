@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json;
 using Menus.Api.Actor;
 using Menus.Api.Auth;
@@ -66,15 +67,38 @@ builder.Services.AddHsts(opciones =>
 });
 
 // La API está detrás de nginx en Compose. Con estas cabeceras, el rate limiting ve la IP del cliente y HSTS el
-// esquema original. Solo se aceptan proxies de redes privadas: si la API se expone directamente, hay que quitar
-// estas redes o limitarlas a la del proxy.
+// esquema original. Solo se aceptan proxies de las redes de Seguridad:RedesDeProxy, no de toda red privada: si la
+// API se expone en una red privada sin nginx delante, cualquiera en esa red podría falsear X-Forwarded-For y
+// saltarse el límite. Compose fija la subred de su red interna y la declara aquí.
+var redesDeProxy = builder.Configuration.GetSection("Seguridad:RedesDeProxy").Get<string[]>() ?? [];
+var redesDeProxyValidas = new List<IPNetwork>(redesDeProxy.Length);
+foreach (var red in redesDeProxy)
+{
+    if (!IPNetwork.TryParse(red, out var redValida))
+    {
+        throw new InvalidOperationException($"Seguridad:RedesDeProxy contiene una red no válida: {red}.");
+    }
+
+    redesDeProxyValidas.Add(redValida);
+}
+
 builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
 {
     opciones.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     opciones.ForwardLimit = 1;
-    opciones.KnownIPNetworks.Add(IPNetwork.Parse("10.0.0.0/8"));
-    opciones.KnownIPNetworks.Add(IPNetwork.Parse("172.16.0.0/12"));
-    opciones.KnownIPNetworks.Add(IPNetwork.Parse("192.168.0.0/16"));
+
+    // Si KnownIPNetworks y KnownProxies quedan vacías, el middleware acepta cabeceras reenviadas de cualquier
+    // origen. Se deja siempre loopback y se añaden solo las redes configuradas, así que por defecto únicamente se
+    // aceptan cabeceras del propio host.
+    opciones.KnownIPNetworks.Clear();
+    opciones.KnownProxies.Clear();
+    opciones.KnownProxies.Add(IPAddress.Loopback);
+    opciones.KnownProxies.Add(IPAddress.IPv6Loopback);
+
+    foreach (var red in redesDeProxyValidas)
+    {
+        opciones.KnownIPNetworks.Add(red);
+    }
 });
 
 builder.Services.AddOptions<OpcionesDeLimiteDePeticiones>()

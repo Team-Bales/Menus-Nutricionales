@@ -10,7 +10,7 @@ namespace Menus.Api.Seguridad;
 /// <summary>Nombres de las políticas de límite de peticiones.</summary>
 public static class PoliticasDeTasa
 {
-    /// <summary>Límite de los endpoints de autenticación (login y registro).</summary>
+    /// <summary>Límite del login (fuerza bruta).</summary>
     public const string Autenticacion = "Autenticacion";
 }
 
@@ -23,21 +23,21 @@ public sealed class OpcionesDeLimiteDePeticiones
     public const string Seccion = "RateLimiting";
 
     /// <summary>Peticiones permitidas por ventana y por origen.</summary>
-    public int PermitLimit { get; set; } = 10;
+    public int PermitLimit { get; set; } = 60;
 
     /// <summary>Duración de la ventana, en segundos.</summary>
     public int WindowSeconds { get; set; } = 60;
 }
 
 /// <summary>
-/// Límite de peticiones de los endpoints de autenticación (#294, §13.3): ventana fija por dirección de origen.
+/// Límite de peticiones del login (#294, §13.3): ventana fija por dirección de origen.
 /// </summary>
 /// <remarks>
 /// Es una defensa básica contra la fuerza bruta y el abuso del login. El límite se cuenta por IP de origen y no por
 /// usuario porque el login es anónimo: todavía no hay una identidad que particionar. Detrás de nginx, la IP del
 /// cliente llega en <c>X-Forwarded-For</c>; <c>Program</c> configura <c>UseForwardedHeaders</c> para que
 /// <see cref="HttpContext.Connection"/> la use. Cuando se supera, la API responde 429 con <c>ProblemDetails</c> y
-/// <c>Retry-After</c>, sin revelar nada del sistema.
+/// <c>Retry-After</c>, sin revelar nada del sistema. El registro no lleva límite: exige rol Admin.
 /// </remarks>
 public static class LimiteDePeticiones
 {

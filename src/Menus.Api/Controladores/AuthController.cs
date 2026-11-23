@@ -16,8 +16,9 @@ namespace Menus.Api.Controladores;
 /// Endpoints de autenticación: login, registro (solo Admin) y perfil.
 /// </summary>
 /// <remarks>
-/// Login y registro llevan el límite de peticiones de <see cref="PoliticasDeTasa.Autenticacion"/>: son la puerta de
-/// entrada y el punto donde tendría sentido una fuerza bruta. El perfil no lo lleva porque ya exige un token válido.
+/// Login lleva el límite de peticiones de <see cref="PoliticasDeTasa.Autenticacion"/>: es la puerta de entrada
+/// y el punto donde tendría sentido una fuerza bruta. El registro no lo lleva porque ya exige el rol Admin, y
+/// el perfil porque exige token.
 /// </remarks>
 [ApiController]
 [Route("api/auth")]
@@ -48,17 +49,14 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
     /// <response code="403">No es administrador.</response>
     /// <response code="409">Ya existe un usuario con ese email.</response>
     /// <response code="422">La entrada no es válida según las reglas de negocio.</response>
-    /// <response code="429">Se superó el límite de peticiones de autenticación.</response>
     [HttpPost("registro/nutricionista")]
     [Authorize(Policy = Politicas.SoloAdmin)]
-    [EnableRateLimiting(PoliticasDeTasa.Autenticacion)]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<IdCreadoDto>> RegistrarNutricionista(
         RegistrarNutricionistaCommand comando, CancellationToken ct)
     {
@@ -73,17 +71,14 @@ public sealed class AuthController(IDespachador despachador) : ControllerBase
     /// <response code="403">No es administrador.</response>
     /// <response code="409">Ya existe un usuario con ese email.</response>
     /// <response code="422">La entrada no es válida según las reglas de negocio.</response>
-    /// <response code="429">Se superó el límite de peticiones de autenticación.</response>
     [HttpPost("registro/paciente")]
     [Authorize(Policy = Politicas.SoloAdmin)]
-    [EnableRateLimiting(PoliticasDeTasa.Autenticacion)]
     [ProducesResponseType<IdCreadoDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<IdCreadoDto>> RegistrarPaciente(
         RegistrarPacienteCommand comando, CancellationToken ct)
     {

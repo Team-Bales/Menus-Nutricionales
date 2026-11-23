@@ -68,6 +68,11 @@ public sealed class LimiteDePeticionesTests
         using var rechazada = await cliente.PostAsJsonAsync(
             "/api/auth/login", new { email = "", password = "" });
         Assert.Equal(HttpStatusCode.TooManyRequests, rechazada.StatusCode);
+
+        // El mismo origen ya agotó el login, pero otro endpoint sigue respondiendo (422 de validación).
+        using var otro = await cliente.PostAsJsonAsync(
+            "/api/nomencladores/grupos-nutricionales", new { });
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, otro.StatusCode);
     }
 
     [Fact]
@@ -81,6 +86,36 @@ public sealed class LimiteDePeticionesTests
     public void Sin_espera_en_el_arrendamiento_se_anuncia_la_ventana()
     {
         Assert.Equal("60", LimiteDePeticiones.SegundosDeEspera(new ArrendamientoSinEspera(), 60));
+    }
+
+    [Theory]
+    [InlineData("/api/auth/registro/nutricionista")]
+    [InlineData("/api/auth/registro/paciente")]
+    public async Task El_registro_no_esta_limitado(string ruta)
+    {
+        const int limite = 2;
+        await using var api = Api(limite);
+        using var cliente = api.CreateClient();
+        cliente.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Admin));
+
+        // Agota el límite del login: el contador de la IP queda lleno antes de tocar el registro.
+        for (var intento = 0; intento < limite; intento++)
+        {
+            using var permitida = await cliente.PostAsJsonAsync(
+                "/api/auth/login", new { email = "", password = "" });
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, permitida.StatusCode);
+        }
+
+        using var rechazada = await cliente.PostAsJsonAsync(
+            "/api/auth/login", new { email = "", password = "" });
+        Assert.Equal(HttpStatusCode.TooManyRequests, rechazada.StatusCode);
+
+        for (var intento = 0; intento < limite + 3; intento++)
+        {
+            using var respuesta = await cliente.PostAsJsonAsync(ruta, new { });
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, respuesta.StatusCode);
+        }
     }
 
     private sealed class ArrendamientoSinEspera : RateLimitLease

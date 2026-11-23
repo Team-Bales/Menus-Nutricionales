@@ -77,6 +77,7 @@ public sealed class CatalogoPagesTests : BunitContext
         public Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default) => Task.FromResult(Guid.NewGuid());
         public Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default) => Task.CompletedTask;
         public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default) => Task.FromResult(new Pagina<Dieta>([], 0, page, size));
+        public Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Dieta>>([]);
         public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default) => Task.FromResult(new DietaDetalle(id, "Dieta", Guid.Empty, [], []));
         public Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default) => Task.CompletedTask;
         public Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default) => Task.CompletedTask;

@@ -100,6 +100,9 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
         return Resultado(ErrorAlCargarDieta, new Pagina<Dieta>([.. Dietas], Dietas.Count, page, size));
     }
 
+    public Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default)
+        => Resultado<IReadOnlyList<Dieta>>(ErrorAlCargarDieta, [.. Dietas]);
+
     public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default)
         => Resultado(ErrorAlCargarDieta, DietaDetalle);
 

@@ -26,6 +26,7 @@ builder.Services.AddScoped(sp =>
     return new HttpClient(handler) { BaseAddress = new Uri(apiBaseUrl, UriKind.Absolute) };
 });
 builder.Services.AddScoped<ICatalogoApi, CatalogoApi>();
+builder.Services.AddScoped<IAdministracionApi, AdministracionApi>();
 builder.Services.AddScoped<IAutenticacionApi, AutenticacionApi>();
 
 await builder.Build().RunAsync();

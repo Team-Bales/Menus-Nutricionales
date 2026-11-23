@@ -37,6 +37,21 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
     public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Dieta>>(RutaPaginada("api/dietas", "programa", programa, page, size), ct);
 
+    public async Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default)
+    {
+        const int size = 100;
+        var firstPage = await ListarDietasAsync(null, 1, size, ct);
+        var dietas = firstPage.Data.ToList();
+        var pages = (int)Math.Ceiling(firstPage.Total / (double)size);
+
+        for (var page = 2; page <= pages; page++)
+        {
+            dietas.AddRange((await ListarDietasAsync(null, page, size, ct)).Data);
+        }
+
+        return dietas;
+    }
+
     public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default)
         => ObtenerAsync<DietaDetalle>($"api/dietas/{id}", ct);
 

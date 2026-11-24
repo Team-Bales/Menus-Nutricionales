@@ -1,3 +1,6 @@
+@* Lista paginada de dietas (/catalogo/dietas), filtrable por programa de atención, con
+   la cantidad de grupos y de restricciones de cada una. La ven el Admin y los
+   nutricionistas. *@
 @page "/catalogo/dietas"
 @attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api

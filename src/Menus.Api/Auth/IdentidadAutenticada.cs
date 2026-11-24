@@ -15,11 +15,13 @@ public sealed class IdentidadAutenticada : IIdentidadAutenticada
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
+    /// <param name="httpContextAccessor">Acceso al <see cref="HttpContext"/> de la petición en curso, del que salen los claims.</param>
     public IdentidadAutenticada(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }
 
+    /// <inheritdoc />
     public Guid UsuarioId
     {
         get
@@ -37,6 +39,7 @@ public sealed class IdentidadAutenticada : IIdentidadAutenticada
         }
     }
 
+    /// <inheritdoc />
     public Guid? EntidadId
     {
         get
@@ -53,6 +56,7 @@ public sealed class IdentidadAutenticada : IIdentidadAutenticada
         }
     }
 
+    /// <inheritdoc />
     public string Rol
     {
         get

@@ -13,7 +13,7 @@ namespace Menus.Api.Seguridad;
 /// ni marcos.
 /// </para>
 /// <para>
-/// Las cabeceras se registran en <see cref="HttpResponse.OnStarting"/> y no se escriben antes de llamar al resto de la
+/// Las cabeceras se registran en <see cref="HttpResponse.OnStarting(Func{Task})"/> y no se escriben antes de llamar al resto de la
 /// tubería: el manejador de excepciones limpia la respuesta con <c>Response.Clear()</c> y borraría las cabeceras ya
 /// escritas. Así también las llevan los 401, 403, 404, 409, 422 y 500, además de la comprobación previa de CORS.
 /// </para>

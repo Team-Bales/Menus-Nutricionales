@@ -35,7 +35,7 @@ public sealed class AutorizacionEnLaApiTests
     /// Lo que pide cada endpoint. Un endpoint nuevo que no esté aquí hace fallar
     /// <see cref="Cada_endpoint_exige_la_politica_acordada"/>: así nadie lo agrega sin decidir quién lo usa.
     /// </summary>
-    private static readonly Dictionary<string, string> Esperado = new()
+    internal static readonly Dictionary<string, string> Esperado = new()
     {
         ["POST api/auth/login"] = Anonimo,
         ["POST api/auth/registro/nutricionista"] = SoloAdmin,
@@ -127,6 +127,13 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/revalorizaciones/{id:guid}/resultado"] = SoloNutricionista,
         ["GET api/nutricionistas/{nutricionistaId:guid}/revalorizaciones/pendientes"] = SoloNutricionista,
     };
+
+    /// <summary>
+    /// Políticas cuyos accesos negativos ya cubre esta clase: el login anónimo, los 401 de cualquier endpoint y el
+    /// paciente ajeno en las rutas de <see cref="Politicas.PacientePropioOPersonal"/>.
+    /// </summary>
+    internal static bool YaCubiertaAqui(string politica) =>
+        politica is Anonimo or Autenticado or PacientePropioOPersonal;
 
     private static async Task<HttpResponseMessage> PedirAsync(
         HttpMethod metodo,

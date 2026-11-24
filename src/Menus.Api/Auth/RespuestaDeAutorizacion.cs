@@ -25,6 +25,7 @@ public sealed class RespuestaDeAutorizacion(IProblemDetailsService problemDetail
 
     private readonly AuthorizationMiddlewareResultHandler _porDefecto = new();
 
+    /// <inheritdoc />
     public async Task HandleAsync(
         RequestDelegate next,
         HttpContext context,

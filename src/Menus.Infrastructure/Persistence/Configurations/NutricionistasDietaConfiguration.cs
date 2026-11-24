@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="NutricionistasDieta"/> (relación <c>Autoriza</c>) a la tabla <c>autoriza</c>:
+/// las dietas en las que cada nutricionista puede crear y validar menús.
+/// </summary>
 internal sealed class NutricionistasDietaConfiguration : IEntityTypeConfiguration<NutricionistasDieta>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<NutricionistasDieta> builder)
     {
         builder.ToTable("autoriza");

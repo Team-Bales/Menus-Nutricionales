@@ -1,3 +1,6 @@
+@* Banco de alimentos (/catalogo/alimentos), paginado y filtrable por grupo, tipo de
+   preparación y nivel calórico. Lo ven el Admin y los nutricionistas; crear, editar y
+   eliminar, solo los nutricionistas. *@
 @page "/catalogo/alimentos"
 @attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api

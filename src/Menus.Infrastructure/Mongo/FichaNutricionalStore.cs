@@ -11,12 +11,14 @@ public sealed class FichaNutricionalStore(MenusMongoContext contexto) : IFichaNu
 {
     private static FilterDefinitionBuilder<FichaNutricionalDocumento> Filtro => Builders<FichaNutricionalDocumento>.Filter;
 
+    /// <inheritdoc />
     public async Task<bool> EliminarPorOrigenAsync(string tabla, Guid itemId, CancellationToken cancellationToken = default)
     {
         var resultado = await contexto.Fichas.DeleteOneAsync(PorOrigen(tabla, itemId), cancellationToken);
         return resultado.DeletedCount > 0;
     }
 
+    /// <inheritdoc />
     public async Task<bool> AgregarIngredienteAsync(
         Guid platoId,
         Guid alimentoId,
@@ -40,6 +42,7 @@ public sealed class FichaNutricionalStore(MenusMongoContext contexto) : IFichaNu
         return resultado.ModifiedCount > 0;
     }
 
+    /// <inheritdoc />
     public async Task<bool> QuitarIngredienteAsync(Guid platoId, Guid alimentoId, CancellationToken cancellationToken = default)
     {
         var id = FichaNutricionalEsquema.Identificador(alimentoId);

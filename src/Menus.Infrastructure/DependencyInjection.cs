@@ -21,6 +21,7 @@ using StackExchange.Redis;
 
 namespace Menus.Infrastructure;
 
+/// <summary>Registro de los servicios de la capa de infraestructura en el contenedor de la API.</summary>
 public static class DependencyInjection
 {
     /// <summary>Registra la persistencia, los repositorios y la autenticación JWT.</summary>

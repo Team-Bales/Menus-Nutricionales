@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el nomenclador <see cref="ProgramaAtencion"/> a la tabla <c>programas_atencion</c>, con
+/// nombre único y los programas iniciales.
+/// </summary>
 internal sealed class ProgramaAtencionConfiguration : IEntityTypeConfiguration<ProgramaAtencion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ProgramaAtencion> builder)
     {
         // RD-07: nombre no vacío

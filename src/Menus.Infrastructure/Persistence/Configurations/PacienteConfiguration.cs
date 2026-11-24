@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Paciente"/> a la tabla <c>pacientes</c>, con su sala y las dietas en las que está
+/// inscripto.
+/// </summary>
 internal sealed class PacienteConfiguration : IEntityTypeConfiguration<Paciente>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Paciente> builder)
     {
         // RD-07: nombre no vacío; RD-06: edad mayor o igual que cero

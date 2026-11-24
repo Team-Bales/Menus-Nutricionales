@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Nutricionista"/> a la tabla <c>nutricionistas</c>, con su especialidad, si es jefe
+/// de nutrición y las dietas que tiene autorizadas.
+/// </summary>
 internal sealed class NutricionistaConfiguration : IEntityTypeConfiguration<Nutricionista>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Nutricionista> builder)
     {
         // RD-07: nombre no vacío

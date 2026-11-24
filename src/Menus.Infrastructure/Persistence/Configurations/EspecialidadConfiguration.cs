@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el nomenclador <see cref="Especialidad"/> a la tabla <c>especialidades</c>, con nombre único y
+/// las especialidades iniciales.
+/// </summary>
 internal sealed class EspecialidadConfiguration : IEntityTypeConfiguration<Especialidad>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Especialidad> builder)
     {
         // RD-07: nombre no vacío

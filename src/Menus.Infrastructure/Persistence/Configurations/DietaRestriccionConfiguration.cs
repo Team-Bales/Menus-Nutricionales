@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="DietaRestriccion"/> (relación <c>Restringe</c>) a la tabla <c>restringe</c>: las
+/// restricciones alimentarias de cada dieta.
+/// </summary>
 internal sealed class DietaRestriccionConfiguration : IEntityTypeConfiguration<DietaRestriccion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<DietaRestriccion> builder)
     {
         builder.ToTable("restringe");

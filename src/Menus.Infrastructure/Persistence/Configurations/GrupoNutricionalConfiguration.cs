@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el nomenclador <see cref="GrupoNutricional"/> a la tabla <c>grupos_nutricionales</c>, con
+/// nombre único y los grupos iniciales.
+/// </summary>
 internal sealed class GrupoNutricionalConfiguration : IEntityTypeConfiguration<GrupoNutricional>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<GrupoNutricional> builder)
     {
         // RD-04: nombre no vacío

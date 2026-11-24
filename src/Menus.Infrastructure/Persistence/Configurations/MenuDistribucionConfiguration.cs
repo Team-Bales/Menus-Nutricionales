@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="MenuDistribucion"/> (relación <c>Distribuye</c>) a la tabla
+/// <c>menu_distribucion</c>: la proporción de cada tipo de preparación en un menú.
+/// </summary>
 internal sealed class MenuDistribucionConfiguration : IEntityTypeConfiguration<MenuDistribucion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<MenuDistribucion> builder)
     {
         // RD-11: proporción en el intervalo (0, 1]

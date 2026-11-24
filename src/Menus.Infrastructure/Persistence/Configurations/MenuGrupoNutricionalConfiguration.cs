@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="MenuGrupoNutricional"/> (relación <c>Cubre</c>) a la tabla
+/// <c>menu_grupo_nutricional</c>: los grupos nutricionales que cubre un menú.
+/// </summary>
 internal sealed class MenuGrupoNutricionalConfiguration : IEntityTypeConfiguration<MenuGrupoNutricional>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<MenuGrupoNutricional> builder)
     {
         builder.ToTable("menu_grupo_nutricional");

@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="MenuItem"/> (relación <c>Incluye</c>) a la tabla <c>menu_item</c>: los alimentos y
+/// platos de cada menú, sin repetir.
+/// </summary>
 internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<MenuItem> builder)
     {
         // Incluye(Menú, ItemAlimentario): una sola relación para alimentos y platos (RC-15: sin repetidos)

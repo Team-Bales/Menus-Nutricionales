@@ -17,6 +17,7 @@ public sealed record Sala(Guid Id, string Nombre);
 /// <summary>Datos editables de una sala.</summary>
 public sealed class SalaFormulario
 {
+    /// <summary>Nombre de la sala; obligatorio, hasta 100 caracteres.</summary>
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(100, ErrorMessage = "El nombre no puede superar 100 caracteres.")]
     public string Nombre { get; set; } = string.Empty;

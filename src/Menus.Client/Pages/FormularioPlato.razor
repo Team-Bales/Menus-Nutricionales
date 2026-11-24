@@ -1,3 +1,7 @@
+@* Alta (/catalogo/platos/nuevo) y reclasificación (/catalogo/platos/{id}/editar) de
+   un plato, solo nutricionistas. El alta lleva los ingredientes iniciales: al menos
+   uno, sin repetir y con cantidad mayor que cero. Al editar solo cambia la
+   clasificación; la composición se administra desde el detalle. *@
 @page "/catalogo/platos/nuevo"
 @attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
 @page "/catalogo/platos/{Id:guid}/editar"
@@ -45,6 +49,7 @@ else
 }
 
 @code {
+    /// <summary>Id del plato que se edita, de la ruta; nulo en el alta.</summary>
     [Parameter] public Guid? Id { get; set; }
 
     private readonly ClasificacionFormulario _formulario = new();

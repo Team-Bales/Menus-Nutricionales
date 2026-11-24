@@ -1,4 +1,6 @@
-﻿<CascadingAuthenticationState>
+﻿@* Raíz del cliente: el enrutador con autorización. Cada página declara su rol con [Authorize]; si no
+   lo cumple, se muestra AccesoDenegado o se redirige al login (ver NotAuthorized). *@
+<CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">

@@ -1,3 +1,6 @@
+@* Detalle de una dieta (/catalogo/dietas/{id}): los grupos nutricionales que cubre,
+   requeridos o restringidos, y sus restricciones alimentarias. La ven el Admin y los
+   nutricionistas; agregar y quitar, solo el Admin. *@
 @page "/catalogo/dietas/{Id:guid}"
 @attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api
@@ -54,6 +57,7 @@ else
 }
 
 @code {
+    /// <summary>Id de la dieta, de la ruta.</summary>
     [Parameter] public Guid Id { get; set; }
     private DietaDetalle? _dieta;
     private IReadOnlyList<Nomenclador> _grupos = [];

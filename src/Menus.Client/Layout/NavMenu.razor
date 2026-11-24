@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@* Menú lateral. Muestra solo los enlaces que permite el rol de la sesión: el catálogo al personal
+   (Admin y nutricionista), la administración al Admin, y el perfil y cerrar sesión a cualquiera
+   con sesión. Ocultar un enlace no protege la página: cada una declara su propio [Authorize]. *@
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Menús nutricionales</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">

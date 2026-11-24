@@ -52,6 +52,19 @@ internal sealed class BancoDeReportesFalso
 
 internal sealed class DietasFalsas(BancoDeReportesFalso banco) : IDietaRepository
 {
+    // Miembros que los reportes no usan; existen solo para cumplir la interfaz.
+    public Task<(IReadOnlyList<Dieta> Dietas, int Total)> BuscarAsync(Guid? programaAtencionId, int pagina, int tamano, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<IReadOnlyDictionary<Guid, ConteosDeDieta>> ContarRelacionesAsync(IReadOnlyCollection<Guid> dietaIds, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<Dieta>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<IReadOnlyList<Guid>> GetGruposProhibidosAsync(Guid dietaId, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
     public Task<Dieta?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(banco.Dietas.FirstOrDefault(d => d.Id == id));
 
@@ -75,6 +88,10 @@ internal sealed class DietasFalsas(BancoDeReportesFalso banco) : IDietaRepositor
 
 internal sealed class NutricionistasFalsos(BancoDeReportesFalso banco) : INutricionistaRepository
 {
+    // Miembro que los reportes no usa; existe solo para cumplir la interfaz.
+    public Task<(IReadOnlyList<Nutricionista> Nutricionistas, int Total)> BuscarAsync(Guid? especialidadId, int pagina, int tamano, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
     public Task<Nutricionista?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(banco.Nutricionistas.FirstOrDefault(n => n.Id == id));
 
@@ -95,6 +112,13 @@ internal sealed class NutricionistasFalsos(BancoDeReportesFalso banco) : INutric
 
 internal sealed class MenusFalsos(BancoDeReportesFalso banco) : IMenuRepository
 {
+    // Miembros que los reportes no usan; existen solo para cumplir la interfaz.
+    public Task<(IReadOnlyList<Menu> Menus, int Total)> BuscarAsync(Guid dietaId, EstadoDeMenu? estado, int pagina, int tamano, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<IReadOnlyDictionary<Guid, int>> ContarItemsFinalesPorNivelCaloricoAsync(Guid dietaId, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
     public Task<Menu?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(banco.Menus.FirstOrDefault(m => m.Id == id));
 

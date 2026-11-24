@@ -284,6 +284,73 @@ Texto vigente (versión `1`):
 - **Spike (#297):** con 2 o 3 valoraciones reales se mide la latencia, el porcentaje de respuestas que pasan el
   `VerificadorDeCifras` y una nota de calidad de 1 a 5 que pone un nutricionista del equipo.
 
+## 11. Contrato HTTP
+
+Rutas, cuerpos y errores de los endpoints de IA, congelados para que el back (#331) y la UI (#332) trabajen contra el
+mismo texto. Los tipos (`TareaIA`, `RespuestaIADto`, `SeccionDto`) son los de §3; los bloques y sus valores por
+defecto, los de §4; qué tareas tienen camino determinista, §7. El JSON usa las convenciones de la API actual
+(camelCase, enums como texto). Cambiar una ruta o un campo exige cambiar primero este documento.
+
+### 11.1 `POST /api/ia/consultas`: el nutricionista pide una tarea de IA
+
+- **Autorización:** `Politicas.SoloNutricionista`. Un paciente o el Admin reciben 403; sin token, 401.
+- **Cuerpo:**
+
+```json
+{
+  "tarea": "ExplicarAnalisis",
+  "valoracionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "bloques": ["valoracion", "aceptacion"],
+  "pregunta": "¿Por qué el resultado bajó respecto a la última vez?"
+}
+```
+
+| Campo | Tipo | Obligatorio | Regla |
+|---|---|---|---|
+| `tarea` | `"ExplicarAnalisis"` \| `"SugerirAcciones"` \| `"GuionParaPaciente"` | sí | Cualquier otro valor: 422 |
+| `valoracionId` | guid | sí | Identifica el caso. Si no existe: 404 |
+| `bloques` | lista de texto (la `Fuente` del bloque: `valoracion`, `aceptacion`, `reporte-1`…, `ficha`, `menu`, `dieta`) | no | Omitido o vacío: se usan los valores por defecto de la tarea (contrato §4). Una fuente que no existe: 422. Una fuente que existe pero no tiene datos para el caso se omite y se avisa en `advertencias`. Si hay más de `IA:MaxBloques`, se descartan los de menor prioridad y se avisa en `advertencias` (no es error) |
+| `pregunta` | texto | no | Solo en `ExplicarAnalisis` y `SugerirAcciones`; con `GuionParaPaciente`: 422. Máximo 500 caracteres: si se pasa, 422 |
+
+- **200:** `RespuestaIADto`:
+
+```json
+{
+  "resumen": "…",
+  "secciones": [ { "titulo": "…", "texto": "…" } ],
+  "recomendaciones": ["…"],
+  "advertencias": ["…"],
+  "fuentesUsadas": ["valoracion", "aceptacion"],
+  "generadoPorIA": true
+}
+```
+
+  Las listas nunca son `null`. `generadoPorIA` es `true` solo si el texto salió del modelo; es `false` cuando se devolvió el camino determinista (`ExplicarAnalisis` con la IA apagada, caída o descartada por el auditor o el verificador). La UI decide el aviso según este campo. En `GuionParaPaciente`, `secciones` son los pasos del guion.
+- **Errores** (siempre `ProblemDetails`, sin revelar prompt, configuración ni proveedor):
+
+| Código | Cuándo |
+|---|---|
+| 401 | Sin token |
+| 403 | El rol no es nutricionista |
+| 404 | La valoración no existe |
+| 422 | Entrada inválida (tarea, bloque, pregunta) |
+| 503 | `SugerirAcciones` o `GuionParaPaciente` con la IA apagada, caída o descartada (§7: no hay determinista). El `detail` es un mensaje claro para mostrar al nutricionista, p. ej. «La IA no está disponible ahora». `ExplicarAnalisis` **no** da 503: cae al determinista y responde 200 con `generadoPorIA: false` |
+
+### 11.2 `GET /api/valoraciones/{id}/explicacion`: la explicación determinista de una valoración
+
+- **Autorización:** como `GET /api/valoraciones/{id}`: la ven el paciente valorado y el personal (nutricionista o Admin). La comprobación va en el caso de uso, porque la ruta lleva el id de la valoración y no el del paciente. Otro paciente: 403.
+- **Sin cuerpo ni parámetros.** Nunca llama al modelo: es la plantilla desde los números de la valoración y de la aceptación (§7), así que el paciente masivo no genera llamadas al LLM.
+- **200:** `RespuestaIADto` con `generadoPorIA: false` siempre.
+- **Errores:** 401, 403 (paciente que no es el valorado), 404 (la valoración no existe). No hay 503.
+
+**Fuera de este contrato:** límite de peticiones (429), paginación, envío de la respuesta por partes (la respuesta llega
+completa), el consentimiento del paciente (#334) y los reportes (#335). Un bloque nuevo entra por `bloques` sin
+cambiar las rutas.
+
+**Para quien implemente:** las rutas y errores de arriba son los criterios de aceptación de #331. Entran en
+`AutorizacionEnLaApiTests` y en `docs/seguridad/matriz-rbac.md`, y se documentan con `ProducesResponseType` como el
+resto de controladores. #332 puede construir el cliente contra datos de prueba con estas formas antes de que #331 esté en `main`.
+
 ## Dependencias fuera de este documento
 
 - **Consentimiento del paciente (§5.2):** campo nuevo en `Paciente`, con su migración, endpoint y pantalla. Es un issue

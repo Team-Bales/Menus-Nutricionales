@@ -1,7 +1,7 @@
 # ADR-015: Integración de IA generativa opcional: proveedor OpenAI-compatible y separación por volumen de uso
 
-**Estado:** Propuesto  
-**Fecha:** 2026-11-20 (propuesto). Extensión opcional, posterior a la entrega del informe (17-12-2026).
+**Estado:** Aceptado  
+**Fecha:** 2026-11-20 (propuesto); aceptado el 2026-11-24. Ampliado el 2026-11-24 (ver «Actualización»).
 
 ## Contexto
 
@@ -74,3 +74,29 @@ Para la consulta en lenguaje natural, un **clasificador de intención pequeño**
 - ⚠️ Hay que implementar, post-informe: el adaptador OpenAI-compatible, el generador determinista y la caché por valoración.
 - ⚠️ Exige gestionar la clave API fuera del repositorio (#295).
 - ⚠️ El router de intención (fase 2) necesita un conjunto de ejemplos por cada consulta para clasificar.
+
+## Actualización (2026-11-24)
+
+La decisión de fondo no cambia (§1 a §6). Se precisan cuatro cosas, que **prevalecen sobre el texto anterior**
+cuando difieren; el detalle de interfaces, datos y configuración está en
+[`docs/ia/contrato-iasistenteia.md`](../ia/contrato-iasistenteia.md).
+
+1. **Alcance y calendario.** La IA **entra en la v1.0** (informe final: 17-12-2026), ya no como extensión posterior
+   al informe. Sigue detrás del feature flag `IA:Habilitada`.
+2. **Más tareas que explicar la valoración.** El asistente cubre tres usos: explicar análisis sobre cualquier dato del
+   sistema, sugerir acciones al nutricionista y dar un guion a un nutricionista novato para explicar el caso a un
+   paciente sin formación médica. Los datos entran como *bloques de contexto* independientes, en la cantidad que
+   se elija (de uno a todos los del caso); sumar una fuente nueva, como la ficha nutricional, no cambia el puerto.
+3. **Privacidad determinista al construir el prompt.** Ningún dato personal llega al modelo: lo garantiza el código
+   del servidor (constructor y auditor de prompt), no una instrucción al modelo, y vale con cualquier proveedor.
+   Los datos clínicos entran; la edad se convierte en un rango y el nombre, los identificadores y la sala se eliminan.
+   Las combinaciones poco frecuentes entran solo con el **consentimiento del paciente**; sin él se generalizan u omiten.
+4. **Responsabilidad de quien configura un proveedor externo.** Debe aceptar unos términos de uso y confirmar que
+   desactivó la retención y el entrenamiento en su proveedor; sin eso la IA externa no arranca.
+
+Consecuencias añadidas:
+- ✅ Una salida solo puede decir lo que está en la entrada: un verificador comprueba las cifras tras el modelo.
+- ⚠️ El consentimiento del paciente exige un cambio en el dominio (campo, migración, endpoint y pantalla), que es
+  trabajo aparte de la línea de IA.
+- ⚠️ Los issues de la línea de IA redactados antes de esta actualización asumen «explicar la valoración» y un puerto
+  que genera la explicación; hay que alinearlos con el contrato.

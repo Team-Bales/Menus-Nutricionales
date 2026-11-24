@@ -6,15 +6,18 @@ using System.Text.RegularExpressions;
 using Menus.Api.Auth;
 using Menus.Api.Tests.Auth;
 using Menus.Domain;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Api.Tests.Seguridad;
 
 /// <summary>
 /// Matriz de autorización por roles (#292, §13.1): cada endpoint con política de rol recibe 403 de los roles
-/// que no la cumplen. Los casos se derivan de <see cref="AutorizacionEnLaApiTests.Esperado"/>, la fuente única
-/// de verdad de qué política tiene cada endpoint.
+/// que no la cumplen, y cada política admite a los roles que declara. Los casos se derivan de
+/// <see cref="AutorizacionEnLaApiTests.Esperado"/>, la fuente única de verdad de qué política tiene cada endpoint.
 /// </summary>
 /// <remarks>
 /// Los 403 que dependen de los datos (RS-02, RS-03, RS-05, RS-09) no se prueban aquí: necesitan base de datos y
@@ -77,6 +80,23 @@ public sealed class MatrizDeAutorizacionTests : IClassFixture<MatrizDeAutorizaci
         Assert.Equal(RespuestaDeAutorizacion.SinPermisos, problema!.Detail);
     }
 
+    [Theory]
+    [MemberData(nameof(PoliticasConSusRoles))]
+    public async Task Cada_politica_admite_a_sus_roles(string politica, string[] alcanzan)
+    {
+        var proveedor = _fabrica.Api.Services.GetRequiredService<IAuthorizationPolicyProvider>();
+        var definicion = await proveedor.GetPolicyAsync(politica);
+
+        Assert.NotNull(definicion);
+        var roles = definicion!.Requirements
+            .OfType<RolesAuthorizationRequirement>()
+            .SelectMany(requisito => requisito.AllowedRoles)
+            .OrderBy(rol => rol)
+            .ToArray();
+
+        Assert.Equal(alcanzan.OrderBy(rol => rol).ToArray(), roles);
+    }
+
     [Fact]
     public void El_mapeo_de_roles_alcanzados_es_coherente_con_el_dominio()
     {
@@ -111,6 +131,15 @@ public sealed class MatrizDeAutorizacionTests : IClassFixture<MatrizDeAutorizaci
             {
                 yield return new object[] { rol, metodo, path };
             }
+        }
+    }
+
+    /// <summary>Casos de <c>[Theory]</c>: cada política de rol con los roles que debe admitir.</summary>
+    public static IEnumerable<object[]> PoliticasConSusRoles()
+    {
+        foreach (var (politica, alcanzan) in Alcanzan)
+        {
+            yield return new object[] { politica, alcanzan };
         }
     }
 

@@ -9,11 +9,14 @@ namespace Menus.Infrastructure.Cache;
 /// </summary>
 public sealed class CacheNula : ICache
 {
+    /// <inheritdoc />
     public Task<T?> ObtenerAsync<T>(string clave, CancellationToken ct = default) where T : class
         => Task.FromResult<T?>(null);
 
+    /// <inheritdoc />
     public Task GuardarAsync<T>(string clave, T valor, TimeSpan tiempoDeVida, CancellationToken ct = default) where T : class
         => Task.CompletedTask;
 
+    /// <inheritdoc />
     public Task InvalidarAsync(string clave, CancellationToken ct = default) => Task.CompletedTask;
 }

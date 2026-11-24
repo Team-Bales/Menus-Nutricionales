@@ -16,6 +16,7 @@ namespace Menus.Infrastructure.Cache;
 /// <param name="logger">Log de los fallos de Redis.</param>
 public sealed class RedisCache(IConnectionMultiplexer conexion, ILogger<RedisCache> logger) : ICache
 {
+    /// <inheritdoc />
     public async Task<T?> ObtenerAsync<T>(string clave, CancellationToken ct = default) where T : class
     {
         try
@@ -30,6 +31,7 @@ public sealed class RedisCache(IConnectionMultiplexer conexion, ILogger<RedisCac
         }
     }
 
+    /// <inheritdoc />
     public async Task GuardarAsync<T>(string clave, T valor, TimeSpan tiempoDeVida, CancellationToken ct = default) where T : class
     {
         try
@@ -42,6 +44,7 @@ public sealed class RedisCache(IConnectionMultiplexer conexion, ILogger<RedisCac
         }
     }
 
+    /// <inheritdoc />
     public async Task InvalidarAsync(string clave, CancellationToken ct = default)
     {
         try

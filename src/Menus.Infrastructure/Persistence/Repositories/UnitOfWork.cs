@@ -2,7 +2,7 @@ using Menus.Domain.Abstractions;
 
 namespace Menus.Infrastructure.Persistence.Repositories;
 
-/// <summary>Implementación de <see cref="IUnitOfWork"/> sobre <see cref="MenusDbContext.SaveChangesAsync"/>.</summary>
+/// <summary>Implementación de <see cref="IUnitOfWork"/> sobre <see cref="Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(System.Threading.CancellationToken)"/>.</summary>
 /// <param name="context">Contexto de persistencia.</param>
 public sealed class UnitOfWork(MenusDbContext context) : IUnitOfWork
 {

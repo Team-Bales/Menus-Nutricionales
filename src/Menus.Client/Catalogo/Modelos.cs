@@ -77,13 +77,21 @@ public sealed record PlatoDetalle(Guid Id, string Nombre, Guid GrupoNutricionalI
 /// <summary>Datos de clasificación compartidos por alimentos y platos.</summary>
 public sealed class ClasificacionFormulario : IValidatableObject
 {
+    /// <summary>Nombre del alimento o plato; obligatorio, hasta 160 caracteres. Al editar no se envía.</summary>
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(160, ErrorMessage = "El nombre no puede superar 160 caracteres.")]
     public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>Grupo nutricional elegido; <see cref="Guid.Empty"/> mientras no se elige.</summary>
     public Guid GrupoNutricionalId { get; set; }
+
+    /// <summary>Tipo de preparación elegido; <see cref="Guid.Empty"/> mientras no se elige.</summary>
     public Guid TipoPreparacionId { get; set; }
+
+    /// <summary>Nivel calórico elegido; <see cref="Guid.Empty"/> mientras no se elige.</summary>
     public Guid NivelCaloricoId { get; set; }
 
+    /// <summary>Exige que las tres clasificaciones estén elegidas, con un mensaje por cada una que falte.</summary>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (GrupoNutricionalId == Guid.Empty)
@@ -106,6 +114,9 @@ public sealed class ClasificacionFormulario : IValidatableObject
 /// <summary>Ingrediente editable antes de enviar un plato.</summary>
 public sealed class IngredienteFormulario
 {
+    /// <summary>Alimento elegido; <see cref="Guid.Empty"/> mientras no se elige.</summary>
     public Guid AlimentoId { get; set; }
+
+    /// <summary>Cantidad del alimento en el plato; tiene que ser mayor que cero.</summary>
     public decimal Cantidad { get; set; } = 1m;
 }

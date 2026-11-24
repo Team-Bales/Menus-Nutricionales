@@ -23,6 +23,7 @@ namespace Menus.Infrastructure.Persistence.Repositories;
 /// </remarks>
 public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
 {
+    /// <inheritdoc />
     public Task<Menu?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => dbContext.Menus
             .Include(m => m.Items)
@@ -32,20 +33,25 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
             .AsSplitQuery()
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> ListAsync(CancellationToken cancellationToken = default)
         => await Listado().ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task AddAsync(Menu entity, CancellationToken cancellationToken = default)
         => await dbContext.Menus.AddAsync(entity, cancellationToken);
 
+    /// <inheritdoc />
     public void Remove(Menu entity)
         => dbContext.Menus.Remove(entity);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> GetByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => await Listado()
             .Where(m => m.DietaId == dietaId)
             .ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task<(IReadOnlyList<Menu> Menus, int Total)> BuscarAsync(
         Guid dietaId,
         EstadoDeMenu? estado,
@@ -77,11 +83,13 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
         return (menus, total);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> GetByNutricionistaCreadorAsync(Guid nutricionistaId, CancellationToken cancellationToken = default)
         => await Listado()
             .Where(m => m.NutricionistaCreadorId == nutricionistaId)
             .ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> GetByPacienteAsync(Guid pacienteId, CancellationToken cancellationToken = default)
         => await Listado()
             .Include(m => m.Items)
@@ -93,16 +101,19 @@ public sealed class MenuRepository(MenusDbContext dbContext) : IMenuRepository
             .ThenBy(m => m.Id)
             .ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> GetFinalesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => await Listado()
             .Where(m => m.DietaId == dietaId && m.Validacion != null && m.Validacion.Aprobado)
             .ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Menu>> GetPendientesByDietaAsync(Guid dietaId, CancellationToken cancellationToken = default)
         => await Listado()
             .Where(m => m.DietaId == dietaId && m.Validacion == null)
             .ToListAsync(cancellationToken);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyDictionary<Guid, int>> ContarItemsFinalesPorNivelCaloricoAsync(
         Guid dietaId,
         CancellationToken cancellationToken = default)

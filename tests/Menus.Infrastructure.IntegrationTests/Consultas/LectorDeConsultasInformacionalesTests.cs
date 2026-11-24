@@ -183,7 +183,8 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
         var (dieta, creador, revisor) = await EscenarioBaseAsync();
 
         var aprobado = await _s.MenuAsync(dieta, creador);
-        await _s.ValidarAsync(aprobado, revisor, aprobado: true, observaciones: "cumple");
+        // No pasar observaciones para menú aprobado: la BD guarda NULL y la consulta lo devuelve así
+        await _s.ValidarAsync(aprobado, revisor, aprobado: true);
 
         var rechazado = await _s.MenuAsync(dieta, creador);
         await _s.ValidarAsync(rechazado, revisor, aprobado: false, observaciones: "falta proteína");
@@ -207,10 +208,17 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
     {
         var (dieta, creador, revisor) = await EscenarioBaseAsync();
 
-        var m1 = await _s.MenuAsync(dieta, creador);
-        await _s.ValidarAsync(m1, revisor, aprobado: true, fechaValidacion: DateTime.UtcNow.AddDays(-2));
-        var m2 = await _s.MenuAsync(dieta, creador);
-        await _s.ValidarAsync(m2, revisor, aprobado: true, fechaValidacion: DateTime.UtcNow.AddDays(-1));
+        // Usar fechas de creación explícitas anteriores a las de validación para cumplir RS-06
+        var fechaCreacion = new DateTime(2026, 10, 1, 9, 30, 0, DateTimeKind.Utc);
+        var m1 = await _s.MenuConParametrosAsync(
+            dieta, creador, fechaCreacion, cantidadTotalAlimentos: 1, esAutomatico: false,
+            [(Sembrador.TipoPlatoFuerteId, 1.0m)], [Sembrador.GrupoCerealesId]);
+        await _s.ValidarAsync(m1, revisor, aprobado: true, fechaValidacion: fechaCreacion.AddDays(1)); // +1 día
+
+        var m2 = await _s.MenuConParametrosAsync(
+            dieta, creador, fechaCreacion.AddHours(1), cantidadTotalAlimentos: 1, esAutomatico: false,
+            [(Sembrador.TipoPlatoFuerteId, 1.0m)], [Sembrador.GrupoCerealesId]);
+        await _s.ValidarAsync(m2, revisor, aprobado: true, fechaValidacion: fechaCreacion.AddDays(2)); // +2 días (más reciente)
 
         var resultado = await _lector.ConsultarDictamenesAsync(revisor);
 
@@ -424,15 +432,14 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
         var creador = await _s.NutricionistaAsync();
         await _s.AutorizarParaDietaAsync(creador, dieta);
 
-        await using (var cmd = _dbContext.Database.GetDbConnection().CreateCommand())
-        {
-            cmd.CommandText = """
-                INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo) VALUES (@dieta, @grupo, 'Restringido')
-                """;
-            var pDieta = cmd.CreateParameter(); pDieta.ParameterName = "@dieta"; pDieta.Value = dieta; cmd.Parameters.Add(pDieta);
-            var pGrupo = cmd.CreateParameter(); pGrupo.ParameterName = "@grupo"; pGrupo.Value = Sembrador.GrupoProteinas; cmd.Parameters.Add(pGrupo);
-            await cmd.ExecuteNonQueryAsync();
-        }
+        // Usar la conexión del Sembrador (_conexion) que ya está abierta, en lugar de la del DbContext
+        await using var cmd = _conexion.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo) VALUES (@dieta, @grupo, 'Restringido')
+            """;
+        var pDieta = cmd.CreateParameter(); pDieta.ParameterName = "@dieta"; pDieta.Value = dieta; cmd.Parameters.Add(pDieta);
+        var pGrupo = cmd.CreateParameter(); pGrupo.ParameterName = "@grupo"; pGrupo.Value = Sembrador.GrupoProteinas; cmd.Parameters.Add(pGrupo);
+        await cmd.ExecuteNonQueryAsync();
 
         var itemPlatoFuerte = await _s.AlimentoConAsync(grupoId: Sembrador.GrupoCerealesId);
         var itemEntrante = await _s.ItemAsync("Alimento", grupoId: Sembrador.GrupoCerealesId, tipoId: Sembrador.TipoEntrante);

@@ -7,6 +7,7 @@ using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Application.Valoraciones.ObtenerValoracion;
 using Menus.Application.Valoraciones.RegistrarValoracion;
+using Menus.Domain;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 
@@ -24,7 +25,17 @@ public sealed class ManejadoresDeValoracionesTests
     private RegistrarValoracionHandler Registrar(Guid nutricionistaId)
         => new(_banco.MenusRepo, _valoraciones, _banco.UnidadDeTrabajo, new ActorFalso(nutricionistaId), _cache);
 
-    private ObtenerValoracionHandler Obtener() => new(_valoraciones);
+    /// <summary>El detalle, pedido por un nutricionista salvo que se indique otro rol.</summary>
+    private ObtenerValoracionHandler Obtener(string rol = RolesUsuario.Nutricionista, Guid? entidadId = null)
+        => new(_valoraciones, new IdentidadFalsa(rol, entidadId ?? Guid.NewGuid()));
+
+    private ValoracionNutricional NuevaValoracion(Guid pacienteId)
+    {
+        var valoracion = new ValoracionNutricional(
+            Guid.NewGuid(), Guid.NewGuid(), pacienteId, Guid.NewGuid(), ResultadoNutricional.Normal.Id, DateTime.UtcNow);
+        _valoraciones.Valoraciones.Add(valoracion);
+        return valoracion;
+    }
 
     private ListarValoracionesPorDietaHandler ListarPorDieta() => new(_banco.DietasRepo, _valoraciones);
 
@@ -130,6 +141,57 @@ public sealed class ManejadoresDeValoracionesTests
         Assert.Equal("valoración", error.Recurso);
         Assert.Equal(id, error.Id);
     }
+
+    // ---- Quién ve el detalle (#285) ----
+
+    [Fact]
+    public async Task Obtener_el_paciente_valorado_ve_su_valoracion()
+    {
+        var paciente = Guid.NewGuid();
+        var valoracion = NuevaValoracion(paciente);
+
+        var detalle = await Obtener(RolesUsuario.Paciente, paciente)
+            .HandleAsync(new ObtenerValoracionQuery(valoracion.Id), CancellationToken.None);
+
+        Assert.Equal(valoracion.Id, detalle.Id);
+    }
+
+    [Fact]
+    public async Task Obtener_el_administrador_ve_cualquier_valoracion()
+    {
+        var valoracion = NuevaValoracion(Guid.NewGuid());
+
+        var detalle = await Obtener(RolesUsuario.Admin)
+            .HandleAsync(new ObtenerValoracionQuery(valoracion.Id), CancellationToken.None);
+
+        Assert.Equal(valoracion.Id, detalle.Id);
+    }
+
+    [Fact]
+    public async Task Obtener_otro_paciente_lanza_AccesoDenegado()
+    {
+        var valoracion = NuevaValoracion(Guid.NewGuid());
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => Obtener(RolesUsuario.Paciente, Guid.NewGuid())
+                .HandleAsync(new ObtenerValoracionQuery(valoracion.Id), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtener_un_paciente_sin_entidad_en_el_token_lanza_AccesoDenegado()
+    {
+        var valoracion = NuevaValoracion(Guid.NewGuid());
+        var handler = new ObtenerValoracionHandler(_valoraciones, new IdentidadFalsa(RolesUsuario.Paciente, null));
+
+        await Assert.ThrowsAsync<AccesoDenegadoException>(
+            () => handler.HandleAsync(new ObtenerValoracionQuery(valoracion.Id), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Obtener_una_valoracion_que_no_existe_es_404_antes_que_403()
+        => await Assert.ThrowsAsync<NoEncontradoException>(
+            () => Obtener(RolesUsuario.Paciente, Guid.NewGuid())
+                .HandleAsync(new ObtenerValoracionQuery(Guid.NewGuid()), CancellationToken.None));
 
     // ---- ListarPorDieta ----
 

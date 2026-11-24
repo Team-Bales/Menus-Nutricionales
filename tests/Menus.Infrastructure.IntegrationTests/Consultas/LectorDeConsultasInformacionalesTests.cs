@@ -13,7 +13,7 @@ using Xunit;
 namespace Menus.Infrastructure.IntegrationTests.Consultas;
 
 /// <summary>
-/// Pruebas de <see cref="LectorDeConsultasInformacionales> contra PostgreSQL real.
+/// Pruebas de <see cref="LectorDeConsultasInformacionales"/> contra PostgreSQL real.
 /// Cada prueba siembra el escenario mínimo, llama al método del lector (no a la función SQL directa)
 /// y comprueba el mapeo de columnas snake_case a las propiedades del DTO, el orden canónico,
 /// el recurso sin filas (lista vacía) y que los parámetros van parametrizados.
@@ -23,6 +23,7 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
 {
     private readonly PostgresFixture _fixture;
     private MenusDbContext _dbContext = null!;
+    private NpgsqlConnection _conexion = null!;
     private Sembrador _s = null!;
     private LectorDeConsultasInformacionales _lector = null!;
 
@@ -35,8 +36,8 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
     {
         await _fixture.ReiniciarAsync();
         _dbContext = _fixture.CrearContexto();
-        var conexion = await _fixture.AbrirAsync();
-        _s = new Sembrador(conexion);
+        _conexion = await _fixture.AbrirAsync();
+        _s = new Sembrador(_conexion);
         _lector = new LectorDeConsultasInformacionales(_dbContext);
     }
 
@@ -52,8 +53,6 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
         await _s.AutorizarParaDietaAsync(revisor, dieta);
         return (dieta, creador, revisor);
     }
-
-    private NpgsqlConnection _conexion => _dbContext.Database.GetDbConnection() as NpgsqlConnection ?? throw new InvalidOperationException("Conexión no es Npgsql");
 
     // ---------------------------------------------------------------------------------------------------------
     // Consulta 1: Menús automáticos por dieta
@@ -432,7 +431,7 @@ public sealed class LectorDeConsultasInformacionalesTests : IAsyncLifetime
         var creador = await _s.NutricionistaAsync();
         await _s.AutorizarParaDietaAsync(creador, dieta);
 
-        // Usar la conexión del Sembrador (_conexion) que ya está abierta, en lugar de la del DbContext
+        // Conexión abierta por el fixture, la misma del Sembrador: la del DbContext no está abierta aquí.
         await using var cmd = _conexion.CreateCommand();
         cmd.CommandText = """
             INSERT INTO cubre_dieta (dieta_id, grupo_nutricional_id, tipo) VALUES (@dieta, @grupo, 'Restringido')

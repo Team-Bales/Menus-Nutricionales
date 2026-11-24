@@ -2,9 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Menus.Application.Reportes;
 
-/// <summary>
-/// DTOs de respuesta para los endpoints de reportes.
-/// </summary>
+// DTOs de respuesta para los endpoints de reportes.
 
 #region C1: Menús automáticos por dieta
 

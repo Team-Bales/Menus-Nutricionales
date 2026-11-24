@@ -2,9 +2,7 @@ using Menus.Application.Comun;
 
 namespace Menus.Application.Reportes;
 
-/// <summary>
-/// Consultas (IQuery) para los endpoints de reportes.
-/// </summary>
+// Consultas (IQuery) para los endpoints de reportes.
 
 #region C1: Menús automáticos por dieta
 

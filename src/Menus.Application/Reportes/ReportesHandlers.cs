@@ -3,10 +3,8 @@ using Menus.Domain.Abstractions.Repositories;
 
 namespace Menus.Application.Reportes;
 
-/// <summary>
-/// Manejadores (handlers) para las consultas de reportes.
-/// Cada uno valida la existencia del recurso correspondiente, invoca el puerto y aplica ordenamiento de presentación.
-/// </summary>
+// Manejadores (handlers) para las consultas de reportes.
+// Cada uno valida la existencia del recurso correspondiente, invoca el puerto y aplica ordenamiento de presentación.
 
 #region C1: ListarMenusAutomaticosHandler
 

@@ -206,7 +206,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="200">Tres listas: correlaciones, itemsMasRechazados, revalorizaciones.</response>
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
-    /// <response code="422">Parámetros inválidos (desde >= hasta, minimoConsumos < 1, ordenamiento inválido).</response>
+    /// <response code="422">Parámetros inválidos (desde >= hasta, minimoConsumos &lt; 1, ordenamiento inválido).</response>
     [HttpGet("correlacion-nutricional")]
     [ProducesResponseType<CorrelacionNutricionalDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

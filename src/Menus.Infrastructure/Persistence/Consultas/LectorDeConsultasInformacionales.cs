@@ -6,7 +6,8 @@ using Npgsql;
 namespace Menus.Infrastructure.Persistence.Consultas;
 
 /// <summary>
-/// Implementación del puerto <see cref="IConsultasInformacionales"/> usando <see cref="MenusDbContext.Database.SqlQuery{T}"/>.
+/// Implementación del puerto <see cref="IConsultasInformacionales"/> usando
+/// <see cref="Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.SqlQueryRaw{TResult}(Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade, string, object[])"/>.
 /// Cada método ejecuta la función SQL correspondiente con parámetros parametrizados y mapea las columnas
 /// snake_case a PascalCase mediante alias explícitos (sin SELECT *).
 /// </summary>

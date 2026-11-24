@@ -16,8 +16,9 @@ namespace Menus.Api.Controladores;
 /// traduce el manejador global.
 /// </summary>
 /// <remarks>
-/// No hay <c>PUT</c> ni <c>DELETE</c>: una valoración no cambia (R7-33) y no se borra. Registrar y listar por dieta son
-/// para un nutricionista (#74). Las de un paciente las ven él mismo y el personal (#285): la lista, con la política
+/// No hay <c>PUT</c> ni <c>DELETE</c>: una valoración no cambia (R7-33) y no se borra. Registrar es para un
+/// nutricionista (#74). Listar por dieta es para el personal, nutricionista o Admin, porque el Admin ya ve las de cada
+/// paciente y su detalle (#285). Las de un paciente las ven él mismo y el personal: la lista, con la política
 /// <see cref="Politicas.PacientePropioOPersonal"/>; el detalle, comprobado en el caso de uso, porque su ruta lleva el id
 /// de la valoración y no el del paciente. Por eso la política va en cada acción y no en la clase.
 /// </remarks>
@@ -56,7 +57,7 @@ public sealed class ValoracionesController(IDespachador despachador) : Controlle
     /// <summary>Valoraciones de los menús de una dieta, de todos sus pacientes inscritos, de la más reciente a la más antigua.</summary>
     /// <response code="200">Las valoraciones.</response>
     /// <response code="404">La dieta no existe.</response>
-    [Authorize(Policy = Politicas.SoloNutricionista)]
+    [Authorize(Policy = Politicas.NutricionistaOAdmin)]
     [HttpGet("~/api/dietas/{dietaId:guid}/valoraciones")]
     [ProducesResponseType<IReadOnlyList<ValoracionDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Valoraciones;
+using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -112,7 +113,7 @@ public sealed class AutorizacionEnLaApiTests
 
         ["POST api/valoraciones"] = SoloNutricionista,
         ["GET api/valoraciones/{id:guid}"] = Autenticado,
-        ["GET api/dietas/{dietaId:guid}/valoraciones"] = SoloNutricionista,
+        ["GET api/dietas/{dietaId:guid}/valoraciones"] = NutricionistaOAdmin,
         ["GET api/pacientes/{id:guid}/valoraciones"] = PacientePropioOPersonal,
 
         ["POST api/revalorizaciones"] = SoloPaciente,
@@ -263,6 +264,31 @@ public sealed class AutorizacionEnLaApiTests
     }
 
     [Fact]
+    public async Task Un_administrador_recibe_las_valoraciones_de_una_dieta()
+    {
+        var dieta = Guid.NewGuid();
+        var listar = new ListarValoracionesFalso();
+        await using var api = ApiEnMemoria.Crear().WithWebHostBuilder(builder => builder.ConfigureTestServices(servicios =>
+            servicios.AddScoped<IHandler<ListarValoracionesPorDietaQuery, IReadOnlyList<ValoracionDto>>>(_ => listar)));
+        using var peticion = new HttpRequestMessage(HttpMethod.Get, $"/api/dietas/{dieta}/valoraciones");
+        peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Admin));
+
+        using var respuesta = await api.CreateClient().SendAsync(peticion);
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Equal(dieta, listar.DietaPedida);
+    }
+
+    [Fact]
+    public async Task Un_paciente_no_lista_las_valoraciones_de_una_dieta_y_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Get, $"/api/dietas/{Guid.NewGuid()}/valoraciones", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
     public async Task Un_paciente_que_pide_las_valoraciones_de_otro_recibe_403()
     {
         using var respuesta = await PedirAsync(
@@ -337,14 +363,24 @@ public sealed class AutorizacionEnLaApiTests
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
     }
 
-    /// <summary>Caso de uso de la lista que no va a la base y recuerda qué paciente se pidió.</summary>
-    private sealed class ListarValoracionesFalso : IHandler<ListarValoracionesPorPacienteQuery, IReadOnlyList<ValoracionDto>>
+    /// <summary>Casos de uso de las listas de valoraciones que no van a la base y recuerdan qué se pidió.</summary>
+    private sealed class ListarValoracionesFalso
+        : IHandler<ListarValoracionesPorPacienteQuery, IReadOnlyList<ValoracionDto>>,
+          IHandler<ListarValoracionesPorDietaQuery, IReadOnlyList<ValoracionDto>>
     {
         public Guid? PacientePedido { get; private set; }
+
+        public Guid? DietaPedida { get; private set; }
 
         public Task<IReadOnlyList<ValoracionDto>> HandleAsync(ListarValoracionesPorPacienteQuery solicitud, CancellationToken ct)
         {
             PacientePedido = solicitud.PacienteId;
+            return Task.FromResult<IReadOnlyList<ValoracionDto>>([]);
+        }
+
+        public Task<IReadOnlyList<ValoracionDto>> HandleAsync(ListarValoracionesPorDietaQuery solicitud, CancellationToken ct)
+        {
+            DietaPedida = solicitud.DietaId;
             return Task.FromResult<IReadOnlyList<ValoracionDto>>([]);
         }
     }

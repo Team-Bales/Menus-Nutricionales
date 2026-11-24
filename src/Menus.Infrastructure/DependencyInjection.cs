@@ -1,5 +1,6 @@
 using Menus.Application.Catalogo;
 using Menus.Application.Comun;
+using Menus.Application.Reportes;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Abstractions.Security;
@@ -8,6 +9,7 @@ using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Cache;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Persistence;
+using Menus.Infrastructure.Persistence.Consultas;
 using Menus.Infrastructure.Persistence.Repositories;
 using Menus.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -57,6 +59,8 @@ public static class DependencyInjection
         // Seguridad: hash de contraseñas y emisión de tokens
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<ITokenEmitter, JwtTokenService>();
+        // Puerto de consultas informacionales (reportes)
+        services.AddScoped<IConsultasInformacionales, LectorDeConsultasInformacionales>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         JwtBearerConfiguration.Validate(jwtOptions);

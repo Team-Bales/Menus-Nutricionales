@@ -121,8 +121,9 @@ public sealed class TriggersAlimentoPlatoTests : IAsyncLifetime
     // RS-13: trg_r5_19 (fn_r5_19), BEFORE UPDATE OF clase
     // =========================================================================
 
-    // 15. Un alimento no pasa a ser un plato. El trigger salta antes que el CHECK de la clase, por eso es P0001 y no
-    // 23514.
+    // 15. Un alimento no pasa a ser un plato. 'Plato' es un valor válido para el CHECK de la clase
+    // (ck_items_alimentarios_r5_19_clase), y trg_r5_15_plato solo se dispara en el INSERT: lo único que rechaza este
+    // UPDATE es trg_r5_19, y por eso el error es P0001.
     [Fact]
     public async Task Trg_r5_19_rechaza_cambiar_la_clase_de_un_item()
     {

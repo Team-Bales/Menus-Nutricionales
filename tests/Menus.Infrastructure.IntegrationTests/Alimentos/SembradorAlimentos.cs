@@ -42,6 +42,46 @@ public sealed partial class Sembrador
     }
 
     /// <summary>
+    /// Inserta una fila (<c>id</c>, <c>nombre</c>) en uno de los tres catálogos del submodelo, sin validar el nombre:
+    /// lo juzgan el CHECK (RD-01, RD-02, RD-04) y el índice único (RD-03, RD-08) de la tabla.
+    /// </summary>
+    /// <remarks>
+    /// El <c>INSERT</c> va en una transacción que siempre se deshace. Los catálogos los siembra la migración y
+    /// <see cref="Fixtures.PostgresFixture.ReiniciarAsync"/> no los limpia: si una regresión dejara pasar la fila, se
+    /// quedaría en el contenedor compartido y alteraría las demás pruebas. El CHECK y el índice único saltan en el
+    /// propio <c>INSERT</c>, así que no hace falta confirmar para que la prueba vea el error.
+    /// </remarks>
+    /// <param name="tabla">
+    /// <c>grupos_nutricionales</c>, <c>tipos_preparacion</c> o <c>niveles_caloricos</c>. Cada una tiene su sentencia
+    /// literal, así que el nombre de la tabla nunca se interpola en el SQL.
+    /// </param>
+    /// <param name="nombre">Nombre de la fila, sin modificar.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Si <paramref name="tabla"/> no es uno de los tres catálogos.</exception>
+    public async Task CatalogoSinValidarAsync(string tabla, string nombre)
+    {
+        await using var tx = await _conexion.BeginTransactionAsync();
+        await using var cmd = _conexion.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = tabla switch
+        {
+            "grupos_nutricionales" => "INSERT INTO grupos_nutricionales (id, nombre) VALUES (@id, @nombre)",
+            "tipos_preparacion" => "INSERT INTO tipos_preparacion (id, nombre) VALUES (@id, @nombre)",
+            "niveles_caloricos" => "INSERT INTO niveles_caloricos (id, nombre) VALUES (@id, @nombre)",
+            _ => throw new ArgumentOutOfRangeException(nameof(tabla), tabla, "No es un catálogo del submodelo Alimento-Plato."),
+        };
+        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+        cmd.Parameters.AddWithValue("nombre", nombre);
+        try
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            await tx.RollbackAsync();
+        }
+    }
+
+    /// <summary>
     /// Inserta una fila de <c>composicion</c> sin pasar por el dominio, para que la juzguen el CHECK de la cantidad
     /// (RD-05) y el trigger de un solo nivel (RS-12).
     /// </summary>

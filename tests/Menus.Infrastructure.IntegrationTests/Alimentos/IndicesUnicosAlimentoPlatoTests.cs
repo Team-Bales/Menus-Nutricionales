@@ -42,7 +42,7 @@ public sealed class IndicesUnicosAlimentoPlatoTests : IAsyncLifetime
     public async Task IX_grupos_nutricionales_nombre_rechaza_otro_grupo_Cereales()
     {
         var ex = await Assert.ThrowsAsync<PostgresException>(
-            () => InsertarEnCatalogoAsync("grupos_nutricionales", "Cereales"));
+            () => _sembrador.CatalogoSinValidarAsync("grupos_nutricionales", "Cereales"));
 
         Assert.Equal(PostgresErrorCodes.UniqueViolation, ex.SqlState);
         Assert.Equal("IX_grupos_nutricionales_nombre", ex.ConstraintName);
@@ -53,7 +53,7 @@ public sealed class IndicesUnicosAlimentoPlatoTests : IAsyncLifetime
     public async Task IX_tipos_preparacion_nombre_rechaza_otro_tipo_Postre()
     {
         var ex = await Assert.ThrowsAsync<PostgresException>(
-            () => InsertarEnCatalogoAsync("tipos_preparacion", "Postre"));
+            () => _sembrador.CatalogoSinValidarAsync("tipos_preparacion", "Postre"));
 
         Assert.Equal(PostgresErrorCodes.UniqueViolation, ex.SqlState);
         Assert.Equal("IX_tipos_preparacion_nombre", ex.ConstraintName);
@@ -64,7 +64,7 @@ public sealed class IndicesUnicosAlimentoPlatoTests : IAsyncLifetime
     public async Task IX_niveles_caloricos_nombre_rechaza_otro_nivel_Bajo()
     {
         var ex = await Assert.ThrowsAsync<PostgresException>(
-            () => InsertarEnCatalogoAsync("niveles_caloricos", "Bajo"));
+            () => _sembrador.CatalogoSinValidarAsync("niveles_caloricos", "Bajo"));
 
         Assert.Equal(PostgresErrorCodes.UniqueViolation, ex.SqlState);
         Assert.Equal("IX_niveles_caloricos_nombre", ex.ConstraintName);
@@ -108,24 +108,6 @@ public sealed class IndicesUnicosAlimentoPlatoTests : IAsyncLifetime
         await _sembrador.AlimentoAsync("Arroz integral");
 
         Assert.Equal(2, await ContarItemsAsync("arroz%"));
-    }
-
-    /// <summary>Inserta una fila en una tabla de catálogo (<c>id</c>, <c>nombre</c>) y la confirma.</summary>
-    /// <param name="tabla">Tabla del catálogo: una de las tres del submodelo.</param>
-    /// <param name="nombre">Nombre de la fila.</param>
-    private async Task InsertarEnCatalogoAsync(string tabla, string nombre)
-    {
-        await using var cmd = _conexion.CreateCommand();
-        cmd.CommandText = tabla switch
-        {
-            "grupos_nutricionales" => "INSERT INTO grupos_nutricionales (id, nombre) VALUES (@id, @nombre)",
-            "tipos_preparacion" => "INSERT INTO tipos_preparacion (id, nombre) VALUES (@id, @nombre)",
-            "niveles_caloricos" => "INSERT INTO niveles_caloricos (id, nombre) VALUES (@id, @nombre)",
-            _ => throw new ArgumentOutOfRangeException(nameof(tabla), tabla, "No es un catálogo del submodelo Alimento-Plato."),
-        };
-        cmd.Parameters.AddWithValue("id", Guid.NewGuid());
-        cmd.Parameters.AddWithValue("nombre", nombre);
-        await cmd.ExecuteNonQueryAsync();
     }
 
     private async Task<long> ContarItemsAsync(string patron)

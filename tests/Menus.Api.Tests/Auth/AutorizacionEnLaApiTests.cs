@@ -2,12 +2,16 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Menus.Api.Auth;
+using Menus.Application.Comun;
+using Menus.Application.Valoraciones;
+using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
 using Menus.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Api.Tests.Auth;
@@ -241,6 +245,24 @@ public sealed class AutorizacionEnLaApiTests
     }
 
     [Fact]
+    public async Task Un_paciente_que_pide_sus_propias_valoraciones_las_recibe()
+    {
+        // Lo que arregla el #285: antes la política de la clase (SoloNutricionista) se sumaba a la de la acción y el
+        // paciente recibía 403 también con su propio id. El caso de uso se reemplaza porque aquí no hay base.
+        var paciente = Guid.NewGuid();
+        var listar = new ListarValoracionesFalso();
+        await using var api = ApiEnMemoria.Crear().WithWebHostBuilder(builder => builder.ConfigureTestServices(servicios =>
+            servicios.AddScoped<IHandler<ListarValoracionesPorPacienteQuery, IReadOnlyList<ValoracionDto>>>(_ => listar)));
+        using var peticion = new HttpRequestMessage(HttpMethod.Get, $"/api/pacientes/{paciente}/valoraciones");
+        peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Paciente, paciente));
+
+        using var respuesta = await api.CreateClient().SendAsync(peticion);
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Equal(paciente, listar.PacientePedido);
+    }
+
+    [Fact]
     public async Task Un_paciente_que_pide_las_valoraciones_de_otro_recibe_403()
     {
         using var respuesta = await PedirAsync(
@@ -313,5 +335,17 @@ public sealed class AutorizacionEnLaApiTests
         using var respuesta = await api.CreateClient().GetAsync("/openapi/v1.json");
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+    }
+
+    /// <summary>Caso de uso de la lista que no va a la base y recuerda qué paciente se pidió.</summary>
+    private sealed class ListarValoracionesFalso : IHandler<ListarValoracionesPorPacienteQuery, IReadOnlyList<ValoracionDto>>
+    {
+        public Guid? PacientePedido { get; private set; }
+
+        public Task<IReadOnlyList<ValoracionDto>> HandleAsync(ListarValoracionesPorPacienteQuery solicitud, CancellationToken ct)
+        {
+            PacientePedido = solicitud.PacienteId;
+            return Task.FromResult<IReadOnlyList<ValoracionDto>>([]);
+        }
     }
 }

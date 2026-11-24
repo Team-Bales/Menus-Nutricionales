@@ -97,6 +97,19 @@ public sealed class ReportesControllerTests
         Assert.Equal("desc", query.Orden.Direccion);
     }
 
+    [Fact]
+    public async Task GetDictamenes_SinOrden_ArmaConsultaSinOrden()
+    {
+        var lista = new List<DictamenDto> { new(Guid.NewGuid(), "Dieta", "Creador", DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, true, null, null) };
+        _despachador.Resultado = lista;
+
+        await Controlador.GetDictamenes(RevisorId, null, null, CancellationToken.None);
+
+        var query = Assert.IsType<ListarDictamenesQuery>(_despachador.Recibida);
+        Assert.Equal(RevisorId, query.RevisorId);
+        Assert.Null(query.Orden);
+    }
+
     // ---- C4: GET /desempeno-menu ----
 
     [Fact]
@@ -113,6 +126,19 @@ public sealed class ReportesControllerTests
         Assert.NotNull(query.Orden);
         Assert.Equal("tasaAceptacion", query.Orden!.Columna);
         Assert.Equal("desc", query.Orden.Direccion);
+    }
+
+    [Fact]
+    public async Task GetDesempenoMenu_SinOrden_ArmaConsultaSinOrden()
+    {
+        var lista = new List<DesempenoItemDto> { new(Guid.NewGuid(), "Arroz", "Alimento", "Medio", 10, 8, 2, 0.8m) };
+        _despachador.Resultado = lista;
+
+        await Controlador.GetDesempenoMenu(MenuId, null, null, CancellationToken.None);
+
+        var query = Assert.IsType<ListarDesempenoMenuQuery>(_despachador.Recibida);
+        Assert.Equal(MenuId, query.MenuId);
+        Assert.Null(query.Orden);
     }
 
     // ---- C5: GET /comparacion-dietas ----
@@ -161,6 +187,38 @@ public sealed class ReportesControllerTests
         Assert.Null(query.OrdenEquilibrio);
     }
 
+    [Fact]
+    public async Task GetComparacionDietas_BindingDietasArray_RecibeMultiplesGuid()
+    {
+        var dietas = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        _despachador.Resultado = new ComparacionDietasDto([], [], []);
+
+        await Controlador.GetComparacionDietas(dietas, ct: CancellationToken.None);
+
+        var query = Assert.IsType<CompararDietasQuery>(_despachador.Recibida);
+        Assert.Equal(3, query.Dietas.Count);
+        Assert.Equal(dietas, query.Dietas);
+    }
+
+    [Fact]
+    public async Task GetComparacionDietas_SoloOrdenGrupos_OtrosNulos()
+    {
+        var dietas = new[] { Guid.NewGuid(), Guid.NewGuid() };
+        _despachador.Resultado = new ComparacionDietasDto([], [], []);
+
+        await Controlador.GetComparacionDietas(
+            dietas, false,
+            "dieta", "asc",
+            null, null,
+            null, null,
+            CancellationToken.None);
+
+        var query = Assert.IsType<CompararDietasQuery>(_despachador.Recibida);
+        Assert.NotNull(query.OrdenGrupos);
+        Assert.Null(query.OrdenNiveles);
+        Assert.Null(query.OrdenEquilibrio);
+    }
+
     // ---- C6: GET /correlacion-nutricional ----
 
     [Fact]
@@ -204,6 +262,45 @@ public sealed class ReportesControllerTests
         var query = Assert.IsType<ObtenerCorrelacionNutricionalQuery>(_despachador.Recibida);
         Assert.Equal(1, query.MinimoConsumos);
         Assert.Null(query.OrdenCorrelacion);
+        Assert.Null(query.OrdenRechazos);
+        Assert.Null(query.OrdenRevalorizaciones);
+    }
+
+    [Fact]
+    public async Task GetCorrelacionNutricional_SoloDesdeHasta_SinOrdenes()
+    {
+        var desde = DateTimeOffset.UtcNow.AddDays(-30);
+        var hasta = DateTimeOffset.UtcNow;
+        _despachador.Resultado = new CorrelacionNutricionalDto([], [], []);
+
+        await Controlador.GetCorrelacionNutricional(desde, hasta, ct: CancellationToken.None);
+
+        var query = Assert.IsType<ObtenerCorrelacionNutricionalQuery>(_despachador.Recibida);
+        Assert.Equal(desde, query.Desde);
+        Assert.Equal(hasta, query.Hasta);
+        Assert.Equal(1, query.MinimoConsumos);
+        Assert.Null(query.OrdenCorrelacion);
+        Assert.Null(query.OrdenRechazos);
+        Assert.Null(query.OrdenRevalorizaciones);
+    }
+
+    [Fact]
+    public async Task GetCorrelacionNutricional_SoloOrdenCorrelacion_OtrosNulos()
+    {
+        _despachador.Resultado = new CorrelacionNutricionalDto([], [], []);
+
+        await Controlador.GetCorrelacionNutricional(
+            null, null, 5,
+            "menusValorados", "desc",
+            null, null,
+            null, null,
+            CancellationToken.None);
+
+        var query = Assert.IsType<ObtenerCorrelacionNutricionalQuery>(_despachador.Recibida);
+        Assert.Equal(5, query.MinimoConsumos);
+        Assert.NotNull(query.OrdenCorrelacion);
+        Assert.Equal("menusValorados", query.OrdenCorrelacion!.Columna);
+        Assert.Equal("desc", query.OrdenCorrelacion.Direccion);
         Assert.Null(query.OrdenRechazos);
         Assert.Null(query.OrdenRevalorizaciones);
     }

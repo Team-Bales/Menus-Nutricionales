@@ -122,6 +122,7 @@ NUTRICIONISTAS = [
 
 @dataclass(eq=False)
 class Dieta:
+    """Una dieta con su programa, la cobertura de grupos (CubreDieta), sus restricciones y quién la atiende."""
     n: int
     nombre: str
     programa: str
@@ -133,6 +134,7 @@ class Dieta:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("d1e7a000", self.n)
 
     def prohibidos(self) -> set[str]:
@@ -171,6 +173,7 @@ DIETAS = [
 
 @dataclass(eq=False)
 class Item:
+    """Un ítem del banco: un alimento simple o un plato con su composición, y los datos de su ficha."""
     n: int
     nombre: str
     clase: str  # Alimento | Plato
@@ -192,6 +195,7 @@ class Item:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("17e30000", self.n)
 
 
@@ -351,6 +355,7 @@ POCO_ACEPTADOS = {"Brócoli", "Quimbombó", "Espinaca", "Berenjena", "Lentejas",
 
 
 def construir_banco() -> list[Item]:
+    """Crea los alimentos y los platos; la ficha de cada plato suma la de sus ingredientes."""
     items: list[Item] = []
     por_nombre: dict[str, Item] = {}
     for i, (nombre, grupo, tipo, nivel, kcal, prot, carb, gras, fib, sod, alerg, dulce) in enumerate(ALIMENTOS):
@@ -409,6 +414,7 @@ APELLIDOS = ["García", "Rodríguez", "González", "Fernández", "López", "Mart
 
 @dataclass(eq=False)
 class Paciente:
+    """Un paciente, su sala, sus dietas y su apetito (inclinación a aceptar lo que se le sirve)."""
     n: int
     nombre: str
     edad: int
@@ -418,6 +424,7 @@ class Paciente:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("9ac1e000", self.n)
 
 
@@ -437,6 +444,7 @@ SEGUNDA_DIETA = {1: [], 2: [], 3: [4], 4: [3], 5: [6], 6: [5], 7: [5]}
 
 
 def construir_pacientes() -> list[Paciente]:
+    """Crea los pacientes por grupos de edad y sala, con nombres únicos."""
     pacientes: list[Paciente] = []
     usados: set[str] = set()
     n = 0
@@ -474,6 +482,8 @@ PLANTILLAS = {
 
 @dataclass(eq=False)
 class Menu:
+    """Un menú con su parametrización, sus ítems, su dictamen y, si es un reemplazo, el menú rechazado que lo
+    originó."""
     n: int
     dieta: Dieta
     creador: int
@@ -491,6 +501,7 @@ class Menu:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("3e700000", self.n)
 
 
@@ -549,10 +560,12 @@ OBSERVACIONES_RECHAZO = [
 
 
 def jefes_de(dieta: Dieta) -> list[int]:
+    """Jefes de nutrición autorizados en la dieta: los únicos que pueden validar sus menús (RS-03)."""
     return [i for i in dieta.autorizados if NUTRICIONISTAS[i][2]]
 
 
 def construir_menus(banco: list[Item]) -> list[Menu]:
+    """Crea los menús de cada dieta según CICLO, con su dictamen y, tras cada rechazo, su menú de reemplazo."""
     menus: list[Menu] = []
     por_nombre = {i.nombre: i for i in banco}
     n = 0
@@ -611,6 +624,7 @@ def construir_menus(banco: list[Item]) -> list[Menu]:
 
 @dataclass(eq=False)
 class Valoracion:
+    """Una valoración nutricional de una asignación (menú y paciente), con su resultado del 1 al 5."""
     n: int
     menu: Menu
     paciente: Paciente
@@ -620,11 +634,13 @@ class Valoracion:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("7a100000", self.n)
 
 
 @dataclass(eq=False)
 class Revalorizacion:
+    """Una solicitud de revalorización: pendiente, o atendida con la valoración que generó (RS-10)."""
     n: int
     fecha: dt.datetime
     nutricionista: int
@@ -633,6 +649,7 @@ class Revalorizacion:
 
     @property
     def id(self) -> str:
+        """Identificador fijo de la entidad."""
         return uid("7e7a0000", self.n)
 
 
@@ -644,6 +661,8 @@ ACEPTACION_NIVEL = {"Bajo": 0.86, "Medio": 0.78, "Alto": 0.66}
 
 
 def construir_flujo(menus: list[Menu], pacientes: list[Paciente]):
+    """Crea, para los menús aprobados, las asignaciones, los servicios, el consumo, las valoraciones y las
+    revalorizaciones."""
     asignaciones: list[tuple[Menu, Paciente]] = []
     servicios: list[tuple[Menu, Paciente, dt.date]] = []
     consumos: list[tuple[Menu, Paciente, dt.date, Item, bool]] = []
@@ -728,6 +747,7 @@ def construir_flujo(menus: list[Menu], pacientes: list[Paciente]):
 
 
 def verificar(banco, pacientes, menus, asignaciones, servicios, consumos, valoraciones, revalorizaciones):
+    """Comprueba las reglas de la base sobre los datos generados, para no escribir un SQL que la base rechace."""
     nombres = [i.nombre.strip().lower() for i in banco]
     assert len(nombres) == len(set(nombres)), "RC-01: nombres de ítems repetidos"
     assert all(p.edad >= 0 for p in pacientes), "RD-06: edad negativa"
@@ -770,34 +790,41 @@ def verificar(banco, pacientes, menus, asignaciones, servicios, consumos, valora
 
 
 def q(texto: str | None) -> str:
+    """Literal de texto SQL, con las comillas escapadas; NULL si no hay valor."""
     return "NULL" if texto is None else "'" + texto.replace("'", "''") + "'"
 
 
 def ts(momento: dt.datetime) -> str:
+    """Literal SQL de un instante en UTC."""
     return f"'{momento.astimezone(UTC):%Y-%m-%d %H:%M:%S}+00'"
 
 
 def correo(nombre: str, sufijo: str = "") -> str:
+    """Correo de demo a partir del nombre: nombre.primerapellido, sin tildes, con un sufijo si se repite."""
     plano = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
     partes = plano.split()
     return f"{partes[0]}.{partes[-2] if len(partes) > 2 else partes[-1]}{sufijo}@{DOMINIO_CORREO}"
 
 
 def nut_id(i: int) -> str:
+    """Identificador del nutricionista por su índice en NUTRICIONISTAS."""
     return uid("0a7e0000", i + 1)
 
 
 def sala_id(i: int) -> str:
+    """Identificador de la sala por su índice en SALAS."""
     return uid("5a1a0000", i + 1)
 
 
 def insert(tabla: str, columnas: str, filas: list[str]) -> str:
+    """Un INSERT con varias filas; nada si no hay filas."""
     if not filas:
         return ""
     return f"INSERT INTO {tabla} ({columnas}) VALUES\n    " + ",\n    ".join(filas) + ";\n"
 
 
 def escribir_sql(banco, pacientes, menus, asignaciones, servicios, consumos, valoraciones, revalorizaciones):
+    """Escribe datos-ejemplo.sql en el orden que exigen las FK y los triggers, y devuelve los correos creados."""
     s: list[str] = []
     s.append(f"""-- Datos de ejemplo de Menús Nutricionales (#284). GENERADO por scripts/datos-ejemplo/generar.py: no se
 -- edita a mano; se cambia el generador y se vuelve a generar.
@@ -933,11 +960,13 @@ MINERALES = {"Frutas": {"potasioMg": 180}, "Verduras": {"potasioMg": 290, "hierr
 
 
 def r1(x: float) -> float:
+    """Redondea a un decimal, para que las fichas no muestren ruido de coma flotante."""
     return round(x, 1)
 
 
 def ficha(item: Item, fecha: dt.datetime) -> dict | None:
     # La ficha es opcional: algunos ítems no la tienen, para que se vea en la UI y en la conciliación.
+    """La ficha nutricional de un ítem para MongoDB, o None si el ítem no tiene ficha (la ficha es opcional)."""
     if item.clase == "Alimento" and item.n % 9 == 0 or item.clase == "Plato" and item.n % 11 == 0:
         return None
     macros = {"energiaKcal": r1(item.kcal), "proteinasG": r1(item.proteinas),
@@ -975,6 +1004,7 @@ def ficha(item: Item, fecha: dt.datetime) -> dict | None:
 
 
 def escribir_mongo(banco: list[Item]) -> int:
+    """Escribe fichas-nutricionales.js y devuelve cuántas fichas contiene."""
     fecha = dt.datetime(2026, 10, 3, 12, 0, tzinfo=UTC)
     docs = []
     for item in banco:
@@ -1039,6 +1069,7 @@ print(`Fichas nutricionales escritas: ${{escritas}}`);
 
 
 def main() -> None:
+    """Genera los dos archivos y muestra un resumen de lo generado."""
     banco = construir_banco()
     pacientes = construir_pacientes()
     menus = construir_menus(banco)

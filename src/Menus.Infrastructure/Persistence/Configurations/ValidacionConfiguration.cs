@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Validacion"/> a la tabla <c>validacion</c>, con el menú como clave: a lo sumo una
+/// validación por menú, con su revisor y su dictamen.
+/// </summary>
 internal sealed class ValidacionConfiguration : IEntityTypeConfiguration<Validacion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Validacion> builder)
     {
         builder.ToTable("validacion");

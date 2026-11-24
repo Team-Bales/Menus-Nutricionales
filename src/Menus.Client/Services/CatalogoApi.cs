@@ -10,33 +10,43 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarGruposAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/grupos-nutricionales", ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarRestriccionesAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/restricciones-alimentarias", ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarProgramasAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/programas-atencion", ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarEspecialidadesAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/especialidades", ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarTiposPreparacionAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/tipos-preparacion", ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Nomenclador>> ListarNivelesCaloricosAsync(CancellationToken ct = default)
         => ObtenerListaAsync("api/nomencladores/niveles-caloricos", ct);
 
+    /// <inheritdoc />
     public async Task<Guid> CrearNomencladorAsync(TipoDeNomenclador tipo, NomencladorFormulario formulario, CancellationToken ct = default)
         => (await EnviarAsync<IdCreado>(HttpMethod.Post, RutaNomenclador(tipo), formulario, ct)).Id;
 
+    /// <inheritdoc />
     public Task EliminarNomencladorAsync(TipoDeNomenclador tipo, Guid id, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"{RutaNomenclador(tipo)}/{id}", null, ct);
 
+    /// <inheritdoc />
     public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Dieta>>(RutaPaginada("api/dietas", "programa", programa, page, size), ct);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default)
     {
         const int size = 100;
@@ -52,24 +62,31 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         return dietas;
     }
 
+    /// <inheritdoc />
     public Task<DietaDetalle> ObtenerDietaAsync(Guid id, CancellationToken ct = default)
         => ObtenerAsync<DietaDetalle>($"api/dietas/{id}", ct);
 
+    /// <inheritdoc />
     public Task AgregarGrupoDietaAsync(Guid dietaId, GrupoCubiertoFormulario grupo, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Post, $"api/dietas/{dietaId}/grupos", grupo, ct);
 
+    /// <inheritdoc />
     public Task QuitarGrupoDietaAsync(Guid dietaId, Guid grupoId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/dietas/{dietaId}/grupos/{grupoId}", null, ct);
 
+    /// <inheritdoc />
     public Task AgregarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Post, $"api/dietas/{dietaId}/restricciones", new { RestriccionAlimentariaId = restriccionId }, ct);
 
+    /// <inheritdoc />
     public Task QuitarRestriccionDietaAsync(Guid dietaId, Guid restriccionId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/dietas/{dietaId}/restricciones/{restriccionId}", null, ct);
 
+    /// <inheritdoc />
     public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Alimento>>(RutaPaginada("api/alimentos", grupo, tipo, nivel, page, size), ct);
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Alimento>> ListarTodosLosAlimentosAsync(CancellationToken ct = default)
     {
         const int size = 100;
@@ -85,24 +102,31 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         return alimentos;
     }
 
+    /// <inheritdoc />
     public Task<Alimento> ObtenerAlimentoAsync(Guid id, CancellationToken ct = default)
         => ObtenerAsync<Alimento>($"api/alimentos/{id}", ct);
 
+    /// <inheritdoc />
     public async Task<Guid> CrearAlimentoAsync(ClasificacionFormulario alimento, CancellationToken ct = default)
         => (await EnviarAsync<IdCreado>(HttpMethod.Post, "api/alimentos", alimento, ct)).Id;
 
+    /// <inheritdoc />
     public Task ActualizarAlimentoAsync(Guid id, ClasificacionFormulario alimento, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Put, $"api/alimentos/{id}", Clasificacion(alimento), ct);
 
+    /// <inheritdoc />
     public Task EliminarAlimentoAsync(Guid id, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/alimentos/{id}", null, ct);
 
+    /// <inheritdoc />
     public Task<Pagina<Plato>> ListarPlatosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Plato>>(RutaPaginada("api/platos", grupo, tipo, nivel, page, size), ct);
 
+    /// <inheritdoc />
     public Task<PlatoDetalle> ObtenerPlatoAsync(Guid id, CancellationToken ct = default)
         => ObtenerAsync<PlatoDetalle>($"api/platos/{id}", ct);
 
+    /// <inheritdoc />
     public async Task<Guid> CrearPlatoAsync(ClasificacionFormulario plato, IReadOnlyList<IngredienteFormulario> ingredientes, CancellationToken ct = default)
     {
         var request = new
@@ -117,15 +141,19 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
         return (await EnviarAsync<IdCreado>(HttpMethod.Post, "api/platos", request, ct)).Id;
     }
 
+    /// <inheritdoc />
     public Task ActualizarPlatoAsync(Guid id, ClasificacionFormulario plato, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Put, $"api/platos/{id}", Clasificacion(plato), ct);
 
+    /// <inheritdoc />
     public Task EliminarPlatoAsync(Guid id, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/platos/{id}", null, ct);
 
+    /// <inheritdoc />
     public Task AgregarIngredienteAsync(Guid platoId, IngredienteFormulario ingrediente, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Post, $"api/platos/{platoId}/ingredientes", ingrediente, ct);
 
+    /// <inheritdoc />
     public Task QuitarIngredienteAsync(Guid platoId, Guid alimentoId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/platos/{platoId}/ingredientes/{alimentoId}", null, ct);
 
@@ -214,5 +242,6 @@ public sealed class CatalogoApi(HttpClient http) : ICatalogoApi
 /// <summary>Error de una respuesta HTTP que puede mostrarse de forma legible en la UI.</summary>
 public sealed class ApiException(HttpStatusCode statusCode, string message) : Exception(message)
 {
+    /// <summary>Código HTTP de la respuesta con error.</summary>
     public HttpStatusCode StatusCode { get; } = statusCode;
 }

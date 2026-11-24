@@ -24,6 +24,7 @@ public sealed partial class ManejadorDeExcepciones(
     IProblemDetailsService problemDetails,
     ILogger<ManejadorDeExcepciones> logger) : IExceptionHandler
 {
+    /// <inheritdoc />
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var problema = Traducir(exception);

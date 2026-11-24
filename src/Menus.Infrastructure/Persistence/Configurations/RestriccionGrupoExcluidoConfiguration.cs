@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="RestriccionGrupoExcluido"/> (relación <c>Excluye</c>) a la tabla
+/// <c>excluye</c>: los grupos nutricionales que excluye cada restricción alimentaria.
+/// </summary>
 internal sealed class RestriccionGrupoExcluidoConfiguration : IEntityTypeConfiguration<RestriccionGrupoExcluido>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<RestriccionGrupoExcluido> builder)
     {
         builder.ToTable("excluye");

@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="DietaGrupoNutricional"/> (relación <c>CubreDieta</c>) a la tabla
+/// <c>cubre_dieta</c>: cada grupo nutricional de una dieta, como requerido o restringido.
+/// </summary>
 internal sealed class DietaGrupoNutricionalConfiguration : IEntityTypeConfiguration<DietaGrupoNutricional>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<DietaGrupoNutricional> builder)
     {
         // RD-16: el tipo de cobertura es Requerido o Restringido

@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Usuario"/> a la tabla <c>usuarios</c>: correo único, rol y, para nutricionistas y
+/// pacientes, la entidad que representa, también única.
+/// </summary>
 internal sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Usuario> builder)
     {
         builder.ToTable("usuarios", t =>

@@ -1,3 +1,6 @@
+@* Alta (/catalogo/alimentos/nuevo) y reclasificación
+   (/catalogo/alimentos/{id}/editar) de un alimento, solo nutricionistas. Al editar,
+   el nombre queda fijo, porque la API solo permite cambiar la clasificación. *@
 @page "/catalogo/alimentos/nuevo"
 @attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
 @page "/catalogo/alimentos/{Id:guid}/editar"
@@ -66,6 +69,7 @@ else
 }
 
 @code {
+    /// <summary>Id del alimento que se edita, de la ruta; nulo en el alta.</summary>
     [Parameter] public Guid? Id { get; set; }
 
     private readonly ClasificacionFormulario _formulario = new();

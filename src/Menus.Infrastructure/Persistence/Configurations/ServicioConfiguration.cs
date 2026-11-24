@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Servicio"/> (relación <c>Sirve</c>) a la tabla <c>servicios</c>, con clave (menú,
+/// paciente, fecha). De cada servicio dependen sus consumos.
+/// </summary>
 internal sealed class ServicioConfiguration : IEntityTypeConfiguration<Servicio>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Servicio> builder)
     {
         // Entidad débil de Asignación: su clave es la de la asignación más la fecha del servicio. Que el servicio

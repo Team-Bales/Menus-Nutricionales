@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="PacienteDieta"/> (relación <c>Inscribe</c>) a la tabla <c>paciente_dieta</c>: las
+/// dietas en las que está inscripto cada paciente.
+/// </summary>
 internal sealed class PacienteDietaConfiguration : IEntityTypeConfiguration<PacienteDieta>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<PacienteDieta> builder)
     {
         builder.ToTable("paciente_dieta");

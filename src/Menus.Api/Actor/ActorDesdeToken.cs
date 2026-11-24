@@ -16,6 +16,7 @@ namespace Menus.Api.Actor;
 /// <param name="accesor">Acceso a la petición en curso.</param>
 public sealed class ActorDesdeToken(IHttpContextAccessor accesor) : IActorActual
 {
+    /// <inheritdoc />
     public Guid Id
     {
         get

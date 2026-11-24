@@ -1,3 +1,6 @@
+@* Detalle de un nutricionista (/admin/nutricionistas/{id}), solo Admin: autorizar
+   y revocar dietas, y designarlo jefe de nutrición. Después de cada cambio vuelve
+   a cargar todo desde la API. *@
 @page "/admin/nutricionistas/{Id:guid}"
 @attribute [Authorize(Roles = RolesDeUsuario.Admin)]
 @inject IAdministracionApi Api
@@ -23,6 +26,7 @@ else if (!string.IsNullOrWhiteSpace(_error)) { <div class="alert alert-danger" r
 else { <p class="text-muted">Cargando nutricionista…</p> }
 
 @code {
+    /// <summary>Id del nutricionista, de la ruta.</summary>
     [Parameter] public Guid Id { get; set; }
     private NutricionistaDetalle? _nutricionista;
     private IReadOnlyList<Nomenclador> _especialidades = [];

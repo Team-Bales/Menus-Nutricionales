@@ -31,6 +31,9 @@ public sealed class AuthBootstrapService : IHostedService
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthBootstrapService> _logger;
 
+    /// <param name="scopeFactory">Crea el ámbito del que salen los repositorios, el hasher y la unidad de trabajo.</param>
+    /// <param name="configuration">Configuración de la que se leen el correo y la contraseña del Admin inicial.</param>
+    /// <param name="logger">Log del arranque, sin valores sensibles.</param>
     public AuthBootstrapService(
         IServiceScopeFactory scopeFactory,
         IConfiguration configuration,
@@ -41,6 +44,7 @@ public sealed class AuthBootstrapService : IHostedService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var email = _configuration["AuthBootstrap:Email"];
@@ -84,5 +88,6 @@ public sealed class AuthBootstrapService : IHostedService
         _logger.LogInformation("Usuario administrador inicial creado.");
     }
 
+    /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

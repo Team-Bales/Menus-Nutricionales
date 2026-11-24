@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el catálogo cerrado <see cref="NivelCalorico"/> a la tabla <c>niveles_caloricos</c>, con sus
+/// tres valores fijos.
+/// </summary>
 internal sealed class NivelCaloricoConfiguration : IEntityTypeConfiguration<NivelCalorico>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<NivelCalorico> builder)
     {
         // RD-02: catálogo cerrado con exactamente estos tres valores

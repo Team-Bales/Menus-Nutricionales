@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Dieta"/> a la tabla <c>dietas</c>, con su programa de atención. Los grupos que cubre y las
+/// restricciones que aplica se borran con ella (RX-02).
+/// </summary>
 internal sealed class DietaConfiguration : IEntityTypeConfiguration<Dieta>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Dieta> builder)
     {
         // RD-07: nombre no vacío

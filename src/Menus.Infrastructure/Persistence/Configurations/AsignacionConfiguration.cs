@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Asignacion"/> (relación <c>Asigna</c>) a la tabla <c>asignacion</c>, con clave
+/// (menú, paciente). De ella dependen los servicios, y no se elimina una asignación servida.
+/// </summary>
 internal sealed class AsignacionConfiguration : IEntityTypeConfiguration<Asignacion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Asignacion> builder)
     {
         builder.ToTable("asignacion");

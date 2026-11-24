@@ -1,3 +1,6 @@
+@* Nomencladores abiertos (/admin/nomencladores), solo Admin: grupos nutricionales,
+   restricciones alimentarias, programas de atención y especialidades. Permite listar,
+   agregar y eliminar; los errores de la API se muestran arriba. *@
 @page "/admin/nomencladores"
 @attribute [Authorize(Roles = RolesDeUsuario.Admin)]
 @inject ICatalogoApi Api

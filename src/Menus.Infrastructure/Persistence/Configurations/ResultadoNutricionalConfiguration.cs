@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el catálogo cerrado <see cref="ResultadoNutricional"/> a la tabla
+/// <c>resultados_nutricionales</c>, con sus cinco categorías y valores fijos.
+/// </summary>
 internal sealed class ResultadoNutricionalConfiguration : IEntityTypeConfiguration<ResultadoNutricional>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ResultadoNutricional> builder)
     {
         // RD-14: catálogo cerrado con exactamente estas cinco categorías y sus valores

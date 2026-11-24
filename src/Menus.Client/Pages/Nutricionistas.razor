@@ -1,3 +1,6 @@
+@* Lista paginada de nutricionistas (/admin/nutricionistas), solo Admin, filtrable por
+   especialidad. La cantidad de dietas autorizadas sale del detalle de cada
+   nutricionista, que se pide fila por fila. *@
 @page "/admin/nutricionistas"
 @attribute [Authorize(Roles = RolesDeUsuario.Admin)]
 @inject IAdministracionApi Api

@@ -11,33 +11,43 @@ public sealed class AdministracionApi(HttpClient http) : IAdministracionApi
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <inheritdoc />
     public Task<Pagina<Nutricionista>> ListarNutricionistasAsync(Guid? especialidadId, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Nutricionista>>(RutaPaginada("api/nutricionistas", "especialidadId", especialidadId, page, size), ct);
 
+    /// <inheritdoc />
     public Task<NutricionistaDetalle> ObtenerNutricionistaAsync(Guid id, CancellationToken ct = default)
         => ObtenerAsync<NutricionistaDetalle>($"api/nutricionistas/{id}", ct);
 
+    /// <inheritdoc />
     public Task AutorizarDietaAsync(Guid nutricionistaId, Guid dietaId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Post, $"api/nutricionistas/{nutricionistaId}/dietas", new { DietaId = dietaId }, ct);
 
+    /// <inheritdoc />
     public Task RevocarDietaAsync(Guid nutricionistaId, Guid dietaId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/nutricionistas/{nutricionistaId}/dietas/{dietaId}", null, ct);
 
+    /// <inheritdoc />
     public Task AsignarRolJefeAsync(Guid nutricionistaId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Post, $"api/nutricionistas/{nutricionistaId}/rol-jefe", null, ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<Sala>> ListarSalasAsync(CancellationToken ct = default)
         => ObtenerListaAsync<Sala>("api/salas", ct);
 
+    /// <inheritdoc />
     public async Task<int> ContarPacientesEnSalaAsync(Guid salaId, CancellationToken ct = default)
         => (await ObtenerAsync<Pagina<Paciente>>(RutaPaginada("api/pacientes", "sala", salaId, 1, 1), ct)).Total;
 
+    /// <inheritdoc />
     public async Task<Guid> CrearSalaAsync(SalaFormulario formulario, CancellationToken ct = default)
         => (await EnviarAsync<IdCreado>(HttpMethod.Post, "api/salas", formulario, ct)).Id;
 
+    /// <inheritdoc />
     public Task ActualizarSalaAsync(Guid salaId, SalaFormulario formulario, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Put, $"api/salas/{salaId}", formulario, ct);
 
+    /// <inheritdoc />
     public Task EliminarSalaAsync(Guid salaId, CancellationToken ct = default)
         => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/salas/{salaId}", null, ct);
 

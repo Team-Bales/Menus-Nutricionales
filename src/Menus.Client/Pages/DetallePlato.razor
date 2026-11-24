@@ -1,3 +1,6 @@
+@* Composición de un plato (/catalogo/platos/{id}). La ven el Admin y los nutricionistas;
+   agregar y quitar ingredientes, y editar la clasificación, solo los nutricionistas. El
+   selector ofrece solo los alimentos que el plato todavía no tiene. *@
 @page "/catalogo/platos/{Id:guid}"
 @attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api
@@ -16,6 +19,7 @@ else if (_plato is not null)
 else { <div class="alert alert-danger" role="alert">@(_error ?? "No se pudo cargar el plato.")</div> }
 
 @code {
+    /// <summary>Id del plato, de la ruta.</summary>
     [Parameter] public Guid Id { get; set; }
     private PlatoDetalle? _plato;
     private IReadOnlyList<Alimento> _alimentos = [];

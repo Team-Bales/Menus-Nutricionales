@@ -5,6 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- #287 (requisito 5 de IS), como Domain y Application desde el #94: todo tipo y miembro público lleva
+         comentario XML, y sus referencias resuelven. Un faltante rompe el build en lugar de quedar como advertencia. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1572;CS1573;CS1574;CS1591</WarningsAsErrors>
+    <!-- Las clases que genera Razor ya desactivan CS1591; los .razor se documentan con un comentario de
+         cabecera y, en @code, con /// en los parámetros. -->
   </PropertyGroup>
 
   <ItemGroup>

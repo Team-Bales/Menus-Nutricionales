@@ -83,8 +83,10 @@ public sealed class ReportesDtosTests
     [Fact]
     public void DesempenoItemDto_Constructor_AsignaTodasLasPropiedades()
     {
-        var dto = new DesempenoItemDto(Guid.NewGuid(), "Pollo", "Plato", "Alto", 20L, 18L, 2L, 0.9m);
+        var itemId = Guid.NewGuid();
+        var dto = new DesempenoItemDto(itemId, "Pollo", "Plato", "Alto", 20L, 18L, 2L, 0.9m);
 
+        Assert.Equal(itemId, dto.ItemId);
         Assert.Equal("Pollo", dto.Item);
         Assert.Equal("Plato", dto.Clase);
         Assert.Equal("Alto", dto.NivelCalorico);
@@ -106,7 +108,10 @@ public sealed class ReportesDtosTests
     [Fact]
     public void ComparacionPorGrupoDto_Constructor_AsignaTodasLasPropiedades()
     {
-        var dto = new ComparacionPorGrupoDto(Guid.NewGuid(), "Dieta", "Proteinas", 8L, 40m);
+        var dietaId = Guid.NewGuid();
+        var dto = new ComparacionPorGrupoDto(dietaId, "Dieta", "Proteinas", 8L, 40m);
+        Assert.Equal(dietaId, dto.DietaId);
+        Assert.Equal("Dieta", dto.Dieta);
         Assert.Equal("Proteinas", dto.GrupoNutricional);
         Assert.Equal(8L, dto.Items);
         Assert.Equal(40m, dto.Porcentaje);
@@ -117,7 +122,10 @@ public sealed class ReportesDtosTests
     [Fact]
     public void ComparacionPorNivelDto_Constructor_AsignaTodasLasPropiedades()
     {
-        var dto = new ComparacionPorNivelDto(Guid.NewGuid(), "Dieta", "Medio", 12L, 60m);
+        var dietaId = Guid.NewGuid();
+        var dto = new ComparacionPorNivelDto(dietaId, "Dieta", "Medio", 12L, 60m);
+        Assert.Equal(dietaId, dto.DietaId);
+        Assert.Equal("Dieta", dto.Dieta);
         Assert.Equal("Medio", dto.NivelCalorico);
         Assert.Equal(12L, dto.Items);
         Assert.Equal(60m, dto.Porcentaje);
@@ -128,11 +136,14 @@ public sealed class ReportesDtosTests
     [Fact]
     public void CriteriosEquilibrioDto_Constructor_AsignaTodasLasPropiedades()
     {
+        var dietaId = Guid.NewGuid();
         var menuId = Guid.NewGuid();
         var dto = new CriteriosEquilibrioDto(
-            Guid.NewGuid(), "Dieta", menuId, "Final", 10L, 10, true, true, null,
+            dietaId, "Dieta", menuId, "Final", 10L, 10, true, true, null,
             true, null, true, null);
 
+        Assert.Equal(dietaId, dto.DietaId);
+        Assert.Equal("Dieta", dto.Dieta);
         Assert.Equal(menuId, dto.MenuId);
         Assert.Equal("Final", dto.Estado);
         Assert.Equal(10L, dto.Items);
@@ -149,10 +160,15 @@ public sealed class ReportesDtosTests
     [Fact]
     public void CriteriosEquilibrioDto_CamposOpcionalesNull_SePermiten()
     {
+        var dietaId = Guid.NewGuid();
+        var menuId = Guid.NewGuid();
         var dto = new CriteriosEquilibrioDto(
-            Guid.NewGuid(), "D", Guid.NewGuid(), "Pendiente", 5L, 5, false, false, "PlatoFuerte",
+            dietaId, "D", menuId, "Pendiente", 5L, 5, false, false, "PlatoFuerte",
             false, "Proteinas", false, null);
 
+        Assert.Equal(dietaId, dto.DietaId);
+        Assert.Equal("D", dto.Dieta);
+        Assert.Equal(menuId, dto.MenuId);
         Assert.Equal("PlatoFuerte", dto.TiposFueraDeProporcion);
         Assert.Equal("Proteinas", dto.RequeridosFaltantes);
         Assert.Null(dto.ProhibidosPresentes);
@@ -183,7 +199,10 @@ public sealed class ReportesDtosTests
     [Fact]
     public void CorrelacionPorDietaDto_Constructor_AsignaTodasLasPropiedades()
     {
-        var dto = new CorrelacionPorDietaDto(Guid.NewGuid(), "Dieta", 8L, 0.75m);
+        var dietaId = Guid.NewGuid();
+        var dto = new CorrelacionPorDietaDto(dietaId, "Dieta", 8L, 0.75m);
+        Assert.Equal(dietaId, dto.DietaId);
+        Assert.Equal("Dieta", dto.Dieta);
         Assert.Equal(8L, dto.MenusValorados);
         Assert.Equal(0.75m, dto.CoeficienteSpearman);
     }
@@ -191,7 +210,9 @@ public sealed class ReportesDtosTests
     [Fact]
     public void CorrelacionPorDietaDto_CoeficienteNull_CuandoNoCalculable()
     {
-        var dto = new CorrelacionPorDietaDto(Guid.NewGuid(), "Dieta", 0L, null);
+        var dietaId = Guid.NewGuid();
+        var dto = new CorrelacionPorDietaDto(dietaId, "Dieta", 0L, null);
+        Assert.Equal(dietaId, dto.DietaId);
         Assert.Null(dto.CoeficienteSpearman);
     }
 
@@ -200,7 +221,9 @@ public sealed class ReportesDtosTests
     [Fact]
     public void ItemMasRechazadoDto_Constructor_AsignaTodasLasPropiedades()
     {
-        var dto = new ItemMasRechazadoDto(Guid.NewGuid(), "Arroz", "Alimento", "Nutri", 50L, 10L, 0.2m, "Dieta1,Dieta2");
+        var itemId = Guid.NewGuid();
+        var dto = new ItemMasRechazadoDto(itemId, "Arroz", "Alimento", "Nutri", 50L, 10L, 0.2m, "Dieta1,Dieta2");
+        Assert.Equal(itemId, dto.ItemId);
         Assert.Equal("Arroz", dto.Item);
         Assert.Equal("Alimento", dto.Clase);
         Assert.Equal("Nutri", dto.Descriptor);

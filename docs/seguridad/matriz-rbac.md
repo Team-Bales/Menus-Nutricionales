@@ -1,9 +1,10 @@
 # Matriz de autorización por roles (RBAC)
 
-> Documento de trabajo para el §13.1 del informe (prevención de vulnerabilidades, OWASP). Se incorporará al
+> Documento de trabajo para el §13.1 del informe. Se incorporará al
 > informe cuando esa sección exista; hasta entonces vive aquí. La tabla se deriva del diccionario `Esperado` de
 > `AutorizacionEnLaApiTests`, la fuente única de verdad de qué política tiene cada endpoint: ese test comprueba
-> que el diccionario refleja los endpoints reales, y `MatrizDeAutorizacionTests` prueba los accesos negativos.
+> que el diccionario refleja los endpoints reales, y `MatrizDeAutorizacionTests` prueba los accesos negativos y
+> que cada política admite a los roles que declara.
 
 ## Roles
 
@@ -195,7 +196,7 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 | `POST /api/valoraciones` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 | `GET /api/valoraciones/{id}` | — | · | ✓ | ✓ | Autenticado |
 | `GET /api/dietas/{dietaId}/valoraciones` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
-| `GET /api/pacientes/{pacienteId}/valoraciones` | — | · | ✓ | ✓ | PacientePropioOPersonal |
+| `GET /api/pacientes/{id}/valoraciones` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 
 > El detalle (`GET /api/valoraciones/{id}`) es para el paciente valorado y el personal; la ruta lleva el id de
 > la valoración y no el del paciente, así que lo comprueba `ObtenerValoracionHandler`. En la lista por paciente,
@@ -243,6 +244,13 @@ Todas se traducen a 403 en `ManejadorDeExcepciones`.
   está entre las tres políticas ya cubiertas por `AutorizacionEnLaApiTests` (Anónimo, Autenticado,
   PacientePropioOPersonal). Si alguien agrega una política nueva sin mapearla, falla. Otro test comprueba que
   los roles alcanzados existen en el dominio y que cada política mapeada excluye al menos un rol.
+- **Acceso positivo por rol:** un test resuelve cada política registrada y comprueba que sus requisitos de rol
+  admiten exactamente los roles de `Alcanzan`. Así, si una política deja fuera a un rol permitido, falla sin
+  necesidad de base de datos ni de peticiones HTTP.
+
+> **Mantenimiento:** la tabla se deriva de `Esperado`; al cambiar un endpoint o una política, actualizar este
+> documento y ejecutar `MatrizDeAutorizacionTests`. La cobertura negativa se genera sola, pero los cambios de
+> política y de ruta deben reflejarse aquí.
 
 Fuera de este archivo, ya cubierto por otros tests:
 

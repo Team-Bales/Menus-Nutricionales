@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el catálogo cerrado <see cref="TipoPreparacion"/> a la tabla <c>tipos_preparacion</c>, con
+/// sus cuatro valores fijos.
+/// </summary>
 internal sealed class TipoPreparacionConfiguration : IEntityTypeConfiguration<TipoPreparacion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<TipoPreparacion> builder)
     {
         // RD-01: catálogo cerrado con exactamente estos cuatro valores

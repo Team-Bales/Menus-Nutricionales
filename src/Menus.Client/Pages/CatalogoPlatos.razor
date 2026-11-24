@@ -1,3 +1,6 @@
+@* Banco de platos (/catalogo/platos), paginado y filtrable por grupo, tipo de
+   preparación y nivel calórico, con la cantidad de ingredientes de cada uno. Lo ven el
+   Admin y los nutricionistas; crear, editar y eliminar, solo los nutricionistas. *@
 @page "/catalogo/platos"
 @attribute [Authorize(Roles = RolesDeUsuario.Personal)]
 @inject ICatalogoApi Api

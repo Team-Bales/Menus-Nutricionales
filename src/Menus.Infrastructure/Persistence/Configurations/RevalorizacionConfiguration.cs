@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Revalorizacion"/> a la tabla <c>revalorizaciones</c>: la valoración que se
+/// revisa, el nutricionista que la ejecuta y la valoración que genera.
+/// </summary>
 internal sealed class RevalorizacionConfiguration : IEntityTypeConfiguration<Revalorizacion>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Revalorizacion> builder)
     {
         // Sin el paciente solicitante: se deduce de la valoración revisada (RS-09), y guardarlo dejaba la tabla

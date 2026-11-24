@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Consumo"/> (relación <c>Consume</c>) a la tabla <c>consumo</c>, con clave (menú, paciente,
+/// fecha del servicio, ítem). Solo se consume un ítem que el menú incluye (RX-01).
+/// </summary>
 internal sealed class ConsumoConfiguration : IEntityTypeConfiguration<Consumo>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Consumo> builder)
     {
         // Consume(Servicio, ItemAlimentario): un consumo por ítem en cada servicio.

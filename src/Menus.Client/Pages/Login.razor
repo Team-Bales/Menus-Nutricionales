@@ -1,3 +1,6 @@
+@* Inicio de sesión (/login), sin el menú lateral (LayoutVacio). Guarda el token en la sesión y
+   vuelve a returnUrl solo si es una ruta local (RutasDeSesion.DestinoSeguro), para no redirigir a
+   otro sitio. *@
 @page "/login"
 @layout LayoutVacio
 @inject IAutenticacionApi Api

@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="Menu"/> a la tabla <c>menus</c>: su dieta, su creador, su parametrización (que se borra
+/// con él), sus asignaciones, su validación y la validación rechazada que reemplaza, si la hay.
+/// </summary>
 internal sealed class MenuConfiguration : IEntityTypeConfiguration<Menu>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Menu> builder)
     {
         // RD-10: cantidad total de alimentos estrictamente positiva. RS-19: un menú no es reemplazo de sí mismo.

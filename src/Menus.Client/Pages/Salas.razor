@@ -1,3 +1,5 @@
+@* Salas de hospitalización (/admin/salas), solo Admin: crear, renombrar y eliminar, con la
+   cantidad de pacientes de cada una, que se pide a la API sala por sala. *@
 @page "/admin/salas"
 @attribute [Authorize(Roles = RolesDeUsuario.Admin)]
 @inject IAdministracionApi Api

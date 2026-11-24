@@ -4,8 +4,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea el nomenclador <see cref="RestriccionAlimentaria"/> a la tabla
+/// <c>restricciones_alimentarias</c>, con nombre único, los grupos que excluye y las
+/// restricciones iniciales.
+/// </summary>
 internal sealed class RestriccionAlimentariaConfiguration : IEntityTypeConfiguration<RestriccionAlimentaria>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<RestriccionAlimentaria> builder)
     {
         // RD-07: nombre no vacío

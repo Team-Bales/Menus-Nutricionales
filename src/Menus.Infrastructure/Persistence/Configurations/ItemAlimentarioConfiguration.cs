@@ -5,8 +5,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea la generalización <see cref="ItemAlimentario"/> (alimentos y platos) a una sola tabla,
+/// <c>items_alimentarios</c>, con discriminador (TPH), y sus FK a la clasificación y al nutricionista
+/// que lo describió.
+/// </summary>
 internal sealed class ItemAlimentarioConfiguration : IEntityTypeConfiguration<ItemAlimentario>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ItemAlimentario> builder)
     {
         // Generalización Alimento/Plato en una sola tabla con discriminador (TPH). Es la traducción habitual de una

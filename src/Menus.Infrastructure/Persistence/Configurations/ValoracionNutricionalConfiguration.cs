@@ -5,8 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="ValoracionNutricional"/> a la tabla <c>valoraciones_nutricionales</c>: la
+/// asignación que evalúa, el nutricionista que la emite y el resultado.
+/// </summary>
 internal sealed class ValoracionNutricionalConfiguration : IEntityTypeConfiguration<ValoracionNutricional>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<ValoracionNutricional> builder)
     {
         builder.ToTable("valoraciones_nutricionales");

@@ -4,8 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// Mapea <see cref="PlatoIngrediente"/> (relación <c>Composición</c>) a la tabla <c>composicion</c>:
+/// los alimentos de cada plato, con su cantidad.
+/// </summary>
 internal sealed class PlatoIngredienteConfiguration : IEntityTypeConfiguration<PlatoIngrediente>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<PlatoIngrediente> builder)
     {
         // RD-05: cantidad estrictamente positiva

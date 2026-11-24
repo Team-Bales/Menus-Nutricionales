@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Menus.Infrastructure.Persistence.Configurations;
 
+/// <summary>Mapea <see cref="Sala"/> a la tabla <c>salas</c>.</summary>
 internal sealed class SalaConfiguration : IEntityTypeConfiguration<Sala>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Sala> builder)
     {
         // RD-07: nombre no vacío

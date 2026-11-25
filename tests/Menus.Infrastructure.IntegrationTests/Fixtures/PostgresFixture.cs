@@ -38,8 +38,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// </summary>
     public PostgresFixture()
     {
-        _contenedor = new PostgreSqlBuilder()
-            .WithImage("postgres:16")
+        _contenedor = new PostgreSqlBuilder("postgres:16")
             .Build();
     }
 

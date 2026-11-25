@@ -87,8 +87,8 @@ public sealed record CompararDietasQuery(
 /// <summary>
 /// Devuelve la correlación nutricional en tres partes: Spearman por dieta, top-10 ítems rechazados y revalorizaciones.
 /// </summary>
-/// <param name="Desde">Inicio del período (inclusivo), null para sin límite inferior.</param>
-/// <param name="Hasta">Fin del período (exclusivo), null para sin límite superior.</param>
+/// <param name="Desde">Inicio del período (inclusivo), null para sin límite inferior. Valores sin offset se interpretan en la zona horaria del servidor; enviar en UTC o con offset explícito.</param>
+/// <param name="Hasta">Fin del período (exclusivo), null para sin límite superior. Valores sin offset se interpretan en la zona horaria del servidor; enviar en UTC o con offset explícito.</param>
 /// <param name="MinimoConsumos">Mínimo de consumos para que un ítem entre en el top-10 de rechazados (por defecto 1, mínimo 1).</param>
 /// <param name="OrdenCorrelacion">Ordenamiento para la sección de correlación de Spearman.</param>
 /// <param name="OrdenRechazos">Ordenamiento para la sección de ítems más rechazados.</param>

@@ -4,10 +4,10 @@ using Menus.Domain.Abstractions.Repositories;
 namespace Menus.Application.Reportes;
 
 /// <summary>
-/// Validadores FluentValidation para las consultas de reportes.
-/// La validación de columnas y direcciones de ordenamiento se hace como texto (no enum).
+/// Conjuntos de columnas permitidas para el ordenamiento de cada reporte (C1 a C6).
+/// La validación de columnas y direcciones de ordenamiento se hace como texto (no enum)
+/// comparando contra estas listas blancas.
 /// </summary>
-
 internal static class ColumnasPermitidas
 {
     // C1

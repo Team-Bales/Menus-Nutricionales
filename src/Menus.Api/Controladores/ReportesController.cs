@@ -16,6 +16,19 @@ namespace Menus.Api.Controladores;
 [Produces("application/json")]
 public sealed class ReportesController(IDespachador despachador) : ControllerBase
 {
+    /// <summary>
+    /// Crea un <see cref="OrdenDeReporte"/> validando que no se proporcione <paramref name="direccion"/> sin <paramref name="orden"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Se lanza cuando <paramref name="direccion"/> no es null/whitespace pero <paramref name="orden"/> sí lo es.</exception>
+    private static OrdenDeReporte? CrearOrdenValidado(string? orden, string? direccion)
+    {
+        if (string.IsNullOrWhiteSpace(orden) && !string.IsNullOrWhiteSpace(direccion))
+        {
+            throw new InvalidOperationException("El parámetro 'direccion' solo es válido cuando se proporciona también 'orden'.");
+        }
+        return string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
+    }
+
     // ------------------------------------------------------------
     // C1: GET /menus-automaticos
     // ------------------------------------------------------------
@@ -30,7 +43,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
     /// <response code="404">La dieta no existe.</response>
-    /// <response code="422">Parámetros de ordenamiento inválidos.</response>
+    /// <response code="422">Parámetros de ordenamiento inválidos (incluye 'direccion' sin 'orden').</response>
     [HttpGet("menus-automaticos")]
     [ProducesResponseType<IReadOnlyList<MenuAutomaticoDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -43,7 +56,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccion = null,
         CancellationToken ct = default)
     {
-        var ordenReporte = string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
+        var ordenReporte = CrearOrdenValidado(orden, direccion);
         return despachador.EnviarAsync(new ListarMenusAutomaticosQuery(dietaId, ordenReporte), ct);
     }
 
@@ -62,7 +75,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
     /// <response code="404">La dieta no existe.</response>
-    /// <response code="422">Parámetros inválidos (top fuera de rango u ordenamiento inválido).</response>
+    /// <response code="422">Parámetros inválidos (top fuera de rango u ordenamiento inválido, incluye 'direccion' sin 'orden').</response>
     [HttpGet("alimentos-mas-usados")]
     [ProducesResponseType<IReadOnlyList<AlimentoMasUsadoDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -76,7 +89,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccion = null,
         CancellationToken ct = default)
     {
-        var ordenReporte = string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
+        var ordenReporte = CrearOrdenValidado(orden, direccion);
         return despachador.EnviarAsync(new ListarAlimentosMasUsadosQuery(dietaId, top, ordenReporte), ct);
     }
 
@@ -95,7 +108,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
     /// <response code="404">El revisor no existe.</response>
-    /// <response code="422">Parámetros de ordenamiento inválidos.</response>
+    /// <response code="422">Parámetros de ordenamiento inválidos (incluye 'direccion' sin 'orden').</response>
     [HttpGet("dictamenes")]
     [ProducesResponseType<IReadOnlyList<DictamenDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -108,7 +121,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccion = null,
         CancellationToken ct = default)
     {
-        var ordenReporte = string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
+        var ordenReporte = CrearOrdenValidado(orden, direccion);
         return despachador.EnviarAsync(new ListarDictamenesQuery(revisorId, ordenReporte), ct);
     }
 
@@ -126,7 +139,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
     /// <response code="404">El menú no existe.</response>
-    /// <response code="422">Parámetros de ordenamiento inválidos.</response>
+    /// <response code="422">Parámetros de ordenamiento inválidos (incluye 'direccion' sin 'orden').</response>
     [HttpGet("desempeno-menu")]
     [ProducesResponseType<IReadOnlyList<DesempenoItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -139,7 +152,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccion = null,
         CancellationToken ct = default)
     {
-        var ordenReporte = string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
+        var ordenReporte = CrearOrdenValidado(orden, direccion);
         return despachador.EnviarAsync(new ListarDesempenoMenuQuery(menuId, ordenReporte), ct);
     }
 
@@ -162,7 +175,7 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <response code="401">Sin autenticación.</response>
     /// <response code="403">El rol no tiene permiso (solo Nutricionista/Admin).</response>
     /// <response code="404">Alguna de las dietas no existe.</response>
-    /// <response code="422">Parámetros inválidos (menos de 2 dietas, dietas duplicadas, ordenamiento inválido).</response>
+    /// <response code="422">Parámetros inválidos (menos de 2 dietas, dietas duplicadas, ordenamiento inválido, incluye 'direccion*' sin 'orden*').</response>
     [HttpGet("comparacion-dietas")]
     [ProducesResponseType<ComparacionDietasDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -180,9 +193,9 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccionEquilibrio = null,
         CancellationToken ct = default)
     {
-        var ordenG = string.IsNullOrWhiteSpace(ordenGrupos) ? null : new OrdenDeReporte(ordenGrupos, direccionGrupos);
-        var ordenN = string.IsNullOrWhiteSpace(ordenNiveles) ? null : new OrdenDeReporte(ordenNiveles, direccionNiveles);
-        var ordenE = string.IsNullOrWhiteSpace(ordenEquilibrio) ? null : new OrdenDeReporte(ordenEquilibrio, direccionEquilibrio);
+        var ordenG = CrearOrdenValidado(ordenGrupos, direccionGrupos);
+        var ordenN = CrearOrdenValidado(ordenNiveles, direccionNiveles);
+        var ordenE = CrearOrdenValidado(ordenEquilibrio, direccionEquilibrio);
         return despachador.EnviarAsync(
             new CompararDietasQuery(dietas, soloFinales, ordenG, ordenN, ordenE), ct);
     }
@@ -193,8 +206,8 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <summary>
     /// Devuelve la correlación nutricional en tres partes: Spearman por dieta, top-10 ítems rechazados y revalorizaciones.
     /// </summary>
-    /// <param name="desde">Inicio del período (inclusivo), formato ISO 8601.</param>
-    /// <param name="hasta">Fin del período (exclusivo), formato ISO 8601.</param>
+    /// <param name="desde">Inicio del período (inclusivo), formato ISO 8601. Valores sin offset se interpretan en la zona horaria del servidor; enviar en UTC o con offset explícito.</param>
+    /// <param name="hasta">Fin del período (exclusivo), formato ISO 8601. Valores sin offset se interpretan en la zona horaria del servidor; enviar en UTC o con offset explícito.</param>
     /// <param name="minimoConsumos">Mínimo de consumos para que un ítem entre en el top-10 de rechazados (por defecto 1, mínimo 1).</param>
     /// <param name="ordenCorrelacion">Columna para correlación (dietaId, dieta, menusValorados, coeficienteSpearman).</param>
     /// <param name="direccionCorrelacion">Dirección para correlación: asc o desc (por defecto asc).</param>
@@ -224,9 +237,9 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
         string? direccionRevalorizaciones = null,
         CancellationToken ct = default)
     {
-        var ordenC = string.IsNullOrWhiteSpace(ordenCorrelacion) ? null : new OrdenDeReporte(ordenCorrelacion, direccionCorrelacion);
-        var ordenR = string.IsNullOrWhiteSpace(ordenRechazos) ? null : new OrdenDeReporte(ordenRechazos, direccionRechazos);
-        var ordenV = string.IsNullOrWhiteSpace(ordenRevalorizaciones) ? null : new OrdenDeReporte(ordenRevalorizaciones, direccionRevalorizaciones);
+        var ordenC = CrearOrdenValidado(ordenCorrelacion, direccionCorrelacion);
+        var ordenR = CrearOrdenValidado(ordenRechazos, direccionRechazos);
+        var ordenV = CrearOrdenValidado(ordenRevalorizaciones, direccionRevalorizaciones);
         return despachador.EnviarAsync(
             new ObtenerCorrelacionNutricionalQuery(desde, hasta, minimoConsumos, ordenC, ordenR, ordenV), ct);
     }

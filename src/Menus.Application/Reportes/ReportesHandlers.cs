@@ -134,15 +134,11 @@ internal sealed class CompararDietasHandler(
             }
         }
 
-        // Ejecutar las tres consultas en paralelo
-        var tGrupo = consultas.ConsultarComparacionPorGrupoAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
-        var tNivel = consultas.ConsultarComparacionPorNivelAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
-        var tEquilibrio = consultas.ConsultarCriteriosEquilibrioAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
-        await Task.WhenAll(tGrupo, tNivel, tEquilibrio);
-
-        var porGrupo = tGrupo.Result;
-        var porNivel = tNivel.Result;
-        var criterios = tEquilibrio.Result;
+        // Ejecutar las tres consultas de forma secuencial (el lector es Scoped y usa un único DbContext;
+        // EF Core no admite operaciones simultáneas sobre el mismo contexto)
+        var porGrupo = await consultas.ConsultarComparacionPorGrupoAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
+        var porNivel = await consultas.ConsultarComparacionPorNivelAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
+        var criterios = await consultas.ConsultarCriteriosEquilibrioAsync(solicitud.Dietas, solicitud.SoloFinales, ct);
 
         // Aplicar ordenamiento independiente a cada sección
         return new ComparacionDietasDto(
@@ -160,6 +156,10 @@ internal sealed class CompararDietasHandler(
 /// Maneja <see cref="ObtenerCorrelacionNutricionalQuery"/>: correlación nutricional en tres partes.
 /// No comprueba un recurso concreto (C6 es transversal).
 /// Cada sección se ordena independientemente según su propio parámetro.
+/// <para>
+/// Los parámetros <c>Desde</c> y <c>Hasta</c> sin offset se interpretan en la zona horaria del servidor;
+/// se recomienda enviarlos en UTC o con offset explícito.
+/// </para>
 /// </summary>
 internal sealed class ObtenerCorrelacionNutricionalHandler(
     IConsultasInformacionales consultas)
@@ -167,15 +167,11 @@ internal sealed class ObtenerCorrelacionNutricionalHandler(
 {
     public async Task<CorrelacionNutricionalDto> HandleAsync(ObtenerCorrelacionNutricionalQuery solicitud, CancellationToken ct)
     {
-        // Ejecutar las tres consultas en paralelo
-        var tCorrelacion = consultas.ConsultarCorrelacionPorDietaAsync(solicitud.Desde, solicitud.Hasta, ct);
-        var tRechazos = consultas.ConsultarItemsMasRechazadosAsync(10, solicitud.MinimoConsumos, ct); // límite fijo 10
-        var tRevalorizaciones = consultas.ConsultarRevalorizadosAsync(ct);
-        await Task.WhenAll(tCorrelacion, tRechazos, tRevalorizaciones);
-
-        var correlaciones = tCorrelacion.Result;
-        var itemsMasRechazados = tRechazos.Result;
-        var revalorizaciones = tRevalorizaciones.Result;
+        // Ejecutar las tres consultas de forma secuencial (el lector es Scoped y usa un único DbContext;
+        // EF Core no admite operaciones simultáneas sobre el mismo contexto)
+        var correlaciones = await consultas.ConsultarCorrelacionPorDietaAsync(solicitud.Desde, solicitud.Hasta, ct);
+        var itemsMasRechazados = await consultas.ConsultarItemsMasRechazadosAsync(10, solicitud.MinimoConsumos, ct); // límite fijo 10
+        var revalorizaciones = await consultas.ConsultarRevalorizadosAsync(ct);
 
         // Aplicar ordenamiento independiente a cada sección
         return new CorrelacionNutricionalDto(

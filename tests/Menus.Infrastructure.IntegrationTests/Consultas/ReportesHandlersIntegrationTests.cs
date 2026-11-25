@@ -210,7 +210,8 @@ public sealed class ReportesHandlersIntegrationTests : IAsyncLifetime
         var paciente2 = await _s.PacienteAsync();
         await _s.InscribirAsync(paciente2, dieta);
         await _s.AsignarAsync(menu2, paciente2);
-        var fecha2 = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        // RS-14: el servicio no puede ser anterior al día (UTC) de la aprobación, que acaba de ocurrir.
+        var fecha2 = DateOnly.FromDateTime(DateTime.UtcNow);
         await _s.ServirAsync(menu2, paciente2, fecha2);
         await _s.ConsumirAsync(menu2, paciente2, fecha2, cereal2, aceptacion: true);
         await _s.ConsumirAsync(menu2, paciente2, fecha2, proteina2, aceptacion: true);
@@ -218,8 +219,8 @@ public sealed class ReportesHandlersIntegrationTests : IAsyncLifetime
 
         // Datos para ItemsMasRechazados (top-10 rechazados): ya tenemos rechazos en EscenarioBaseConMenusAsync
         // Datos para Revalorizaciones
-        var valoracionParaRevalorizar = await _s.ValorarAsync(menu, paciente2, revisor, resultadoId: Guid.Parse("4077627e-08b1-404a-aeb5-bb64a90538ba")); // Mala
-        var valoracionGenerada = await _s.ValorarAsync(menu, paciente2, revisor, resultadoId: Guid.Parse("138dec6d-8202-4b54-831c-e6fd21508695")); // Excelente
+        var valoracionParaRevalorizar = await _s.ValorarAsync(menu2, paciente2, revisor, resultadoId: Guid.Parse("4077627e-08b1-404a-aeb5-bb64a90538ba")); // Mala
+        var valoracionGenerada = await _s.ValorarAsync(menu2, paciente2, revisor, resultadoId: Guid.Parse("138dec6d-8202-4b54-831c-e6fd21508695")); // Excelente
         await _s.RevalorizarAsync(valoracionParaRevalorizar, revisor, valoracionGenerada);
     }
 }

@@ -17,7 +17,7 @@ namespace Menus.Infrastructure.IntegrationTests.Fixtures;
 /// </remarks>
 public sealed class MongoFixture : IAsyncLifetime
 {
-    private readonly MongoDbContainer _contenedor = new MongoDbBuilder().WithImage("mongo:7").Build();
+    private readonly MongoDbContainer _contenedor = new MongoDbBuilder("mongo:7").Build();
 
     /// <summary>El cliente de MongoDB conectado al contenedor.</summary>
     public IMongoClient Cliente { get; private set; } = null!;

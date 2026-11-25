@@ -20,7 +20,7 @@ namespace Menus.Infrastructure.IntegrationTests.Fixtures;
 /// Implementa <see cref="IAsyncLifetime"/> para que xUnit gestione el ciclo de vida:
 /// <list type="number">
 ///   <item><see cref="InitializeAsync"/> arranca el contenedor, crea la base <c>menus</c>,
-///   ejecuta <c>Database.MigrateAsync()</c> y prepara <see cref="Checkpoint"/>.</item>
+///   ejecuta <c>Database.MigrateAsync()</c> y prepara <see cref="Respawner"/>.</item>
 ///   <item>Las pruebas usan <see cref="CrearContexto"/>, <see cref="AbrirAsync"/>,
 ///   <see cref="ReiniciarAsync"/> y <see cref="CrearBaseVaciaAsync"/>.</item>
 ///   <item><see cref="DisposeAsync"/> detiene y elimina el contenedor.</item>
@@ -30,7 +30,7 @@ namespace Menus.Infrastructure.IntegrationTests.Fixtures;
 public sealed class PostgresFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _contenedor;
-    private Checkpoint _checkpoint = null!;
+    private Respawner _respawner = null!;
     private DbContextOptions<MenusDbContext> _opcionesContexto = null!;
 
     /// <summary>
@@ -38,8 +38,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// </summary>
     public PostgresFixture()
     {
-        _contenedor = new PostgreSqlBuilder()
-            .WithImage("postgres:16")
+        _contenedor = new PostgreSqlBuilder("postgres:16")
             .Build();
     }
 
@@ -84,8 +83,10 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using var ctx = new MenusDbContext(_opcionesContexto);
         await ctx.Database.MigrateAsync();
 
-        // Prepara Respawn (Checkpoint) ignorando la tabla de historial de migraciones y los 7 catálogos sembrados
-        _checkpoint = new Checkpoint
+        // Prepara Respawn (Respawner) ignorando la tabla de historial de migraciones y los 7 catálogos sembrados
+        await using var conexionRespawn = new NpgsqlConnection(CadenaDeConexion);
+        await conexionRespawn.OpenAsync();
+        _respawner = await Respawner.CreateAsync(conexionRespawn, new RespawnerOptions
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public"],
@@ -101,7 +102,7 @@ public sealed class PostgresFixture : IAsyncLifetime
                 new Table("tipos_preparacion")
             ],
             WithReseed = false
-        };
+        });
     }
 
     /// <summary>
@@ -131,7 +132,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = "SET session_replication_role = replica;";
         await cmd.ExecuteNonQueryAsync();
-        await _checkpoint.Reset(conn);
+        await _respawner.ResetAsync(conn);
     }
 
     /// <summary>

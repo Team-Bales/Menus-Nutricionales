@@ -14,7 +14,7 @@ namespace Menus.Infrastructure.IntegrationTests.Fixtures;
 /// </remarks>
 public sealed class RedisFixture : IAsyncLifetime
 {
-    private readonly RedisContainer _contenedor = new RedisBuilder().WithImage("redis:7-alpine").Build();
+    private readonly RedisContainer _contenedor = new RedisBuilder("redis:7-alpine").Build();
 
     /// <summary>Conexión multiplexada al contenedor, compartida por toda la colección.</summary>
     public IConnectionMultiplexer Conexion { get; private set; } = null!;

@@ -23,23 +23,28 @@ Entorno de la ejecución:
 |---|---|
 | SDK | .NET 10.0.109 |
 | Fuente | `https://api.nuget.org/v3/index.json` |
-| Fecha | 2026-11-24 6:42 UTC |
+| Fecha | 2026-11-26 0:08 UTC |
 
 El comando del criterio de aceptación, sin `--include-transitive`, solo lista las dependencias directas; los
-avisos transitivos pueden aparecer como warnings de NuGet durante el restore, pero no en la tabla. En esta
-solución todas las directas están limpias, pero las transitivas de los proyectos de integración no. Por eso el
-análisis completo usa `--include-transitive`.
+avisos transitivos pueden aparecer como warnings de NuGet durante el restore, pero no en la tabla. Por eso el
+análisis completo usa `--include-transitive`: las directas pueden estar limpias y las transitivas no.
 
 ## Resultados
+
+### Estado actual
+
+La ejecución del 2026-11-25, tras la remediación de #338, responde «no vulnerable packages» para los 13
+proyectos, incluidas las dependencias transitivas. No quedan avisos en los proyectos de integración.
 
 ### Dependencias directas
 
 Ningún proyecto declara un paquete con avisos de seguridad conocidos. El comando sin `--include-transitive`
 responde «no vulnerable packages» para los 13 proyectos.
 
-### Dependencias transitivas
+### Hallazgos anteriores (resueltos en #338)
 
-Hay avisos en los dos proyectos de pruebas de integración. Todos llegan por dos paquetes de pruebas:
+La ejecución del 2026-11-24 6:42 UTC detectó avisos en los dos proyectos de pruebas de integración, todos
+introducidos por dos paquetes de pruebas:
 
 - `Respawn 5.0.0` → `Microsoft.Data.SqlClient 4.0.0`.
 - `Testcontainers 4.0.0` → `SSH.NET 2023.0.0`.
@@ -67,54 +72,56 @@ dotnet nuget why tests/Menus.Infrastructure.IntegrationTests/Menus.Infrastructur
 
 Ninguno de estos paquetes forma parte de los artefactos de producción (`src/`): son dependencias de las pruebas
 que levantan contenedores con Testcontainers y limpian la base con Respawn. Aun así, se ejecutan en CI y en las
-máquinas de desarrollo, así que conviene corregirlas.
+máquinas de desarrollo, así que se corrigieron en #338.
 
 ## Relación con los bumps de Dependabot
 
 | PR | Paquete | Cambio | Estado | Relación con el SCA |
 |---|---|---|---|---|
 | #271 | `bunit` | 2.14.0 → 2.15.2 | Fusionado (`e476a16`) | No aparece en los hallazgos; mantiene actualizado el cliente de pruebas Blazor. |
-| #272 | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.14 → 10.0.15 | Pendiente de fusionar (`7783811` en la rama de Dependabot) | No aparece en los hallazgos, pero sigue pendiente; conviene no dejarlo atrás. |
+| #272 | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.14 → 10.0.15 | Fusionado (`30e477b`) | No aparece en los hallazgos; el paquete ya está actualizado. |
 | #273 | `coverlet.collector` | 10.1.0 → 10.1.1 | Fusionado (`9a1b703`) | No aparece en los hallazgos; mantiene actualizado el colector de cobertura. |
 
 Dependabot revisa NuGet y GitHub Actions cada lunes (`.github/dependabot.yml`, límite de 5 PR abiertos). Este
 análisis es complementario: Dependabot propone actualizaciones, pero no sustituye una revisión periódica de
 avisos ni cubre las dependencias transitivas que no se actualizan solas.
 
-## Remediación recomendada
+## Remediación aplicada (#338)
 
-Actualizar los paquetes que arrastran las versiones vulnerables:
+Se actualizaron los paquetes que arrastraban las versiones vulnerables:
 
-| Paquete | Actual | Recomendada | Efecto |
+| Paquete | Antes | Ahora | Efecto |
 |---|---|---|---|
-| `Respawn` | 5.0.0 | 7.0.0 | Deja de depender de `Microsoft.Data.SqlClient`, por lo que desaparecen `Azure.Identity 1.3.0` y `System.Drawing.Common 5.0.0`. |
-| `Testcontainers.MongoDb` | 4.0.0 | 4.17.0 | Usa `SSH.NET 2026.0.0`, sin los avisos actuales. |
+| `Respawn` | 5.0.0 | 7.0.0 | Ya no depende de `Microsoft.Data.SqlClient`: desaparecen `Azure.Identity 1.3.0` y `System.Drawing.Common 5.0.0`. |
+| `Testcontainers.MongoDb` | 4.0.0 | 4.17.0 | Usa `SSH.NET 2026.0.0`, sin los avisos anteriores. |
 | `Testcontainers.PostgreSql` | 4.0.0 | 4.17.0 | Igual que el anterior. |
 | `Testcontainers.Redis` | 4.0.0 | 4.17.0 | Igual que el anterior. |
 
-`Respawn` 7 cambia la API de `Checkpoint` a `Respawner` (`CreateAsync` y `ResetAsync`), así que la actualización
-requiere adaptar `tests/Menus.Infrastructure.IntegrationTests/Fixtures/PostgresFixture.cs`. En un proyecto
-aislado se comprobó que `Respawn 7.0.0` y `Testcontainers 4.17.0` no arrastran paquetes vulnerables.
+`Respawn` 7 cambia la API de `Checkpoint` a `Respawner` (`CreateAsync` y `ResetAsync`), así que se adaptó
+`tests/Menus.Infrastructure.IntegrationTests/Fixtures/PostgresFixture.cs`. También se eliminó la referencia
+directa a `Respawn` del proyecto `Auth`, que no la usaba.
 
-Después de actualizar, repetir:
+Verificación posterior, ya con los paquetes actualizados:
 
 ```bash
 dotnet list MenusNutricionales.slnx package --vulnerable --include-transitive
 ```
 
-El objetivo es que los dos proyectos de integración también respondan «no vulnerable packages».
+Los 13 proyectos responden «no vulnerable packages». `dotnet build` y `dotnet test` pasan, incluidas las
+pruebas de integración con Docker.
 
 ## Resumen
 
-El análisis de composición de software se ejecutó con `dotnet list package --vulnerable --include-transitive`
-sobre la solución completa. No se detectaron dependencias vulnerables en los proyectos de producción en esta
-ejecución. En los proyectos de pruebas de integración se detectaron cuatro dependencias transitivas con avisos:
-`Azure.Identity 1.3.0`, `Microsoft.Data.SqlClient 4.0.0`, `SSH.NET 2023.0.0` y `System.Drawing.Common 5.0.0`,
-introducidas por `Respawn 5.0.0` y `Testcontainers 4.0.0`; no forman parte de los artefactos desplegados. La
-remediación es actualizar `Respawn` a 7.0.0 y `Testcontainers` a 4.17.0 y repetir el análisis. Dependabot propone
-las actualizaciones de las dependencias directas (bunit #271, JwtBearer #272 y coverlet.collector #273); #271 y
-#273 ya están fusionados y #272 sigue pendiente. El SCA añade la revisión de las transitivas y la evidencia para
-la sección de prevención de vulnerabilidades (OWASP A06:2021, componentes vulnerables y desactualizados).
+La última ejecución de `dotnet list package --vulnerable --include-transitive` (2026-11-25) no detecta
+dependencias vulnerables en ninguno de los 13 proyectos, ni directas ni transitivas. La ejecución anterior
+(2026-11-24) había encontrado cuatro dependencias transitivas con siete avisos en los proyectos de pruebas de
+integración —`Azure.Identity 1.3.0`, `Microsoft.Data.SqlClient 4.0.0`, `SSH.NET 2023.0.0` y
+`System.Drawing.Common 5.0.0`—, introducidas por `Respawn 5.0.0` y `Testcontainers 4.0.0`. Se resolvieron en
+#338 actualizando `Respawn` a 7.0.0 y `Testcontainers` a 4.17.0; no afectaban a los artefactos desplegados.
+Dependabot propone las actualizaciones de las dependencias directas (bunit #271, JwtBearer #272 y
+coverlet.collector #273); las tres ya están fusionadas. El SCA añade la revisión de las transitivas y la
+evidencia para la sección de prevención de vulnerabilidades (OWASP A06:2021, componentes vulnerables y
+desactualizados).
 
 ## Limitaciones
 

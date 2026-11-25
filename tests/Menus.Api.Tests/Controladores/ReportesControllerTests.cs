@@ -2,6 +2,7 @@ using Menus.Api.Auth;
 using Menus.Api.Controladores;
 using Menus.Application.Comun;
 using Menus.Application.Reportes;
+using Menus.Domain.Excepciones;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Menus.Api.Tests.Controladores;
@@ -45,6 +46,19 @@ public sealed class ReportesControllerTests
 
         var query = Assert.IsType<ListarMenusAutomaticosQuery>(_despachador.Recibida);
         Assert.Null(query.Orden);
+    }
+
+    [Theory]
+    [InlineData("asc")]
+    [InlineData("desc")]
+    [InlineData("xyz")]
+    public async Task GetMenusAutomaticos_DireccionSinOrden_Responde422SinDespachar(string direccion)
+    {
+        var ex = await Assert.ThrowsAsync<DatoInvalidoException>(() =>
+            Controlador.GetMenusAutomaticos(DietaId, null, direccion, CancellationToken.None));
+
+        Assert.Equal("direccion", ex.Campo);
+        Assert.Null(_despachador.Recibida);
     }
 
     // ---- C2: GET /alimentos-mas-usados ----

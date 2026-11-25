@@ -1,6 +1,7 @@
 using Menus.Api.Auth;
 using Menus.Application.Comun;
 using Menus.Application.Reportes;
+using Menus.Domain.Excepciones;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,12 +20,12 @@ public sealed class ReportesController(IDespachador despachador) : ControllerBas
     /// <summary>
     /// Crea un <see cref="OrdenDeReporte"/> validando que no se proporcione <paramref name="direccion"/> sin <paramref name="orden"/>.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Se lanza cuando <paramref name="direccion"/> no es null/whitespace pero <paramref name="orden"/> sí lo es.</exception>
+    /// <exception cref="DatoInvalidoException">Se lanza (422) cuando <paramref name="direccion"/> no es null/whitespace pero <paramref name="orden"/> sí lo es.</exception>
     private static OrdenDeReporte? CrearOrdenValidado(string? orden, string? direccion)
     {
         if (string.IsNullOrWhiteSpace(orden) && !string.IsNullOrWhiteSpace(direccion))
         {
-            throw new InvalidOperationException("El parámetro 'direccion' solo es válido cuando se proporciona también 'orden'.");
+            throw new DatoInvalidoException("direccion", "El parámetro 'direccion' solo es válido cuando se proporciona también 'orden'.");
         }
         return string.IsNullOrWhiteSpace(orden) ? null : new OrdenDeReporte(orden, direccion);
     }

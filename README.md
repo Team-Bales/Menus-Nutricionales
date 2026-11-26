@@ -69,9 +69,61 @@ docker compose up --build
 
 Servicios que levanta `docker-compose.yml`: `api` (ASP.NET Core), `client` (Blazor WebAssembly servido por nginx), `postgres`, `mongo`, `redis`.
 
+La API **no aplica las migraciones al arrancar**. La primera vez, y después de cada migración nueva, hay que aplicarlas a la base del contenedor como se explica en [Aplicar las migraciones](#aplicar-las-migraciones). Después, la aplicación queda en http://localhost:5000.
+
+### Aplicar las migraciones
+
+Con la herramienta `dotnet-ef` (una sola vez: `dotnet tool install --global dotnet-ef`) y los valores de `POSTGRES_*` de tu `.env`:
+
+```bash
+dotnet ef database update \
+  --project src/Menus.Infrastructure --startup-project src/Menus.Infrastructure \
+  --connection "Host=localhost;Port=5432;Database=menus_nutricionales;Username=menus_app;Password=change_me"
+```
+
+Termina con `Done.`. El mismo comando sirve con Docker y sin él: en los dos casos PostgreSQL escucha en `localhost:5432`.
+
+### Correr la API y el cliente sin Docker (desarrollo)
+
+Para depurar la API o trabajar en el cliente con recarga, se corren los dos con `dotnet run`. Las bases pueden seguir en Docker.
+
+1. **Levantar las bases** y [aplicar las migraciones](#aplicar-las-migraciones):
+
+   ```bash
+   docker compose up -d postgres mongo redis
+   ```
+
+   Sirve también un PostgreSQL propio. Mongo y Redis son opcionales: sin sus cadenas de conexión, la API arranca sin fichas nutricionales y sin caché.
+
+2. **Correr la API** (se queda en primer plano, en `http://localhost:5119`). Necesita al menos `Jwt__Key` y la cadena de PostgreSQL. Sin la clave se cae al arrancar con «La clave JWT (Jwt:Key) no está configurada».
+
+   ```bash
+   export Jwt__Key="clave-local-de-desarrollo-de-al-menos-32-bytes"
+   export ConnectionStrings__Postgres="Host=localhost;Port=5432;Database=menus_nutricionales;Username=menus_app;Password=change_me"
+   # Opcionales:
+   # export ConnectionStrings__Mongo="mongodb://menus_app:change_me@localhost:27017/fichas_nutricionales?authSource=admin"
+   # export ConnectionStrings__Redis="localhost:6379"
+   # export AuthBootstrap__Email="admin@ejemplo.com" AuthBootstrap__Password="cambiar_por_password_seguro"
+   dotnet run --project src/Menus.Api --launch-profile http
+   ```
+
+   En PowerShell, cada variable se define con `$env:Jwt__Key = "..."`.
+
+3. **Correr el cliente** en otra terminal:
+
+   ```bash
+   dotnet run --project src/Menus.Client --launch-profile http
+   ```
+
+   y abrirlo en **http://localhost:5134**. Tiene que ser ese origen: la API solo acepta llamadas del cliente desde ahí (`Cors:OrigenesDelCliente` en `appsettings.Development.json`). Con el perfil `https` (`https://localhost:7290`), CORS bloquea las llamadas y el login muestra «No se pudo conectar con el servidor», lo mismo que si la API no está corriendo.
+
+4. **Iniciar sesión** con el Admin de `AuthBootstrap__*` o con un usuario de los [datos de ejemplo](#datos-de-ejemplo).
+
+El cliente toma la dirección de la API de `src/Menus.Client/wwwroot/appsettings.Development.json` (`http://localhost:5119/`). En Docker usa `appsettings.json`, que apunta al mismo origen, y nginx pasa `/api/` al contenedor de la API.
+
 ### Datos de ejemplo
 
-Para recorrer la aplicación con todos los roles y ejecutar las 6 consultas con resultados, hay un banco de datos completo (dietas, pacientes, menús, consumos, valoraciones, usuarios y fichas de MongoDB) en [`scripts/datos-ejemplo/`](scripts/datos-ejemplo/README.md). Después de aplicar las migraciones:
+Para recorrer la aplicación con todos los roles y ejecutar las 6 consultas con resultados, hay un banco de datos completo (dietas, pacientes, menús, consumos, valoraciones, usuarios y fichas de MongoDB) en [`scripts/datos-ejemplo/`](scripts/datos-ejemplo/README.md). Con los contenedores de `postgres` y `mongo` levantados y después de [aplicar las migraciones](#aplicar-las-migraciones):
 
 ```bash
 scripts/datos-ejemplo/cargar.sh

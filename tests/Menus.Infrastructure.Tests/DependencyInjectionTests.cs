@@ -1,4 +1,5 @@
 using Menus.Application.Catalogo;
+using Menus.Application.Catalogo.Fichas;
 using Menus.Application.Comun;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -138,6 +139,36 @@ public sealed class DependencyInjectionTests
         using var scope = provider.CreateScope();
 
         Assert.IsType<SinFichasNutricionales>(scope.ServiceProvider.GetRequiredService<IFichasNutricionales>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConMongo_LaFichaSeLeeYSeEscribeEnMongo_YLaColeccionSeInicializaAlArrancar()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(mongo: "mongodb://localhost:27017/menus_prueba"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<AlmacenDeFichasEnMongo>(scope.ServiceProvider.GetRequiredService<IAlmacenDeFichas>());
+        Assert.Contains(provider.GetServices<IHostedService>(), s => s is InicializacionDeFichasHostedService);
+    }
+
+    [Fact]
+    public void AddInfrastructure_SinMongo_LaFichaNoEstaDisponible_YNoSeInicializaNada()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<SinAlmacenDeFichas>(scope.ServiceProvider.GetRequiredService<IAlmacenDeFichas>());
+        Assert.DoesNotContain(provider.GetServices<IHostedService>(), s => s is InicializacionDeFichasHostedService);
     }
 
     [Fact]

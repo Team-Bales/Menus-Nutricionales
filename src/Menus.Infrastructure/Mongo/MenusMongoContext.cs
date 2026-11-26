@@ -9,7 +9,8 @@ namespace Menus.Infrastructure.Mongo;
 /// <remarks>
 /// <see cref="InicializarAsync"/> deja la colección con su validador y su índice único, y se puede llamar las veces
 /// que haga falta. No se llama al registrar el contexto en la inyección de dependencias: lo hace quien aloja el
-/// proceso (la API al arrancar, o las pruebas), cuando esté definido.
+/// proceso. En la API, <see cref="InicializacionDeFichasHostedService"/> al arrancar (#283); en las pruebas, su
+/// fixture.
 /// </remarks>
 public sealed class MenusMongoContext
 {

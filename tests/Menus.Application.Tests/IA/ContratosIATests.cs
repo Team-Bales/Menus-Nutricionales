@@ -113,6 +113,34 @@ public sealed class ContratosIATests
         Assert.Same(causa, ex2.InnerException);
     }
 
+    /// <summary>
+    /// Verifica que el constructor con mensaje lanza <see cref="ArgumentNullException"/> cuando el mensaje es nulo.
+    /// </summary>
+    [Fact]
+    public void AsistenteIANoDisponibleException_ConstructorMensaje_NullLanza()
+    {
+        Assert.Throws<ArgumentNullException>(() => new AsistenteIANoDisponibleException(null!));
+    }
+
+    /// <summary>
+    /// Verifica que el constructor con mensaje y causa lanza <see cref="ArgumentNullException"/> cuando el mensaje es nulo.
+    /// </summary>
+    [Fact]
+    public void AsistenteIANoDisponibleException_ConstructorMensajeCausa_MensajeNullLanza()
+    {
+        var causa = new TimeoutException("timeout");
+        Assert.Throws<ArgumentNullException>(() => new AsistenteIANoDisponibleException(null!, causa));
+    }
+
+    /// <summary>
+    /// Verifica que el constructor con mensaje y causa lanza <see cref="ArgumentNullException"/> cuando la causa es nula.
+    /// </summary>
+    [Fact]
+    public void AsistenteIANoDisponibleException_ConstructorMensajeCausa_CausaNullLanza()
+    {
+        Assert.Throws<ArgumentNullException>(() => new AsistenteIANoDisponibleException("mensaje", null!));
+    }
+
     #endregion
 
     #region TareaIA
@@ -216,25 +244,24 @@ public sealed class ContratosIATests
     /// <summary>
     /// Verifica deserialización con <see cref="JsonSerializerDefaults.Web"/> de un
     /// <see cref="RespuestaIADto"/> con las cuatro listas en null y que todas quedan vacías.
+    /// Usa JSON camelCase según el contrato HTTP (§11.1) y <b>no</b> usa PropertyNameCaseInsensitive
+    /// para no ocultar discrepancias de mayúsculas/minúsculas.
     /// </summary>
     [Fact]
     public void RespuestaIADto_Deserializacion_ListasNullQuedanVacias()
     {
         var json = """
         {
-            "Resumen": "Resumen de prueba",
-            "Secciones": null,
-            "Recomendaciones": null,
-            "Advertencias": null,
-            "FuentesUsadas": null,
-            "GeneradoPorIA": true
+            "resumen": "Resumen de prueba",
+            "secciones": null,
+            "recomendaciones": null,
+            "advertencias": null,
+            "fuentesUsadas": null,
+            "generadoPorIA": true
         }
         """;
 
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var dto = JsonSerializer.Deserialize<RespuestaIADto>(json, options);
 
@@ -245,6 +272,65 @@ public sealed class ContratosIATests
         Assert.Empty(dto.Advertencias);
         Assert.Empty(dto.FuentesUsadas);
         Assert.True(dto.GeneradoPorIA);
+    }
+
+    /// <summary>
+    /// Verifica serialización con <see cref="JsonSerializerDefaults.Web"/> de un
+    /// <see cref="RespuestaIADto"/> completo y que el JSON resultante usa exactamente
+    /// los nombres camelCase requeridos por el contrato: resumen, secciones, recomendaciones,
+    /// advertencias, fuentesUsadas, generadoPorIA, y dentro de secciones: titulo, texto.
+    /// <b>No</b> usa PropertyNameCaseInsensitive para no ocultar el problema.
+    /// </summary>
+    [Fact]
+    public void RespuestaIADto_Serializacion_JsonCamelCaseExacto()
+    {
+        var secciones = new List<SeccionDto> { new("Título de prueba", "Texto de prueba") };
+        var dto = new RespuestaIADto(
+            "Resumen ejecutivo",
+            secciones,
+            new List<string> { "Recomendación 1" },
+            new List<string> { "Advertencia 1" },
+            new List<string> { "Fuente 1" },
+            true);
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(dto, options);
+
+        // Verificar que el JSON contiene exactamente los nombres camelCase esperados
+        Assert.Contains("\"resumen\":", json);
+        Assert.Contains("\"secciones\":", json);
+        Assert.Contains("\"recomendaciones\":", json);
+        Assert.Contains("\"advertencias\":", json);
+        Assert.Contains("\"fuentesUsadas\":", json);
+        Assert.Contains("\"generadoPorIA\":", json);
+        Assert.Contains("\"titulo\":", json);
+        Assert.Contains("\"texto\":", json);
+
+        // Verificar que NO contiene nombres PascalCase
+        Assert.DoesNotContain("\"Resumen\":", json);
+        Assert.DoesNotContain("\"Secciones\":", json);
+        Assert.DoesNotContain("\"Recomendaciones\":", json);
+        Assert.DoesNotContain("\"Advertencias\":", json);
+        Assert.DoesNotContain("\"FuentesUsadas\":", json);
+        Assert.DoesNotContain("\"GeneradoPorIA\":", json);
+        Assert.DoesNotContain("\"Titulo\":", json);
+        Assert.DoesNotContain("\"Texto\":", json);
+
+        // Verificar que se puede deserializar de vuelta correctamente (round-trip)
+        var dtoRoundTrip = JsonSerializer.Deserialize<RespuestaIADto>(json, options);
+        Assert.NotNull(dtoRoundTrip);
+        Assert.Equal(dto.Resumen, dtoRoundTrip!.Resumen);
+        Assert.Equal(dto.Secciones.Count, dtoRoundTrip.Secciones.Count);
+        Assert.Equal(dto.Secciones[0].Titulo, dtoRoundTrip.Secciones[0].Titulo);
+        Assert.Equal(dto.Secciones[0].Texto, dtoRoundTrip.Secciones[0].Texto);
+        Assert.Equal(dto.Recomendaciones.Count, dtoRoundTrip.Recomendaciones.Count);
+        Assert.Equal(dto.Advertencias.Count, dtoRoundTrip.Advertencias.Count);
+        Assert.Equal(dto.FuentesUsadas.Count, dtoRoundTrip.FuentesUsadas.Count);
+        Assert.Equal(dto.GeneradoPorIA, dtoRoundTrip.GeneradoPorIA);
     }
 
     #endregion

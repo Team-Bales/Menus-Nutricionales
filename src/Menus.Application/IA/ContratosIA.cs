@@ -36,13 +36,13 @@ public sealed record SeccionDto
     /// <summary>
     /// Título de la sección. No nulo ni vacío.
     /// </summary>
-    [JsonPropertyName("Titulo")]
+    [JsonPropertyName("titulo")]
     public string Titulo { get; }
 
     /// <summary>
     /// Texto de la sección. No nulo ni vacío.
     /// </summary>
-    [JsonPropertyName("Texto")]
+    [JsonPropertyName("texto")]
     public string Texto { get; }
 
     /// <summary>
@@ -81,41 +81,41 @@ public sealed record RespuestaIADto
     /// <summary>
     /// Resumen ejecutivo de la respuesta. No nulo ni vacío.
     /// </summary>
-    [JsonPropertyName("Resumen")]
+    [JsonPropertyName("resumen")]
     public string Resumen { get; }
 
     /// <summary>
     /// Secciones de la respuesta (pasos del guion en <see cref="TareaIA.GuionParaPaciente"/>).
     /// Nunca <c>null</c>; lista vacía si no hay secciones.
     /// </summary>
-    [JsonPropertyName("Secciones")]
+    [JsonPropertyName("secciones")]
     public IReadOnlyList<SeccionDto> Secciones { get; }
 
     /// <summary>
     /// Recomendaciones para el nutricionista (en <see cref="TareaIA.SugerirAcciones"/>).
     /// Nunca <c>null</c>; lista vacía si no hay recomendaciones.
     /// </summary>
-    [JsonPropertyName("Recomendaciones")]
+    [JsonPropertyName("recomendaciones")]
     public IReadOnlyList<string> Recomendaciones { get; }
 
     /// <summary>
     /// Advertencias generadas por la IA o por el proceso de anonimización.
     /// Nunca <c>null</c>; lista vacía si no hay advertencias.
     /// </summary>
-    [JsonPropertyName("Advertencias")]
+    [JsonPropertyName("advertencias")]
     public IReadOnlyList<string> Advertencias { get; }
 
     /// <summary>
     /// Fuentes usadas para construir la respuesta (bloques de contexto).
     /// Nunca <c>null</c>; lista vacía si no hay fuentes.
     /// </summary>
-    [JsonPropertyName("FuentesUsadas")]
+    [JsonPropertyName("fuentesUsadas")]
     public IReadOnlyList<string> FuentesUsadas { get; }
 
     /// <summary>
     /// Indica si el texto fue generado por IA (<c>true</c>) o es una plantilla determinista (<c>false</c>).
     /// </summary>
-    [JsonPropertyName("GeneradoPorIA")]
+    [JsonPropertyName("generadoPorIA")]
     public bool GeneradoPorIA { get; }
 
     /// <summary>

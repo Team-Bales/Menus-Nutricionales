@@ -67,10 +67,20 @@ public sealed class NutricionistasTests : BunitContext
 
         cut.Find("#especialidad").Change(CatalogoApiFalsa.Especialidad.ToString());
         cut.FindAll("button").Single(b => b.TextContent == "Limpiar").Click();
-        cut.WaitForAssertion(() => Assert.Equal((null, 1, 10), api.UltimaConsultaNutricionistas));
+        // La consulta sale antes de que la página termine de cargar (el detalle de cada fila): hasta entonces no
+        // están los botones de paginación (#366).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal((null, 1, 10), api.UltimaConsultaNutricionistas);
+            Assert.DoesNotContain("Cargando", cut.Markup);
+        });
 
         cut.FindAll("button").Single(b => b.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaNutricionistas!.Value.Page));
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsultaNutricionistas!.Value.Page);
+            Assert.DoesNotContain("Cargando", cut.Markup);
+        });
         cut.FindAll("button").Single(b => b.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaNutricionistas!.Value.Page));
     }

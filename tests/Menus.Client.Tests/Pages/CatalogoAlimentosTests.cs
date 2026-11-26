@@ -70,7 +70,12 @@ public sealed class CatalogoAlimentosTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Avena", cut.Markup));
 
         cut.FindAll("button").Single(b => b.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaAlimentos!.Value.Page));
+        // La consulta sale antes de que la página termine de cargar: hasta entonces no están los botones (#366).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsultaAlimentos!.Value.Page);
+            Assert.DoesNotContain("Cargando", cut.Markup);
+        });
 
         cut.FindAll("button").Single(b => b.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaAlimentos!.Value.Page));

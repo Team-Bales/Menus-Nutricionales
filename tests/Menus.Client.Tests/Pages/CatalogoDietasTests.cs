@@ -96,7 +96,12 @@ public sealed class CatalogoDietasTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
 
         cut.FindAll("button").Single(button => button.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaDietas!.Value.Page));
+        // La consulta sale antes de que la página termine de cargar: hasta entonces no están los botones (#366).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsultaDietas!.Value.Page);
+            Assert.DoesNotContain("Cargando", cut.Markup);
+        });
 
         cut.FindAll("button").Single(button => button.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaDietas!.Value.Page));

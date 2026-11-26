@@ -90,6 +90,12 @@ public sealed class AutorizacionEnLaApiTests
         ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
         ["GET api/pacientes/{id:guid}/consumos"] = PacientePropioOPersonal,
 
+        ["GET api/reportes/menus-automaticos"] = NutricionistaOAdmin,
+        ["GET api/reportes/alimentos-mas-usados"] = NutricionistaOAdmin,
+        ["GET api/reportes/dictamenes"] = NutricionistaOAdmin,
+        ["GET api/reportes/desempeno-menu"] = NutricionistaOAdmin,
+        ["GET api/reportes/comparacion-dietas"] = NutricionistaOAdmin,
+        ["GET api/reportes/correlacion-nutricional"] = NutricionistaOAdmin,
         ["GET api/salas"] = NutricionistaOAdmin,
         ["GET api/salas/{id:guid}"] = NutricionistaOAdmin,
         ["POST api/salas"] = SoloAdmin,

@@ -60,6 +60,7 @@ Sin token, todo responde 401 salvo el login (y el OpenAPI en Development). Leyen
 | Revalorización | Solicitar | ✓ | ✗ | ✗ |
 | Revalorización | Leer | · | ✓ | ✓ |
 | Revalorización | Resolver | ✗ | ✓ | ✗ |
+| Reporte | Consultar (C1–C6) | ✗ | ✓ | ✓ |
 
 ## Detalle por endpoint
 
@@ -213,6 +214,19 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 
 > `GET /api/revalorizaciones/{id}`: cualquier autenticado llega, pero el caso de uso devuelve 403 si es un
 > paciente ajeno al de la valoración revisada (`ObtenerRevalorizacionHandler`, #267).
+
+### Reportes
+
+| Endpoint | Anónimo | Paciente | Nutricionista | Admin | Política |
+|---|---|---|---|---|---|
+| `GET /api/reportes/menus-automaticos` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/reportes/alimentos-mas-usados` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/reportes/dictamenes` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/reportes/desempeno-menu` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/reportes/comparacion-dietas` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/reportes/correlacion-nutricional` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+
+> Los reportes son de solo lectura y no modifican estado; su acceso se restringe a roles con visión analítica (Nutricionista/Admin).
 
 ## Reglas dependientes de datos
 

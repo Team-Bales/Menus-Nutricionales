@@ -33,7 +33,7 @@ Campos comunes a todo documento:
 | Campo | Tipo | Obligatorio | Significado |
 |---|---|---|---|
 | `_id` | `ObjectId` | sí (lo genera MongoDB) | Identificador interno del documento. |
-| `origen` | objeto `{ tabla, id }` | sí | Fila de PostgreSQL a la que pertenece la ficha: `tabla` ∈ {`Alimento`, `Plato`} e `id` = `AlimentoId` o `PlatoId`. Es la referencia descrita en el documento 2. |
+| `origen` | objeto `{ tabla, id }` | sí | Fila de PostgreSQL a la que pertenece la ficha: `tabla` ∈ {`Alimento`, `Plato`} e `id` = `AlimentoId` o `PlatoId`, como texto con el GUID en formato canónico y en minúsculas. Es la referencia descrita en el documento 2. |
 | `tipo` | `string` | sí | `simple` (alimento) o `compuesto` (plato). |
 | `porcionReferencia` | objeto `{ cantidad, unidad }` | no | Porción sobre la que se expresan los valores (p. ej., 100 g). |
 | `macronutrientes` | objeto | no | Energía y macronutrientes; campos variables. |
@@ -54,7 +54,7 @@ Ficha breve: solo los campos que se conocen para ese alimento.
 ```json
 {
   "_id": { "$oid": "66f1a2b3c4d5e6f708192a3b" },
-  "origen": { "tabla": "Alimento", "id": 42 },
+  "origen": { "tabla": "Alimento", "id": "a1100000-0000-4000-8000-000000000042" },
   "tipo": "simple",
   "porcionReferencia": { "cantidad": 100, "unidad": "g" },
   "macronutrientes": {
@@ -69,7 +69,7 @@ Ficha breve: solo los campos que se conocen para ese alimento.
 }
 ```
 
-El alimento 42 (una manzana, por ejemplo) no tiene `micronutrientes` ni `modoPreparacion`: los campos no aplican, así que no aparecen.
+El alimento `a1100000-…-000000000042` (una manzana, por ejemplo) no tiene `micronutrientes` ni `modoPreparacion`: los campos no aplican, así que no aparecen.
 
 ---
 
@@ -80,7 +80,7 @@ Ficha extensa y anidada: bloques con subobjetos, arreglos de pasos y desglose po
 ```json
 {
   "_id": { "$oid": "66f1a2b3c4d5e6f708192a4c" },
-  "origen": { "tabla": "Plato", "id": 7 },
+  "origen": { "tabla": "Plato", "id": "7a1a0000-0000-4000-8000-000000000007" },
   "tipo": "compuesto",
   "porcionReferencia": { "cantidad": 1, "unidad": "ración (350 g)" },
   "macronutrientes": {
@@ -108,13 +108,13 @@ Ficha extensa y anidada: bloques con subobjetos, arreglos de pasos y desglose po
     ]
   },
   "ingredientes": [
-    { "alimentoId": 15, "nombre": "Pollo",
+    { "alimentoId": "a1100000-0000-4000-8000-000000000015", "nombre": "Pollo",
       "aporte": { "energiaKcal": 248, "proteinasG": 27.0, "grasasG": 9.0 } },
-    { "alimentoId": 23, "nombre": "Arroz",
+    { "alimentoId": "a1100000-0000-4000-8000-000000000023", "nombre": "Arroz",
       "aporte": { "energiaKcal": 208, "carbohidratosG": 46.0, "proteinasG": 4.3 } },
-    { "alimentoId": 31, "nombre": "Cebolla",
+    { "alimentoId": "a1100000-0000-4000-8000-000000000031", "nombre": "Cebolla",
       "aporte": { "energiaKcal": 24, "carbohidratosG": 5.6 } },
-    { "alimentoId": 34, "nombre": "Apio",
+    { "alimentoId": "a1100000-0000-4000-8000-000000000034", "nombre": "Apio",
       "aporte": { "energiaKcal": 6, "fibraG": 0.5 } }
   ],
   "actualizadoEn": { "$date": "2026-09-30T10:20:00Z" }
@@ -127,7 +127,7 @@ Ficha extensa y anidada: bloques con subobjetos, arreglos de pasos y desglose po
 
 ## 5. Validación de la colección
 
-MongoDB permite validar con `$jsonSchema` sin imponer una estructura fija. El validador exige solo lo que toda ficha comparte, más la coherencia entre la tabla de origen y el tipo, y deja libre el resto (`additionalProperties` no se restringe en los bloques variables). MongoDB implementa el draft 4 de JSON Schema, donde `exclusiveMinimum` es booleano y acompaña a `minimum`:
+MongoDB permite validar con `$jsonSchema` sin imponer una estructura fija. Este es el validador que aplica `FichaNutricionalEsquema.Validador()`, la fuente de verdad en el código. El validador exige solo lo que toda ficha comparte, más la coherencia entre la tabla de origen y el tipo, y deja libre el resto (`additionalProperties` no se restringe en los bloques variables). MongoDB implementa el draft 4 de JSON Schema, donde `exclusiveMinimum` es booleano y acompaña a `minimum`:
 
 ```javascript
 db.createCollection("fichas_nutricionales", {
@@ -141,7 +141,7 @@ db.createCollection("fichas_nutricionales", {
           required: ["tabla", "id"],
           properties: {
             tabla: { enum: ["Alimento", "Plato"] },
-            id: { bsonType: ["int", "long"], minimum: 1 }
+            id: { bsonType: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" }
           }
         },
         tipo: { enum: ["simple", "compuesto"] },
@@ -159,7 +159,7 @@ db.createCollection("fichas_nutricionales", {
           items: {
             bsonType: "object",
             required: ["alimentoId"],
-            properties: { alimentoId: { bsonType: ["int", "long"], minimum: 1 } }
+            properties: { alimentoId: { bsonType: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" } }
           }
         },
         actualizadoEn: { bsonType: "date" }
@@ -203,6 +203,7 @@ db.fichas_nutricionales.createIndex({ "origen.tabla": 1, "origen.id": 1 }, { uni
 - **`alergenos` es texto libre.** Los valores del arreglo son cadenas sin catálogo forzado. La aplicación es responsable de normalizar los términos antes de compararlos con las restricciones alimentarias de la dieta; si en el futuro se adopta un catálogo cerrado, bastará añadir un `enum` a `alergenos.items` en el validador.
 - Coherencia entre la tabla de origen y el tipo declarada en el validador (R8-03).
 - Regla R8-04.
+- **Identificadores como GUID en texto.** Los identificadores del proyecto son `Guid`, así que `origen.id` e `ingredientes[].alimentoId` se guardan como cadena con el GUID en formato canónico y en minúsculas, y el validador lo exige con un patrón. La primera versión de este documento usaba enteros; se corrigió con el #283 para que coincida con el código.
 - El campo `nombre` en cada elemento de `ingredientes` es una copia de lectura no validada: su ausencia no impide guardar la ficha. Se recomienda incluirlo para que la ficha sea legible sin consultar PostgreSQL.
 
 La correspondencia entre restricciones alimentarias y alérgenos (qué alérgenos excluye cada restricción) no forma parte del modelo relacional: por decisión de diseño se registra en la configuración de la aplicación, y ante un alérgeno excluido o una ficha incompleta el sistema advierte sin bloquear (documento 2, §5; informe, §4.5).

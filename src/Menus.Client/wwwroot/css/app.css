@@ -494,6 +494,7 @@ hr { border-color: var(--border); opacity: 1; }
 }
 
 .avatar-lg { width: 56px; height: 56px; font-size: 1rem; }
+.avatar .icon { width: 20px; height: 20px; }
 
 /* --------------------------------------------------------------------------
    Encabezados de página y acciones
@@ -1514,6 +1515,7 @@ code { color: var(--brand-700); }
 }
 
 @media (max-width: 480px) {
+    .topbar-breadcrumb { display: none; }
     .stats-grid, .quick-grid { grid-template-columns: 1fr; }
     .page-actions { width: 100%; }
     .page-actions .btn { flex: 1; }

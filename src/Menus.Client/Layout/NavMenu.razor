@@ -10,7 +10,7 @@
             <span class="brand-tagline">Centro de nutrición</span>
         </span>
     </a>
-    <button title="Navigation menu" class="navbar-toggler sidebar-toggle" @onclick="ToggleNavMenu">
+    <button aria-label="Menú de navegación" aria-expanded="@(collapseNavMenu ? "false" : "true")" class="navbar-toggler sidebar-toggle" @onclick="ToggleNavMenu">
         <Icon Name="menu" />
     </button>
 </div>
@@ -70,11 +70,11 @@
             <div class="sidebar-footer">
                 <div class="sidebar-footer-label">Sesión activa</div>
                 <div class="sidebar-footer-row">
-                    <span class="avatar avatar-dark">MU</span>
-                    <span>
-                        <span class="sidebar-footer-role">@NombreRol(estado.User)</span>
-                        <span class="sidebar-footer-caption">Menús Nutricionales</span>
-                    </span>
+                    <span class="avatar avatar-dark" aria-hidden="true"><Icon Name="user" /></span>
+                    <div>
+                        <div class="sidebar-footer-role">@NombreRol(estado.User)</div>
+                        <div class="sidebar-footer-caption">Menús Nutricionales</div>
+                    </div>
                 </div>
                 <button class="sidebar-logout" @onclick="CerrarSesion"><Icon Name="logout" />Cerrar sesión</button>
             </div>

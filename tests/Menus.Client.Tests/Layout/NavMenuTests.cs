@@ -56,7 +56,8 @@ public sealed class NavMenuTests : BunitContext
         Assert.DoesNotContain("catalogo/", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
         Assert.Contains("perfil", cut.Markup);
-        Assert.Contains(cut.FindAll("button"), b => b.TextContent == "Cerrar sesión");
+        Assert.Contains("Cerrar sesión", cut.Markup);
+        Assert.NotNull(cut.Find("button.sidebar-logout"));
     }
 
     [Fact]
@@ -95,7 +96,7 @@ public sealed class NavMenuTests : BunitContext
         AddAuthorization().SetAuthorized("admin@centro.test").SetRoles("Admin");
         var cut = Render<NavMenu>();
 
-        cut.FindAll("button").Single(button => button.TextContent == "Cerrar sesión").Click();
+        cut.Find("button.sidebar-logout").Click();
 
         cut.WaitForAssertion(() => Assert.True(sesion.SeCerro));
         Assert.EndsWith("/login", Services.GetRequiredService<BunitNavigationManager>().Uri);

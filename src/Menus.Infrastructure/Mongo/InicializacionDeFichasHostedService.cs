@@ -25,7 +25,15 @@ public sealed class InicializacionDeFichasHostedService(
     ILogger<InicializacionDeFichasHostedService> logger) : BackgroundService
 {
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => InicializarAsync(stoppingToken);
+
+    /// <summary>
+    /// Inicializa la colección y registra el resultado; nunca lanza. Está aparte de <see cref="ExecuteAsync"/> para
+    /// probarlo sin depender de cuándo arranca <see cref="BackgroundService"/> su tarea (desde .NET 10, en otra).
+    /// </summary>
+    /// <param name="stoppingToken">Se cancela cuando la API se detiene.</param>
+    /// <returns>Una tarea que termina cuando la inicialización terminó, falló o se canceló.</returns>
+    internal async Task InicializarAsync(CancellationToken stoppingToken)
     {
         try
         {

@@ -80,6 +80,16 @@ public sealed class ManejadorDeExcepcionesTests
     }
 
     [Fact]
+    public void ServicioNoDisponibleException_es_503_sin_el_detalle_de_la_causa()
+    {
+        var causa = new TimeoutException("mongodb://usuario:clave@mongo:27017 no respondió");
+        var problema = ManejadorDeExcepciones.Traducir(new ServicioNoDisponibleException("MongoDB no responde.", causa));
+
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, problema.Status);
+        Assert.Equal("MongoDB no responde.", problema.Detail);
+    }
+
+    [Fact]
     public void ActorNoIdentificadoException_es_401()
     {
         var problema = ManejadorDeExcepciones.Traducir(new ActorNoIdentificadoException("Falta la cabecera."));

@@ -1,4 +1,5 @@
 using Menus.Application.Catalogo;
+using Menus.Application.Catalogo.Fichas;
 using Menus.Application.Comun;
 using Menus.Application.Reportes;
 using Menus.Domain.Abstractions;
@@ -97,6 +98,10 @@ public static class DependencyInjection
             services.AddScoped<IDesgloseDeIngredientes, FichaNutricionalStore>();
             services.AddScoped<IFichasNutricionales, FichasNutricionalesEnMongo>();
 
+            // Leer y escribir la ficha (#283), y dejar la colección con su validador e índice al arrancar.
+            services.AddScoped<IAlmacenDeFichas, AlmacenDeFichasEnMongo>();
+            services.AddHostedService<InicializacionDeFichasHostedService>();
+
             // Conciliación RM-10: opciones, conciliador y servicio hospedado.
             services.Configure<ConciliacionOptions>(configuration.GetSection(ConciliacionOptions.SectionName));
             services.AddScoped<IFichasConciliador, FichasConciliador>();
@@ -111,6 +116,8 @@ public static class DependencyInjection
         {
             // Sin MongoDB no hay fichas: los casos de uso siguen funcionando, sin nada que mantener.
             services.AddScoped<IFichasNutricionales, SinFichasNutricionales>();
+            // Y la ficha no se puede leer ni escribir: 503 (#283).
+            services.AddSingleton<IAlmacenDeFichas, SinAlmacenDeFichas>();
         }
 
         // Redis (caché de disponibilidad calórica y valoraciones recientes, ADR-005), solo si hay cadena de

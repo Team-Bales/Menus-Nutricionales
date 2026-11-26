@@ -1,6 +1,6 @@
 # ADR-009: Ficha nutricional en MongoDB: conciliación RM-10, configuración restricción–alérgeno y mantenimiento de RM-06
 
-**Estado:** Propuesto  
+**Estado:** Aceptado (2026-11-26, con el #283; ver «Decisión adoptada» al final)  
 **Fecha:** 2026-10-30
 
 ## Contexto
@@ -57,3 +57,25 @@ Las alternativas se presentan en las tablas de cada punto de la decisión.
 - Con B1, mantener la configuración al crear restricciones nuevas es una tarea de administración, no de la base de datos.
 - Con C1, el caso de uso «editar composición» depende del repositorio de fichas.
 - No se añaden reglas de coherencia entre macronutrientes y micronutrientes ni de otro tipo; el informe no las pide.
+
+## Decisión adoptada (2026-11-26, #283)
+
+Se aceptan las tres opciones recomendadas, con una aclaración en (c).
+
+| Punto | Opción | Estado en el código |
+|---|---|---|
+| (a) Conciliación RM-10 | **A1**: tarea en segundo plano cada 24 h, con `Conciliacion:Intervalo` y `Conciliacion:Habilitada` | Hecho en el #205 (`ConciliacionHostedService`, `FichasConciliador`) |
+| (b) Restricción–alérgeno | **B1**: sección `AlergenosPorRestriccion` en la configuración | Pendiente: todavía no hay caso de uso que compare los alérgenos de la ficha con las restricciones de la dieta. La normalización de términos que pide B1 ya existe (`ReglasDeLaFicha.NormalizarAlergeno`, #283) y la usa RM-04 para detectar alérgenos repetidos |
+| (c) RM-06 | **C1**, con la aclaración de abajo | (i) en el #283; (ii) en el commit `67c0fe3` (#62) |
+
+**Aclaración en (c)(ii).** C1 decía que, al cambiar la composición de un plato que ya tiene ficha con desglose, el caso de uso **rechace** el cambio salvo que traiga la ficha actualizada. Lo implementado es distinto, y es lo que se acepta: **el caso de uso mantiene el desglose solo**, después de confirmar en PostgreSQL.
+
+- `AgregarIngrediente` agrega el alimento al desglose, sin `aporte` y con el nombre copiado.
+- `QuitarIngrediente` lo quita.
+- Si la ficha no tiene desglose, no lo crea: uno con un solo ingrediente no coincidiría con la composición.
+
+Así RM-06 se mantiene sin obligar al cliente a mandar la ficha con cada cambio de composición. Lo que queda pendiente es el `aporte` del ingrediente nuevo, que el nutricionista completa con el `PUT` de la ficha. Si MongoDB falla después de confirmar, el desglose queda distinto de la composición y la conciliación registra la advertencia (C1 no corrige en silencio).
+
+**(c)(i), al guardar la ficha de un plato** (`PUT /api/platos/{id}/ficha`): si trae `ingredientes`, su conjunto de `alimentoId` tiene que ser igual al de la composición, o se responde 422 con `regla: RM-06`. Puede no traerlo (documento 1, §6). El `nombre` de cada ingrediente lo copia el servidor desde PostgreSQL.
+
+**Disponibilidad.** MongoDB sigue siendo opcional: sin su cadena de conexión la API arranca igual, y los endpoints de la ficha responden 503 (ADR-010, §4). Con MongoDB configurado, la API deja la colección con su validador y su índice único al arrancar (`InicializacionDeFichasHostedService`).

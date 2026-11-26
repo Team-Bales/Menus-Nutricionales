@@ -69,6 +69,7 @@ Este ADR fija esas convenciones para toda la capa. Recoge las decisiones D3, D6 
 | PostgreSQL: FK (en uso, o no existe) | `23503` | 409 |
 | PostgreSQL: `CHECK` | `23514` | 422 |
 | PostgreSQL: trigger | `P0001`; el código de la regla es lo que el mensaje tiene antes de «:» | 409 |
+| Servicio externo no configurado o sin respuesta (hoy, MongoDB para la ficha nutricional, #283) | `ServicioNoDisponibleException` (de `Menus.Application`) | 503 |
 | Cualquier otra | — | 500 |
 
 **Las dos excepciones del dominio son la parte de esta decisión que cambia código existente.** Hoy el dominio lanza `InvalidOperationException` y `ArgumentException`, que también lanza el framework cuando hay un error de programación. Traducirlas sin más a 409 y 422 convertiría un error del programa en una respuesta «de negocio». Por ejemplo, una consulta que EF no puede traducir lanza `InvalidOperationException`, y el cliente vería un 409 en lugar de un 500.

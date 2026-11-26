@@ -34,3 +34,12 @@ Sin una decisión, cualquier nutricionista podría cambiar los ingredientes de u
 
 - ✅ La clasificación y la composición de un plato siguen la misma regla, y el cliente recibe la misma respuesta.
 - ⚠️ RS-02 queda más amplia que su texto en el informe. Si se vuelve a editar el informe, conviene decir «clasifica o compone».
+
+## Ampliación: la ficha nutricional (#283, 2026-11-26)
+
+**Solo el nutricionista que describió un alimento o un plato puede escribir su ficha nutricional** (`PUT /api/alimentos/{id}/ficha` y `PUT /api/platos/{id}/ficha`). Lo decidió el equipo al implementar el #283, con el mismo razonamiento que la composición: la ficha también describe el ítem, y con más detalle (sus nutrientes, sus alérgenos y cómo se prepara).
+
+- **Dónde se comprueba:** en el caso de uso `GuardarFichaHandler` (`ReglasDeLaFicha.ExigirDescriptor`), antes de validar el desglose y de escribir en MongoDB.
+- **Respuesta:** la misma, 409 con `regla: RS-02`.
+- **Leer la ficha** no está restringido: es como consultar el catálogo, cualquier usuario autenticado.
+- ⚠️ Con esto, RS-02 queda todavía más amplia que su texto en el informe: «clasifica, compone o describe en la ficha».

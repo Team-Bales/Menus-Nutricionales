@@ -18,6 +18,20 @@ public sealed class NoEncontradoException : Exception
         Id = id;
     }
 
+    /// <summary>
+    /// Crea la excepción con un mensaje propio, para cuando «No existe el {recurso} {id}» no dice lo que falta (por
+    /// ejemplo, un alimento que existe pero no tiene ficha nutricional).
+    /// </summary>
+    /// <param name="recurso">Nombre del recurso, en singular.</param>
+    /// <param name="id">Identificador buscado.</param>
+    /// <param name="mensaje">Mensaje para el cliente.</param>
+    public NoEncontradoException(string recurso, object id, string mensaje)
+        : base(mensaje)
+    {
+        Recurso = recurso;
+        Id = id;
+    }
+
     /// <summary>Nombre del recurso buscado.</summary>
     public string Recurso { get; }
 

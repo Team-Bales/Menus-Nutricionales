@@ -86,9 +86,12 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 | `POST /api/alimentos` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 | `PUT /api/alimentos/{id}` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 | `DELETE /api/alimentos/{id}` | — | ✗ | ✓ | ✗ | SoloNutricionista |
+| `GET /api/alimentos/{id}/ficha` | — | ✓ | ✓ | ✓ | Autenticado |
+| `PUT /api/alimentos/{id}/ficha` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 
 > El Admin no crea ni modifica alimentos: no tiene un nutricionista asociado en el token. `POST`/`PUT` además
-> exige que el actor sea quien describió el ítem (RS-02, en el caso de uso).
+> exige que el actor sea quien describió el ítem (RS-02, en el caso de uso). También para escribir la ficha
+> nutricional (`PUT .../ficha`, #283, ADR-012).
 
 ### Platos
 
@@ -101,6 +104,8 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 | `DELETE /api/platos/{id}` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 | `POST /api/platos/{id}/ingredientes` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 | `DELETE /api/platos/{id}/ingredientes/{alimentoId}` | — | ✗ | ✓ | ✗ | SoloNutricionista |
+| `GET /api/platos/{id}/ficha` | — | ✓ | ✓ | ✓ | Autenticado |
+| `PUT /api/platos/{id}/ficha` | — | ✗ | ✓ | ✗ | SoloNutricionista |
 
 ### Dietas
 

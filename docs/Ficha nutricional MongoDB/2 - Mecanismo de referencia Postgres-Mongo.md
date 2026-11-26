@@ -51,9 +51,9 @@ El paso 2 de la última operación, en MongoDB:
 
 ```javascript
 db.fichas_nutricionales.updateMany(
-  { "ingredientes.alimentoId": 42 },
+  { "ingredientes.alimentoId": "a1100000-0000-4000-8000-000000000042" },
   { $set: { "ingredientes.$[i].nombre": "Manzana roja" } },
-  { arrayFilters: [{ "i.alimentoId": 42 }] }
+  { arrayFilters: [{ "i.alimentoId": "a1100000-0000-4000-8000-000000000042" }] }
 )
 ```
 

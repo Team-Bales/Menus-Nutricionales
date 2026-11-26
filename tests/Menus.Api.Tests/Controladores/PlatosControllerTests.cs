@@ -1,4 +1,8 @@
+using System.Text.Json.Nodes;
 using Menus.Api.Controladores;
+using Menus.Application.Catalogo.Fichas;
+using Menus.Application.Catalogo.Fichas.GuardarFicha;
+using Menus.Application.Catalogo.Fichas.ObtenerFicha;
 using Menus.Application.Catalogo.Platos;
 using Menus.Application.Catalogo.Platos.ActualizarPlato;
 using Menus.Application.Catalogo.Platos.AgregarIngrediente;
@@ -113,5 +117,36 @@ public sealed class PlatosControllerTests
 
         Assert.IsType<NoContentResult>(respuesta);
         Assert.Equal(new QuitarIngredienteCommand(id, alimento), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task ObtenerFicha_pide_la_ficha_del_plato_de_la_ruta()
+    {
+        var id = Guid.NewGuid();
+        var ficha = new FichaNutricionalDto(id, "Plato", "compuesto", null, null, null, null, null, null, DateTime.UtcNow);
+        _despachador.Resultado = ficha;
+
+        var respuesta = await Controlador.ObtenerFicha(id, CancellationToken.None);
+
+        Assert.Same(ficha, respuesta);
+        Assert.Equal(new ObtenerFichaQuery(ClaseDeItem.Plato, id), _despachador.Recibida);
+    }
+
+    [Fact]
+    public async Task GuardarFicha_arma_el_comando_de_plato_con_el_id_de_la_ruta_y_el_cuerpo()
+    {
+        var id = Guid.NewGuid();
+        var macros = new JsonObject { ["energiaKcal"] = 486 };
+        IReadOnlyList<string> alergenos = ["apio"];
+        IReadOnlyList<IngredienteDeFichaEntrada> ingredientes = [new(Guid.NewGuid(), null)];
+        var porcion = new PorcionDeReferenciaDto(1, "ración");
+        _despachador.Resultado = new FichaNutricionalDto(id, "Plato", "compuesto", porcion, macros, null, alergenos, null, null, DateTime.UtcNow);
+
+        await Controlador.GuardarFicha(
+            id, new CuerpoDeFicha(porcion, macros, null, alergenos, null, ingredientes), CancellationToken.None);
+
+        Assert.Equal(
+            new GuardarFichaCommand(ClaseDeItem.Plato, id, porcion, macros, null, alergenos, null, ingredientes),
+            _despachador.Recibida);
     }
 }

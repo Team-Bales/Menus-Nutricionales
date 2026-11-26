@@ -47,6 +47,8 @@ public sealed class AutorizacionEnLaApiTests
         ["POST api/alimentos"] = SoloNutricionista,
         ["PUT api/alimentos/{id:guid}"] = SoloNutricionista,
         ["DELETE api/alimentos/{id:guid}"] = SoloNutricionista,
+        ["GET api/alimentos/{id:guid}/ficha"] = Autenticado,
+        ["PUT api/alimentos/{id:guid}/ficha"] = SoloNutricionista,
 
         ["GET api/platos"] = Autenticado,
         ["GET api/platos/{id:guid}"] = Autenticado,
@@ -55,6 +57,8 @@ public sealed class AutorizacionEnLaApiTests
         ["DELETE api/platos/{id:guid}"] = SoloNutricionista,
         ["POST api/platos/{id:guid}/ingredientes"] = SoloNutricionista,
         ["DELETE api/platos/{id:guid}/ingredientes/{alimentoId:guid}"] = SoloNutricionista,
+        ["GET api/platos/{id:guid}/ficha"] = Autenticado,
+        ["PUT api/platos/{id:guid}/ficha"] = SoloNutricionista,
 
         ["GET api/dietas"] = Autenticado,
         ["GET api/dietas/{id:guid}"] = Autenticado,

@@ -1,4 +1,6 @@
 using Menus.Api.Auth;
+using Menus.Application.Catalogo.Fichas;
+using Menus.Application.Catalogo.Fichas.ObtenerFicha;
 using Menus.Application.Catalogo.Platos;
 using Menus.Application.Catalogo.Platos.ActualizarPlato;
 using Menus.Application.Catalogo.Platos.AgregarIngrediente;
@@ -137,4 +139,34 @@ public sealed class PlatosController(IDespachador despachador) : ControllerBase
         await despachador.EnviarAsync(new QuitarIngredienteCommand(id, alimentoId), ct);
         return NoContent();
     }
+
+    /// <summary>Ficha nutricional ampliada del plato (#283, RF-04), con el desglose por ingrediente si lo tiene.</summary>
+    /// <response code="200">La ficha.</response>
+    /// <response code="404">El plato no existe, o no tiene ficha.</response>
+    /// <response code="503">MongoDB no está configurado o no responde.</response>
+    [HttpGet("{id:guid}/ficha")]
+    [ProducesResponseType<FichaNutricionalDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
+    public Task<FichaNutricionalDto> ObtenerFicha(Guid id, CancellationToken ct)
+        => despachador.EnviarAsync(new ObtenerFichaQuery(ClaseDeItem.Plato, id), ct);
+
+    /// <summary>
+    /// Crea o reemplaza la ficha nutricional del plato. Solo puede hacerlo quien lo describió (RS-02). Si trae desglose,
+    /// tiene que nombrar exactamente los alimentos de su composición (RM-06).
+    /// </summary>
+    /// <response code="200">La ficha guardada.</response>
+    /// <response code="404">El plato no existe.</response>
+    /// <response code="409">El actor no es quien describió el plato (RS-02).</response>
+    /// <response code="422">La ficha no es válida (RM-04), o su desglose no coincide con la composición (RM-06).</response>
+    /// <response code="503">MongoDB no está configurado o no responde.</response>
+    [Authorize(Policy = Politicas.SoloNutricionista)]
+    [HttpPut("{id:guid}/ficha")]
+    [ProducesResponseType<FichaNutricionalDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status503ServiceUnavailable)]
+    public Task<FichaNutricionalDto> GuardarFicha(Guid id, CuerpoDeFicha cuerpo, CancellationToken ct)
+        => despachador.EnviarAsync(cuerpo.AComando(ClaseDeItem.Plato, id), ct);
 }

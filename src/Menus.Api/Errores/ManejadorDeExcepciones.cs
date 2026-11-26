@@ -59,6 +59,7 @@ public sealed partial class ManejadorDeExcepciones(
         ActorNoIdentificadoException e => Problema(StatusCodes.Status401Unauthorized, e.Message),
         CredencialesInvalidasException e => Problema(StatusCodes.Status401Unauthorized, e.Message),
         AccesoDenegadoException e => Problema(StatusCodes.Status403Forbidden, e.Message),
+        ServicioNoDisponibleException e => Problema(StatusCodes.Status503ServiceUnavailable, e.Message),
         DbUpdateException { InnerException: PostgresException e } => TraducirPostgres(e),
         PostgresException e => TraducirPostgres(e),
         _ => Problema(StatusCodes.Status500InternalServerError, "Ocurrió un error inesperado al atender la solicitud."),

@@ -58,6 +58,9 @@ public sealed class NavMenuTests : BunitContext
         Assert.Contains("perfil", cut.Markup);
         Assert.Contains("Cerrar sesión", cut.Markup);
         Assert.NotNull(cut.Find("button.sidebar-logout"));
+        Assert.Equal("DIV", cut.Find(".sidebar-footer-role").TagName);
+        Assert.Equal("DIV", cut.Find(".sidebar-footer-caption").TagName);
+        Assert.DoesNotContain(">MU<", cut.Markup);
     }
 
     [Fact]
@@ -81,11 +84,17 @@ public sealed class NavMenuTests : BunitContext
         var navScrollable = cut.Find("div.nav-scrollable");
         Assert.Contains("collapse", navScrollable.ClassName);
 
-        cut.Find("button.navbar-toggler").Click();
+        var boton = cut.Find("button.navbar-toggler");
+        Assert.Equal("Menú de navegación", boton.GetAttribute("aria-label"));
+        Assert.Equal("false", boton.GetAttribute("aria-expanded"));
+
+        boton.Click();
         Assert.DoesNotContain("collapse", cut.Find("div.nav-scrollable").ClassName);
+        Assert.Equal("true", cut.Find("button.navbar-toggler").GetAttribute("aria-expanded"));
 
         cut.Find("button.navbar-toggler").Click();
         Assert.Contains("collapse", cut.Find("div.nav-scrollable").ClassName);
+        Assert.Equal("false", cut.Find("button.navbar-toggler").GetAttribute("aria-expanded"));
     }
 
     [Fact]

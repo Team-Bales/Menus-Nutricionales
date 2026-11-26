@@ -16,14 +16,10 @@
             </div>
 
             <div class="topbar-actions">
-                <button class="icon-button" title="Buscar" type="button"><Icon Name="search" /></button>
-                <button class="icon-button" title="Notificaciones" type="button"><Icon Name="bell" /></button>
-                <span class="topbar-divider" aria-hidden="true"></span>
                 <a class="topbar-user" href="perfil">
-                    <span class="avatar">MU</span>
+                    <span class="avatar" aria-hidden="true"><Icon Name="user" /></span>
                     <span class="topbar-user-meta">
                         <span class="topbar-user-name">Mi cuenta</span>
-                        <span class="topbar-user-role">Gestión nutricional</span>
                     </span>
                 </a>
             </div>
@@ -47,6 +43,7 @@
             if (ruta.StartsWith("catalogo/alimentos", StringComparison.Ordinal)) return "Alimentos";
             if (ruta.StartsWith("catalogo/platos", StringComparison.Ordinal)) return "Platos";
             if (ruta.StartsWith("catalogo/dietas", StringComparison.Ordinal)) return "Dietas";
+            if (ruta.StartsWith("menus", StringComparison.Ordinal)) return "Menús";
             if (ruta.StartsWith("admin/nomencladores", StringComparison.Ordinal)) return "Nomencladores";
             if (ruta.StartsWith("admin/nutricionistas", StringComparison.Ordinal)) return "Nutricionistas";
             if (ruta.StartsWith("admin/salas", StringComparison.Ordinal)) return "Salas";

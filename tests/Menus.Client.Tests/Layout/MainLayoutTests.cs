@@ -23,6 +23,11 @@ public sealed class MainLayoutTests : BunitContext
         Assert.Contains("Contenido de la página", cut.Markup);
         Assert.Contains("app-topbar", cut.Markup);
         Assert.Contains("Menús nutricionales", cut.Markup);
+        Assert.DoesNotContain("Buscar", cut.Markup);
+        Assert.DoesNotContain("Notificaciones", cut.Markup);
+        Assert.DoesNotContain("Gestión nutricional", cut.Markup);
+        Assert.DoesNotContain(">MU<", cut.Markup);
+        Assert.NotNull(cut.Find(".topbar-user .avatar .icon"));
     }
 
     /// <summary>La barra superior debe mostrar la sección que corresponda a la ruta actual.</summary>
@@ -30,6 +35,7 @@ public sealed class MainLayoutTests : BunitContext
     [InlineData("catalogo/alimentos", "Alimentos")]
     [InlineData("catalogo/platos", "Platos")]
     [InlineData("catalogo/dietas", "Dietas")]
+    [InlineData("menus", "Menús")]
     [InlineData("admin/nomencladores", "Nomencladores")]
     [InlineData("admin/nutricionistas", "Nutricionistas")]
     [InlineData("admin/salas", "Salas")]

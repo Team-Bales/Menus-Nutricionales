@@ -1,19 +1,59 @@
 ﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
    secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
    nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
-   una declara su propio [Authorize]. El panel del paciente (menús, consumo y valoraciones) es el #88. *@
+   una declara su propio [Authorize]. El #349 añade las métricas del catálogo sobre esa portada. *@
 @page "/"
 @attribute [Authorize]
+@inject ICatalogoApi Catalogo
+@inject IAdministracionApi Administracion
+@inject AuthenticationStateProvider Estado
 
 <PageTitle>Menús nutricionales</PageTitle>
 
-<div class="mb-4">
-    <h1 class="h2 mb-1">Menús nutricionales</h1>
-    <p class="text-muted mb-0">
-        Gestión de la generación automática de menús nutricionales en una institución de salud: alimentos y platos,
-        dietas, nutricionistas, pacientes, y la generación, validación y valoración de los menús.
-    </p>
+<div class="dashboard-hero">
+    <div class="dashboard-hero-copy">
+        <span class="eyebrow">Panel de trabajo</span>
+        <h1>Menús nutricionales</h1>
+        <p>
+            Gestión de la generación automática de menús nutricionales en una institución de salud: alimentos y platos,
+            dietas, nutricionistas, pacientes, y la generación, validación y valoración de los menús.
+        </p>
+    </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+@if (_esPersonal)
+{
+    <div class="stats-grid" aria-label="Resumen del catálogo">
+            <div class="stat-card">
+                <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.5h15l-1.3 10.7a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8L4.5 8.5Z"/><path d="m8.5 8.5 3.5-5.5 3.5 5.5"/></svg></span>
+                <span class="stat-body"><span class="stat-value">@(_alimentos?.ToString() ?? "—")</span><span class="stat-label">Alimentos</span></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon stat-icon-amber"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v6.5a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17.5 3c-1.9 2-3 5-3 9h6c0-4-1.1-7-3-9Z"/><path d="M17.5 12v9"/></svg></span>
+                <span class="stat-body"><span class="stat-value">@(_platos?.ToString() ?? "—")</span><span class="stat-label">Platos</span></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon stat-icon-blue"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8 12.5h2l1.8-3.2 2 6.4 1.7-3.2H16"/></svg></span>
+                <span class="stat-body"><span class="stat-value">@(_dietas?.ToString() ?? "—")</span><span class="stat-label">Dietas</span></span>
+            </div>
+        @if (_esAdmin)
+        {
+            <div class="stat-card">
+                <span class="stat-icon stat-icon-violet"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.3"/><path d="M5.3 17c.7-1.9 2.1-2.8 3.7-2.8s3 1 3.7 2.8"/><path d="M15 9.5h4M15 13h4"/></svg></span>
+                <span class="stat-body"><span class="stat-value">@(_nutricionistas?.ToString() ?? "—")</span><span class="stat-label">Nutricionistas</span></span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 21V5.8a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2V21"/><path d="M2.5 21h19"/><path d="M12 7v6M9 10h6"/><path d="M9.5 21v-4h5v4"/></svg></span>
+                <span class="stat-body"><span class="stat-value">@(_salas?.ToString() ?? "—")</span><span class="stat-label">Salas</span></span>
+            </div>
+        }
+    </div>
+}
 
 <AuthorizeView Context="estado">
     <Authorized>
@@ -27,6 +67,19 @@
                     <li><a href="catalogo/dietas">Dietas</a>: planes de alimentación por programa de atención.</li>
                 </ul>
             </section>
+
+            @if (_dietasRecientes.Count > 0)
+            {
+                <section class="mb-4" aria-labelledby="portada-recientes">
+                    <h2 id="portada-recientes" class="h4">Dietas recientes</h2>
+                    <ul class="list-unstyled">
+                        @foreach (var dieta in _dietasRecientes)
+                        {
+                            <li><a href="@($"catalogo/dietas/{dieta.Id}")">@dieta.Nombre</a></li>
+                        }
+                    </ul>
+                </section>
+            }
         }
         @if (estado.User.IsInRole(RolesDeUsuario.Admin))
         {
@@ -50,3 +103,72 @@
         </section>
     </Authorized>
 </AuthorizeView>
+
+@code {
+    private int? _alimentos;
+    private int? _platos;
+    private int? _dietas;
+    private int? _nutricionistas;
+    private int? _salas;
+    private IReadOnlyList<Dieta> _dietasRecientes = [];
+    private bool _esPersonal;
+    private bool _esAdmin;
+    private string? _error;
+
+    /// <summary>Carga los totales que permite el rol de la sesión, sin añadir endpoints nuevos.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = (await Estado.GetAuthenticationStateAsync()).User;
+        _esPersonal = RolesDeUsuario.EsPersonal(usuario);
+        _esAdmin = usuario.IsInRole(RolesDeUsuario.Admin);
+
+        if (_esPersonal)
+        {
+            await CargarCatalogo();
+        }
+
+        if (_esAdmin)
+        {
+            await CargarAdministracion();
+        }
+    }
+
+    private async Task CargarCatalogo()
+    {
+        try
+        {
+            var alimentos = Catalogo.ListarAlimentosAsync(null, null, null, 1, 1);
+            var platos = Catalogo.ListarPlatosAsync(null, null, null, 1, 1);
+            var dietas = Catalogo.ListarDietasAsync(null, 1, 1);
+            var recientes = Catalogo.ListarDietasAsync(null, 1, 5);
+
+            await Task.WhenAll(alimentos, platos, dietas, recientes);
+
+            _alimentos = alimentos.Result.Total;
+            _platos = platos.Result.Total;
+            _dietas = dietas.Result.Total;
+            _dietasRecientes = recientes.Result.Data;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task CargarAdministracion()
+    {
+        try
+        {
+            var nutricionistas = Administracion.ListarNutricionistasAsync(null, 1, 1);
+            var salas = Administracion.ListarSalasAsync();
+            await Task.WhenAll(nutricionistas, salas);
+
+            _nutricionistas = nutricionistas.Result.Total;
+            _salas = salas.Result.Count;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

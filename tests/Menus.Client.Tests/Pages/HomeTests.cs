@@ -1,9 +1,11 @@
+using System.Net;
 using System.Reflection;
 using Bunit;
 using Bunit.TestDoubles;
 using Menus.Client.Pages;
 using Menus.Client.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Client.Tests.Pages;
 
@@ -19,7 +21,14 @@ public sealed class HomeTests : BunitContext
     private IRenderedComponent<Home> RenderComo(string correo, string rol)
     {
         AddAuthorization().SetAuthorized(correo).SetRoles(rol);
+        Servicios(new CatalogoApiFalsa(), new AdministracionApiFalsa());
         return Render<Home>();
+    }
+
+    private void Servicios(ICatalogoApi catalogo, IAdministracionApi administracion)
+    {
+        Services.AddSingleton(catalogo);
+        Services.AddSingleton(administracion);
     }
 
     private static IReadOnlyList<string> Enlaces(IRenderedComponent<Home> cut) =>
@@ -83,5 +92,73 @@ public sealed class HomeTests : BunitContext
 
         Assert.Equal("Página no encontrada", cut.Find("h1").TextContent);
         Assert.DoesNotContain("Sorry", cut.Markup);
+    }
+
+    [Fact]
+    public void Un_admin_ve_las_cinco_metricas_del_catalogo_y_la_administracion()
+    {
+        var cut = RenderComo("admin@centro.test", RolesDeUsuario.Admin);
+
+        cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll(".stat-card").Count));
+        Assert.All(cut.FindAll(".stat-value"), valor => Assert.Equal("1", valor.TextContent.Trim()));
+    }
+
+    [Fact]
+    public void Un_nutricionista_ve_solo_las_tres_metricas_del_catalogo()
+    {
+        var cut = RenderComo("nutri@centro.test", RolesDeUsuario.Nutricionista);
+
+        cut.WaitForAssertion(() => Assert.Equal(3, cut.FindAll(".stat-card").Count));
+        Assert.All(cut.FindAll(".stat-value"), valor => Assert.Equal("1", valor.TextContent.Trim()));
+    }
+
+    [Fact]
+    public void Un_paciente_no_ve_metricas_y_sigue_con_un_solo_enlace()
+    {
+        var cut = RenderComo("paciente@centro.test", RolesDeUsuario.Paciente);
+
+        Assert.Empty(cut.FindAll(".stat-card"));
+        Assert.Equal(new[] { "perfil" }, Enlaces(cut));
+    }
+
+    [Fact]
+    public void Sin_dietas_no_se_muestra_la_seccion_de_recientes()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+        Servicios(new CatalogoApiFalsa { Dietas = [] }, new AdministracionApiFalsa());
+
+        var cut = Render<Home>();
+
+        Assert.DoesNotContain("Dietas recientes", cut.Markup);
+    }
+
+    [Fact]
+    public void Un_error_del_catalogo_muestra_un_aviso_y_no_rompe_la_portada()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+        Servicios(new CatalogoApiFalsa
+        {
+            ErrorAlCargarAlimento = new ApiException(HttpStatusCode.InternalServerError, "No se pudo cargar el catálogo."),
+        }, new AdministracionApiFalsa());
+
+        var cut = Render<Home>();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudo cargar el catálogo.", cut.Markup));
+        Assert.Contains("perfil", cut.Markup);
+    }
+
+    [Fact]
+    public void Un_error_de_administracion_muestra_un_aviso_y_no_rompe_la_portada()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+        Servicios(new CatalogoApiFalsa(), new AdministracionApiFalsa
+        {
+            Error = new ApiException(HttpStatusCode.InternalServerError, "No se pudo cargar la administración."),
+        });
+
+        var cut = Render<Home>();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudo cargar la administración.", cut.Markup));
+        Assert.Contains("perfil", cut.Markup);
     }
 }

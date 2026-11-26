@@ -21,7 +21,7 @@ public sealed class MainLayoutTests : BunitContext
         var cut = Render<MainLayout>(ps => ps.Add(p => p.Body, body));
 
         Assert.Contains("Contenido de la página", cut.Markup);
-        Assert.Contains("Gestión del catálogo nutricional", cut.Markup);
+        Assert.Contains("app-topbar", cut.Markup);
         Assert.Contains("Menús nutricionales", cut.Markup);
     }
 }

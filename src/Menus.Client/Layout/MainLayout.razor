@@ -1,17 +1,58 @@
-﻿@* Diseño por defecto: el menú lateral (NavMenu) y el contenido de la página. *@
+﻿@* Diseño por defecto: el menú lateral (NavMenu) y el contenido de la página.
+   La barra superior muestra la sección actual en lugar del texto fijo de la plantilla. *@
 @inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
+@inject NavigationManager Navegacion
+
+<div class="page app-shell">
+    <div class="app-sidebar">
         <NavMenu />
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <span class="text-muted">Gestión del catálogo nutricional</span>
-        </div>
+    <div class="app-main">
+        <header class="app-topbar">
+            <div class="topbar-context">
+                <span class="topbar-breadcrumb">Menús nutricionales</span>
+                <span class="topbar-title">@TituloSeccion</span>
+            </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+            <div class="topbar-actions">
+                <button class="icon-button" title="Buscar" type="button"><Icon Name="search" /></button>
+                <button class="icon-button" title="Notificaciones" type="button"><Icon Name="bell" /></button>
+                <span class="topbar-divider" aria-hidden="true"></span>
+                <a class="topbar-user" href="perfil">
+                    <span class="avatar">MU</span>
+                    <span class="topbar-user-meta">
+                        <span class="topbar-user-name">Mi cuenta</span>
+                        <span class="topbar-user-role">Gestión nutricional</span>
+                    </span>
+                </a>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <article>
+                @Body
+            </article>
+        </main>
+    </div>
 </div>
+
+@code {
+    /// <summary>Título de la barra superior, derivado de la ruta actual.</summary>
+    private string TituloSeccion
+    {
+        get
+        {
+            var ruta = Navegacion.ToBaseRelativePath(Navegacion.Uri).TrimStart('/');
+            if (ruta.StartsWith("catalogo/alimentos", StringComparison.Ordinal)) return "Alimentos";
+            if (ruta.StartsWith("catalogo/platos", StringComparison.Ordinal)) return "Platos";
+            if (ruta.StartsWith("catalogo/dietas", StringComparison.Ordinal)) return "Dietas";
+            if (ruta.StartsWith("admin/nomencladores", StringComparison.Ordinal)) return "Nomencladores";
+            if (ruta.StartsWith("admin/nutricionistas", StringComparison.Ordinal)) return "Nutricionistas";
+            if (ruta.StartsWith("admin/salas", StringComparison.Ordinal)) return "Salas";
+            if (ruta.StartsWith("perfil", StringComparison.Ordinal)) return "Mi perfil";
+            if (ruta.StartsWith("login", StringComparison.Ordinal)) return "Iniciar sesión";
+            return "Inicio";
+        }
+    }
+}

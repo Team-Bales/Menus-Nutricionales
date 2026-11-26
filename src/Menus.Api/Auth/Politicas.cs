@@ -60,7 +60,7 @@ public static class Politicas
             .AddPolicy(SoloAdmin, p => p.RequireRole(RolesUsuario.Admin))
             .AddPolicy(SoloNutricionista, p => p.RequireRole(RolesUsuario.Nutricionista))
             .AddPolicy(SoloPaciente, p => p.RequireRole(RolesUsuario.Paciente))
-            .AddPolicy(NutricionistaOAdmin, p => p.RequireRole(RolesUsuario.Nutricionista, RolesUsuario.Admin))
+            .AddPolicy(NutricionistaOAdmin, p => p.RequireRole(RolesUsuario.Personal))
             .AddPolicy(PacientePropioOPersonal, p => p.RequireAssertion(EsPersonalOElPropioPaciente));
 
         return services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaDeAutorizacion>();
@@ -74,7 +74,7 @@ public static class Politicas
     internal static bool EsPersonalOElPropioPaciente(AuthorizationHandlerContext contexto)
     {
         var usuario = contexto.User;
-        if (usuario.IsInRole(RolesUsuario.Nutricionista) || usuario.IsInRole(RolesUsuario.Admin))
+        if (RolesUsuario.Personal.Any(usuario.IsInRole))
         {
             return true;
         }

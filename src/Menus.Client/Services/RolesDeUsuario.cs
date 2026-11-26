@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace Menus.Client.Services;
 
 /// <summary>
@@ -25,5 +27,14 @@ public static class RolesDeUsuario
     public const string Paciente = "Paciente";
 
     /// <summary>Personal que consulta el catálogo (formato de <c>Roles</c> de <c>[Authorize]</c>).</summary>
+    /// <remarks>
+    /// Es el mismo personal que <c>Menus.Domain.RolesUsuario.Personal</c> (#316). El cliente no referencia el dominio,
+    /// así que aquí está su copia, y <see cref="EsPersonal"/> la lee para no repetir los dos roles.
+    /// </remarks>
     public const string Personal = Admin + "," + Nutricionista;
+
+    /// <summary>Indica si el usuario de la sesión es del personal (<see cref="Personal"/>).</summary>
+    /// <param name="usuario">Usuario de la sesión, con un claim de rol por valor.</param>
+    /// <returns><see langword="true"/> si tiene alguno de los roles de <see cref="Personal"/>.</returns>
+    public static bool EsPersonal(ClaimsPrincipal usuario) => Personal.Split(',').Any(usuario.IsInRole);
 }

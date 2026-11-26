@@ -49,11 +49,12 @@ internal sealed class ObtenerRevalorizacionHandler(
         var revalorizacion = await revalorizaciones.GetByIdAsync(consulta.Id, ct)
             ?? throw new NoEncontradoException("revalorización", consulta.Id);
 
-        if (identidad.Rol != RolesUsuario.Nutricionista && identidad.Rol != RolesUsuario.Admin)
+        // Al personal no hace falta buscarle la valoración: solo al paciente, para saber si es el suyo.
+        if (!identidad.EsPersonal())
         {
             // La valoración existe (FK en RESTRICT); si faltara, se niega en lugar de mostrarla.
             var revisada = await valoraciones.GetByIdAsync(revalorizacion.ValoracionRevisadaId, ct);
-            if (revisada is null || identidad.EntidadId != revisada.PacienteId)
+            if (revisada is null || !identidad.EsElPaciente(revisada.PacienteId))
             {
                 throw new AccesoDenegadoException("Solo el paciente de la valoración revisada y el personal ven esta revalorización.");
             }

@@ -1,7 +1,8 @@
 ﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
    secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
    nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
-   una declara su propio [Authorize]. El #349 añade las métricas del catálogo sobre esa portada. *@
+   una declara su propio [Authorize]. El #349 añade las métricas del catálogo sobre esa portada; el panel del
+   paciente con menús, consumo y valoraciones llegará con el #88. *@
 @page "/"
 @attribute [Authorize]
 @inject ICatalogoApi Catalogo
@@ -28,31 +29,46 @@
 
 @if (_esPersonal)
 {
-    <div class="stats-grid" aria-label="Resumen del catálogo">
-            <div class="stat-card">
-                <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.5h15l-1.3 10.7a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8L4.5 8.5Z"/><path d="m8.5 8.5 3.5-5.5 3.5 5.5"/></svg></span>
-                <span class="stat-body"><span class="stat-value">@(_alimentos?.ToString() ?? "—")</span><span class="stat-label">Alimentos</span></span>
+    <section class="stats-grid" aria-label="Resumen del catálogo">
+        <div class="stat-card">
+            <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.5h15l-1.3 10.7a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8L4.5 8.5Z"/><path d="m8.5 8.5 3.5-5.5 3.5 5.5"/></svg></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_alimentos?.ToString() ?? "—")</div>
+                <div class="stat-label">Alimentos</div>
             </div>
-            <div class="stat-card">
-                <span class="stat-icon stat-icon-amber"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v6.5a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17.5 3c-1.9 2-3 5-3 9h6c0-4-1.1-7-3-9Z"/><path d="M17.5 12v9"/></svg></span>
-                <span class="stat-body"><span class="stat-value">@(_platos?.ToString() ?? "—")</span><span class="stat-label">Platos</span></span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon stat-icon-amber"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v6.5a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17.5 3c-1.9 2-3 5-3 9h6c0-4-1.1-7-3-9Z"/><path d="M17.5 12v9"/></svg></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_platos?.ToString() ?? "—")</div>
+                <div class="stat-label">Platos</div>
             </div>
-            <div class="stat-card">
-                <span class="stat-icon stat-icon-blue"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8 12.5h2l1.8-3.2 2 6.4 1.7-3.2H16"/></svg></span>
-                <span class="stat-body"><span class="stat-value">@(_dietas?.ToString() ?? "—")</span><span class="stat-label">Dietas</span></span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon stat-icon-blue"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8 12.5h2l1.8-3.2 2 6.4 1.7-3.2H16"/></svg></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_totalDietas?.ToString() ?? "—")</div>
+                <div class="stat-label">Dietas</div>
             </div>
+        </div>
         @if (_esAdmin)
         {
             <div class="stat-card">
                 <span class="stat-icon stat-icon-violet"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.3"/><path d="M5.3 17c.7-1.9 2.1-2.8 3.7-2.8s3 1 3.7 2.8"/><path d="M15 9.5h4M15 13h4"/></svg></span>
-                <span class="stat-body"><span class="stat-value">@(_nutricionistas?.ToString() ?? "—")</span><span class="stat-label">Nutricionistas</span></span>
+                <div class="stat-body">
+                    <div class="stat-value">@(_nutricionistas?.ToString() ?? "—")</div>
+                    <div class="stat-label">Nutricionistas</div>
+                </div>
             </div>
             <div class="stat-card">
                 <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 21V5.8a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2V21"/><path d="M2.5 21h19"/><path d="M12 7v6M9 10h6"/><path d="M9.5 21v-4h5v4"/></svg></span>
-                <span class="stat-body"><span class="stat-value">@(_salas?.ToString() ?? "—")</span><span class="stat-label">Salas</span></span>
+                <div class="stat-body">
+                    <div class="stat-value">@(_salas?.ToString() ?? "—")</div>
+                    <div class="stat-label">Salas</div>
+                </div>
             </div>
         }
-    </div>
+    </section>
 }
 
 <AuthorizeView Context="estado">
@@ -68,16 +84,19 @@
                 </ul>
             </section>
 
-            @if (_dietasRecientes.Count > 0)
+            @* Las dietas no tienen fecha de creación: el listado viene ordenado por nombre, así que se presentan
+               como las primeras del catálogo, no como «recientes». *@
+            @if (_dietas.Count > 0)
             {
-                <section class="mb-4" aria-labelledby="portada-recientes">
-                    <h2 id="portada-recientes" class="h4">Dietas recientes</h2>
+                <section class="mb-4" aria-labelledby="portada-dietas">
+                    <h2 id="portada-dietas" class="h4">Dietas</h2>
                     <ul class="list-unstyled">
-                        @foreach (var dieta in _dietasRecientes)
+                        @foreach (var dieta in _dietas)
                         {
                             <li><a href="@($"catalogo/dietas/{dieta.Id}")">@dieta.Nombre</a></li>
                         }
                     </ul>
+                    <a href="catalogo/dietas">Ver todas</a>
                 </section>
             }
         }
@@ -107,10 +126,10 @@
 @code {
     private int? _alimentos;
     private int? _platos;
-    private int? _dietas;
+    private int? _totalDietas;
     private int? _nutricionistas;
     private int? _salas;
-    private IReadOnlyList<Dieta> _dietasRecientes = [];
+    private IReadOnlyList<Dieta> _dietas = [];
     private bool _esPersonal;
     private bool _esAdmin;
     private string? _error;
@@ -133,42 +152,72 @@
         }
     }
 
+    /// <summary>
+    /// Cada cifra se pide y se asigna por separado: si falla una, las demás tarjetas conservan su número.
+    /// Una sola petición de dietas de a cinco sirve para el total y para la lista.
+    /// </summary>
     private async Task CargarCatalogo()
     {
-        try
+        _alimentos = (await ConsultarPaginaAsync(() => Catalogo.ListarAlimentosAsync(null, null, null, 1, 1)))?.Total;
+        _platos = (await ConsultarPaginaAsync(() => Catalogo.ListarPlatosAsync(null, null, null, 1, 1)))?.Total;
+        var dietas = await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 5));
+        if (dietas is not null)
         {
-            var alimentos = Catalogo.ListarAlimentosAsync(null, null, null, 1, 1);
-            var platos = Catalogo.ListarPlatosAsync(null, null, null, 1, 1);
-            var dietas = Catalogo.ListarDietasAsync(null, 1, 1);
-            var recientes = Catalogo.ListarDietasAsync(null, 1, 5);
-
-            await Task.WhenAll(alimentos, platos, dietas, recientes);
-
-            _alimentos = alimentos.Result.Total;
-            _platos = platos.Result.Total;
-            _dietas = dietas.Result.Total;
-            _dietasRecientes = recientes.Result.Data;
-        }
-        catch (ApiException ex)
-        {
-            _error = ex.Message;
+            _totalDietas = dietas.Total;
+            _dietas = dietas.Data;
         }
     }
 
     private async Task CargarAdministracion()
     {
+        _nutricionistas = (await ConsultarPaginaAsync(() => Administracion.ListarNutricionistasAsync(null, 1, 1)))?.Total;
+        _salas = (await ConsultarListaAsync(() => Administracion.ListarSalasAsync()))?.Count;
+    }
+
+    /// <summary>Una página, o nulo si falló esa consulta; el aviso se guarda sin borrar el primero.</summary>
+    private async Task<Pagina<T>?> ConsultarPaginaAsync<T>(Func<Task<Pagina<T>>> consulta)
+    {
         try
         {
-            var nutricionistas = Administracion.ListarNutricionistasAsync(null, 1, 1);
-            var salas = Administracion.ListarSalasAsync();
-            await Task.WhenAll(nutricionistas, salas);
-
-            _nutricionistas = nutricionistas.Result.Total;
-            _salas = salas.Result.Count;
+            return await consulta();
         }
         catch (ApiException ex)
         {
-            _error = ex.Message;
+            MostrarPrimerError(ex.Message);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            MostrarPrimerError(MensajesDeConexion.SinServidor);
+        }
+
+        return null;
+    }
+
+    /// <summary>Una lista, o nula si falló esa consulta; el aviso se guarda sin borrar el primero.</summary>
+    private async Task<IReadOnlyList<T>?> ConsultarListaAsync<T>(Func<Task<IReadOnlyList<T>>> consulta)
+    {
+        try
+        {
+            return await consulta();
+        }
+        catch (ApiException ex)
+        {
+            MostrarPrimerError(ex.Message);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            MostrarPrimerError(MensajesDeConexion.SinServidor);
+        }
+
+        return null;
+    }
+
+    /// <summary>Conserva el primer error: un fallo posterior no debe tapar la causa original.</summary>
+    private void MostrarPrimerError(string mensaje)
+    {
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            _error = mensaje;
         }
     }
 }

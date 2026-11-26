@@ -42,6 +42,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public ApiException? ErrorAlAgregarIngrediente { get; set; }
     public ApiException? ErrorAlQuitarIngrediente { get; set; }
     public ApiException? ErrorAlCargarDieta { get; set; }
+    public Exception? ErrorDeConexion { get; set; }
     public ApiException? ErrorAlGuardarDieta { get; set; }
     public ApiException? ErrorAlEliminarDieta { get; set; }
 
@@ -57,6 +58,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaAlimentos { get; private set; }
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaPlatos { get; private set; }
     public (Guid? Programa, int Page, int Size)? UltimaConsultaDietas { get; private set; }
+    public int ConsultasDeDietas { get; private set; }
     public (Guid DietaId, Guid GrupoId, TipoCobertura Tipo)? UltimoGrupoDeDietaAgregado { get; private set; }
     public (Guid DietaId, Guid GrupoId)? UltimoGrupoDeDietaQuitado { get; private set; }
     public (Guid DietaId, Guid RestriccionId)? UltimaRestriccionAgregada { get; private set; }
@@ -97,6 +99,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
     {
         UltimaConsultaDietas = (programa, page, size);
+        ConsultasDeDietas++;
         return Resultado(ErrorAlCargarDieta, new Pagina<Dieta>([.. Dietas], Dietas.Count, page, size));
     }
 
@@ -133,7 +136,9 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
     {
         UltimaConsultaAlimentos = (grupo, tipo, nivel, page, size);
-        return Resultado(ErrorAlCargarAlimento, new Pagina<Alimento>([.. Alimentos], Alimentos.Count, page, size));
+        return ErrorDeConexion is not null
+            ? Task.FromException<Pagina<Alimento>>(ErrorDeConexion)
+            : Resultado(ErrorAlCargarAlimento, new Pagina<Alimento>([.. Alimentos], Alimentos.Count, page, size));
     }
 
     public Task<IReadOnlyList<Alimento>> ListarTodosLosAlimentosAsync(CancellationToken ct = default)

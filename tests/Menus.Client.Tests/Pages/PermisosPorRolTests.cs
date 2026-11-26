@@ -20,6 +20,7 @@ public sealed class PermisosPorRolTests : BunitContext
     [InlineData(typeof(DetallePlato), RolesDeUsuario.Personal)]
     [InlineData(typeof(CatalogoDietas), RolesDeUsuario.Personal)]
     [InlineData(typeof(DetalleDieta), RolesDeUsuario.Personal)]
+    [InlineData(typeof(GeneracionDeMenus), RolesDeUsuario.Nutricionista)]
     [InlineData(typeof(FormularioAlimento), RolesDeUsuario.Nutricionista)]
     [InlineData(typeof(FormularioPlato), RolesDeUsuario.Nutricionista)]
     [InlineData(typeof(Nomencladores), RolesDeUsuario.Admin)]

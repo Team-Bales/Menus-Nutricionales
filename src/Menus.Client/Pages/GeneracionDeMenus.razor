@@ -1,0 +1,276 @@
+@* Generación y consulta de menús (#81), solo nutricionistas: la API de menús exige ese rol (ADR-016).
+   El formulario pide dieta, cantidad total, porcentaje por tipo de preparación y grupos a cubrir; el listado
+   de esa dieta muestra creador, fecha, estado y los parámetros con que se generó cada menú (F1). *@
+@page "/menus"
+@attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
+@inject IMenusApi ApiDeMenus
+@inject ICatalogoApi Catalogo
+
+<PageTitle>Generación de menús</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Generación de menús</h1>
+        <p class="text-muted mb-0">Genera menús automáticos y consulta cómo se crearon.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+@if (!string.IsNullOrWhiteSpace(_aviso))
+{
+    <div class="alert alert-success" role="status">@_aviso</div>
+}
+
+@if (_cargando)
+{
+    <p class="text-muted">Cargando formulario…</p>
+}
+else if (_dietas.Count == 0)
+{
+    <div class="alert alert-info" role="status">No hay dietas configuradas; no se puede generar un menú.</div>
+}
+else
+{
+    <EditForm Model="_formulario" OnValidSubmit="Generar" class="card shadow-sm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="dieta">Dieta</label>
+                    <InputSelect id="dieta" class="form-select" @bind-Value="_formulario.DietaId">
+                        <option value="@Guid.Empty">Selecciona una dieta</option>
+                        @foreach (var dieta in _dietas)
+                        {
+                            <option value="@dieta.Id">@dieta.Nombre</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _formulario.DietaId)" />
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="cantidad">Cantidad total de alimentos</label>
+                    <InputNumber id="cantidad" class="form-control" @bind-Value="_formulario.CantidadTotalAlimentos" />
+                    <ValidationMessage For="@(() => _formulario.CantidadTotalAlimentos)" />
+                </div>
+            </div>
+
+            <hr class="my-4" />
+            <h2 class="h5">Proporción por tipo de preparación</h2>
+            <p class="small text-muted">Indica el porcentaje de ítems de cada tipo. Los porcentajes deben sumar 100.</p>
+            @for (var index = 0; index < _formulario.Distribucion.Count; index++)
+            {
+                var fila = _formulario.Distribucion[index];
+                <div class="row g-2 align-items-end mb-2" @key="fila">
+                    <div class="col-12 col-md-8">
+                        <label class="form-label" for="@($"porcentaje-{index}")">@NombreTipo(fila.TipoPreparacionId)</label>
+                        <InputNumber id="@($"porcentaje-{index}")" class="form-control" @bind-Value="fila.Porcentaje" />
+                    </div>
+                </div>
+            }
+            <ValidationMessage For="@(() => _formulario.Distribucion)" />
+
+            <hr class="my-4" />
+            <h2 class="h5">Grupos nutricionales a cubrir</h2>
+            <p class="small text-muted">Selecciona al menos un grupo.</p>
+            @for (var index = 0; index < _grupos.Count; index++)
+            {
+                var grupo = _grupos[index];
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="@($"grupo-{index}")"
+                           checked="@_formulario.GruposNutricionalesIds.Contains(grupo.Id)"
+                           @onchange="(() => AlternarGrupo(grupo.Id))" />
+                    <label class="form-check-label" for="@($"grupo-{index}")">@grupo.Nombre</label>
+                </div>
+            }
+            <ValidationMessage For="@(() => _formulario.GruposNutricionalesIds)" />
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary" disabled="@_guardando">@(_guardando ? "Generando…" : "Generar menú")</button>
+        </div>
+    </EditForm>
+}
+
+<section class="mt-5" aria-labelledby="menus-generados">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 id="menus-generados" class="h4 mb-0">Menús generados</h2>
+        <button type="button" class="btn btn-outline-primary" disabled="@(_formulario.DietaId == Guid.Empty)" @onclick="CargarMenus">Buscar menús</button>
+    </div>
+
+    @if (_cargandoMenus)
+    {
+        <p class="text-muted">Cargando menús…</p>
+    }
+    else if (_pagina is null)
+    {
+        <p class="text-muted">Selecciona una dieta para ver sus menús.</p>
+    }
+    else if (_filas.Count == 0)
+    {
+        <p class="text-muted">No hay menús generados para esta dieta.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr><th>Fecha de creación</th><th>Creador</th><th>Origen</th><th>Estado</th><th>Parámetros utilizados</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var fila in _filas)
+                    {
+                        <tr>
+                            <td>@fila.Menu.FechaCreacion.ToString("g")</td>
+                            <td>@fila.Menu.Creador.Nombre</td>
+                            <td>@(fila.Menu.EsAutomatico ? "Automático" : "Manual")</td>
+                            <td>@fila.Menu.Estado</td>
+                            <td>
+                                <div>Cantidad total: @fila.Menu.CantidadTotalAlimentos</div>
+                                <div>Proporciones: @string.Join(", ", fila.Detalle.Distribucion.Select(d => $"{d.Nombre}: {d.Proporcion:P0}"))</div>
+                                <div>Grupos: @string.Join(", ", fila.Detalle.GruposNutricionales.Select(g => g.Nombre))</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">@_pagina.Total resultado(s)</span>
+            <div class="btn-group" role="group" aria-label="Paginación de menús">
+                <button class="btn btn-outline-secondary" disabled="@(_pagina.Page == 1)" @onclick="PaginaAnterior">Anterior</button>
+                <button class="btn btn-outline-secondary" disabled="@(_pagina.Page * _pagina.Size >= _pagina.Total)" @onclick="PaginaSiguiente">Siguiente</button>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private readonly GenerarMenuFormulario _formulario = new();
+    private IReadOnlyList<Dieta> _dietas = [];
+    private IReadOnlyList<Nomenclador> _tipos = [];
+    private IReadOnlyList<Nomenclador> _grupos = [];
+    private IReadOnlyList<FilaDeMenu> _filas = [];
+    private Pagina<MenuResumen>? _pagina;
+    private int _paginaActual = 1;
+    private bool _cargando = true;
+    private bool _cargandoMenus;
+    private bool _guardando;
+    private string? _error;
+    private string? _aviso;
+
+    /// <summary>
+    /// Carga los selectores y, con ellos, el listado de la primera dieta. Los menús del listado trayendo su detalle
+    /// para poder mostrar los parámetros completos (F1): el endpoint de listado solo trae la cantidad total.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var dietas = Catalogo.ListarTodasLasDietasAsync();
+            var tipos = Catalogo.ListarTiposPreparacionAsync();
+            var grupos = Catalogo.ListarGruposAsync();
+            await Task.WhenAll(dietas, tipos, grupos);
+
+            _dietas = dietas.Result;
+            _tipos = tipos.Result;
+            _grupos = grupos.Result;
+            if (_dietas.Count > 0)
+            {
+                _formulario.DietaId = _dietas[0].Id;
+            }
+
+            _formulario.Distribucion = [.. _tipos.Select(t => new ProporcionFormulario { TipoPreparacionId = t.Id })];
+            await CargarMenus();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private string NombreTipo(Guid id) => _tipos.Single(t => t.Id == id).Nombre;
+
+    private void AlternarGrupo(Guid id)
+    {
+        if (_formulario.GruposNutricionalesIds.Contains(id))
+        {
+            _formulario.GruposNutricionalesIds.Remove(id);
+        }
+        else
+        {
+            _formulario.GruposNutricionalesIds.Add(id);
+        }
+    }
+
+    private async Task Generar()
+    {
+        _error = null;
+        _aviso = null;
+        _guardando = true;
+        try
+        {
+            var solicitud = new SolicitudDeGeneracion(
+                _formulario.DietaId,
+                _formulario.CantidadTotalAlimentos,
+                [.. _formulario.Distribucion.Select(d => new ProporcionDeGeneracion(d.TipoPreparacionId, d.Porcentaje / 100m))],
+                [.. _formulario.GruposNutricionalesIds]);
+
+            await ApiDeMenus.GenerarAutomaticamenteAsync(solicitud);
+            _aviso = "Menú generado correctamente.";
+            _paginaActual = 1;
+            await CargarMenus();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+
+    private async Task CargarMenus()
+    {
+        if (_formulario.DietaId == Guid.Empty)
+        {
+            return;
+        }
+
+        _cargandoMenus = true;
+        try
+        {
+            var pagina = await ApiDeMenus.ListarPorDietaAsync(_formulario.DietaId, _paginaActual, 10);
+            var detalles = await Task.WhenAll(pagina.Data.Select(m => ApiDeMenus.ObtenerAsync(m.Id)));
+            _pagina = pagina;
+            _filas = [.. pagina.Data.Zip(detalles, (menu, detalle) => new FilaDeMenu(menu, detalle))];
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargandoMenus = false;
+        }
+    }
+
+    private Task PaginaAnterior() => CargarPagina(Math.Max(1, _pagina!.Page - 1));
+
+    private Task PaginaSiguiente() => CargarPagina(_pagina!.Page + 1);
+
+    private Task CargarPagina(int page)
+    {
+        _paginaActual = page;
+        return CargarMenus();
+    }
+
+    /// <summary>El menú del listado junto a su detalle, del que salen los parámetros que se muestran.</summary>
+    private sealed record FilaDeMenu(MenuResumen Menu, MenuDetalle Detalle);
+}

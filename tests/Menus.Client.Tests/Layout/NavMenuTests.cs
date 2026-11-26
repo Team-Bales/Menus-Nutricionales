@@ -28,6 +28,7 @@ public sealed class NavMenuTests : BunitContext
         Assert.Contains("admin/nomencladores", cut.Markup);
         Assert.Contains("admin/nutricionistas", cut.Markup);
         Assert.Contains("admin/salas", cut.Markup);
+        Assert.DoesNotContain("href=\"menus\"", cut.Markup);
     }
 
     [Fact]
@@ -46,6 +47,19 @@ public sealed class NavMenuTests : BunitContext
     }
 
     [Fact]
+    public void Solo_un_nutricionista_ve_el_enlace_a_los_menus()
+    {
+        Services.AddSingleton<ISesionAutenticada>(new SesionAutenticadaFalsa());
+        AddAuthorization().SetAuthorized("nutri@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+
+        var cut = Render<NavMenu>();
+
+        var enlace = cut.Find("a[href=\"menus\"]");
+        Assert.Contains("sidebar-link", enlace.ClassName);
+        Assert.NotNull(enlace.QuerySelector("svg.icon"));
+    }
+
+    [Fact]
     public void Un_paciente_solo_ve_inicio_perfil_y_cerrar_sesion()
     {
         Services.AddSingleton<ISesionAutenticada>(new SesionAutenticadaFalsa());
@@ -55,6 +69,7 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.DoesNotContain("catalogo/", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
+        Assert.DoesNotContain("href=\"menus\"", cut.Markup);
         Assert.Contains("perfil", cut.Markup);
         Assert.Contains("Cerrar sesión", cut.Markup);
         Assert.NotNull(cut.Find("button.sidebar-logout"));

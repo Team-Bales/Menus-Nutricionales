@@ -1,5 +1,6 @@
 using Bunit;
 using Bunit.TestDoubles;
+using Menus.Client.Catalogo;
 using Menus.Client.GestionDeMenus;
 using Menus.Client.Pages;
 using Menus.Client.Services;
@@ -50,7 +51,9 @@ public sealed class GeneracionDeMenusTests : BunitContext
         {
             Assert.Contains("Ana Pérez", cut.Markup);
             Assert.Contains("Luis García", cut.Markup);
-            Assert.Contains("2026", cut.Find("tbody tr td").TextContent);
+            var fechaEsperada = api.Menus[0].FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+            Assert.Equal(fechaEsperada, cut.Find("tbody tr td").TextContent.Trim());
+            Assert.DoesNotContain("1/15/2026", cut.Markup);
             Assert.Contains("Automático", cut.Markup);
             Assert.Contains("Manual", cut.Markup);
             Assert.Contains("Cantidad total: 12", cut.Markup);
@@ -208,6 +211,84 @@ public sealed class GeneracionDeMenusTests : BunitContext
         cut.FindAll("button").Single(button => button.TextContent == "Buscar menús").Click();
 
         cut.WaitForAssertion(() => Assert.Equal(CatalogoApiFalsa.DietaId, api.UltimaConsulta!.Value.DietaId));
+    }
+
+    [Fact]
+    public void Generar_omite_los_tipos_con_porcentaje_cero()
+    {
+        var tipos = new List<Nomenclador>
+        {
+            new(CatalogoApiFalsa.Tipo, "Entrante"),
+            new(Guid.NewGuid(), "Plato fuerte"),
+            new(Guid.NewGuid(), "Postre"),
+            new(Guid.NewGuid(), "Bebida")
+        };
+        var (api, _) = Servicios(catalogo: new CatalogoApiFalsa { Tipos = tipos });
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForElement("#porcentaje-3");
+
+        cut.Find("#cantidad").Change("20");
+        cut.Find("#porcentaje-0").Change("25");
+        cut.Find("#porcentaje-1").Change("50");
+        cut.Find("#porcentaje-2").Change("25");
+        cut.Find("#grupo-0").Change(true);
+        cut.Find("form").Submit();
+
+        cut.WaitForAssertion(() =>
+        {
+            var solicitud = Assert.IsType<SolicitudDeGeneracion>(api.UltimaSolicitud);
+            Assert.Equal(3, solicitud.Distribucion.Count);
+            Assert.Equal([CatalogoApiFalsa.Tipo, tipos[1].Id, tipos[2].Id], solicitud.Distribucion.Select(d => d.TipoPreparacionId));
+            Assert.DoesNotContain(tipos[3].Id, solicitud.Distribucion.Select(d => d.TipoPreparacionId));
+        });
+    }
+
+    [Fact]
+    public void Cambiar_de_dieta_recarga_el_listado_desde_la_primera_pagina()
+    {
+        var otraDieta = Guid.NewGuid();
+        var catalogo = new CatalogoApiFalsa
+        {
+            Dietas =
+            [
+                new(CatalogoApiFalsa.DietaId, "Dieta basal", CatalogoApiFalsa.Programa, 1, 1),
+                new(otraDieta, "Blanda oncológica", CatalogoApiFalsa.Programa, 1, 1)
+            ]
+        };
+        var (api, _) = Servicios(new MenusApiFalsa { Total = 25 }, catalogo);
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
+
+        cut.FindAll("button").Single(button => button.TextContent == "Siguiente").Click();
+        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsulta!.Value.Page));
+
+        cut.Find("#dieta").Change(otraDieta.ToString());
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(otraDieta, api.UltimaConsulta!.Value.DietaId);
+            Assert.Equal(1, api.UltimaConsulta!.Value.Page);
+        });
+    }
+
+    [Fact]
+    public void Buscar_menus_limpia_el_error_de_una_generacion_anterior()
+    {
+        Servicios(new MenusApiFalsa
+        {
+            ErrorAlGenerar = ErrorDePrueba.Conflicto("La dieta no tiene grupos configurados.")
+        });
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForElement("#cantidad");
+
+        CompletarFormulario(cut);
+        cut.Find("form").Submit();
+        cut.WaitForAssertion(() => Assert.Contains("La dieta no tiene grupos configurados.", cut.Markup));
+
+        cut.FindAll("button").Single(button => button.TextContent == "Buscar menús").Click();
+
+        cut.WaitForAssertion(() => Assert.DoesNotContain("La dieta no tiene grupos configurados.", cut.Markup));
+        cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
     }
 
     private (MenusApiFalsa Menus, CatalogoApiFalsa Catalogo) Servicios(

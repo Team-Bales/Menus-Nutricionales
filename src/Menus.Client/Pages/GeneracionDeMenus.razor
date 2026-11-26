@@ -41,7 +41,7 @@ else
             <div class="row g-3">
                 <div class="col-12 col-md-6">
                     <label class="form-label" for="dieta">Dieta</label>
-                    <InputSelect id="dieta" class="form-select" @bind-Value="_formulario.DietaId">
+                    <InputSelect id="dieta" class="form-select" @bind-Value="_formulario.DietaId" @bind-Value:after="CambiarDieta">
                         <option value="@Guid.Empty">Selecciona una dieta</option>
                         @foreach (var dieta in _dietas)
                         {
@@ -59,7 +59,7 @@ else
 
             <hr class="my-4" />
             <h2 class="h5">Proporción por tipo de preparación</h2>
-            <p class="small text-muted">Indica el porcentaje de ítems de cada tipo. Los porcentajes deben sumar 100.</p>
+            <p class="small text-muted">Indica el porcentaje de ítems de cada tipo; los incluidos deben sumar 100. Un 0 significa que ese tipo no entra en el menú.</p>
             @for (var index = 0; index < _formulario.Distribucion.Count; index++)
             {
                 var fila = _formulario.Distribucion[index];
@@ -96,7 +96,7 @@ else
 <section class="mt-5" aria-labelledby="menus-generados">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <h2 id="menus-generados" class="h4 mb-0">Menús generados</h2>
-        <button type="button" class="btn btn-outline-primary" disabled="@(_formulario.DietaId == Guid.Empty)" @onclick="CargarMenus">Buscar menús</button>
+        <button type="button" class="btn btn-outline-primary" disabled="@(_formulario.DietaId == Guid.Empty)" @onclick="Buscar">Buscar menús</button>
     </div>
 
     @if (_cargandoMenus)
@@ -122,7 +122,7 @@ else
                     @foreach (var fila in _filas)
                     {
                         <tr>
-                            <td>@fila.Menu.FechaCreacion.ToString("g")</td>
+                            <td>@fila.Menu.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                             <td>@fila.Menu.Creador.Nombre</td>
                             <td>@(fila.Menu.EsAutomatico ? "Automático" : "Manual")</td>
                             <td>@fila.Menu.Estado</td>
@@ -218,13 +218,14 @@ else
             var solicitud = new SolicitudDeGeneracion(
                 _formulario.DietaId,
                 _formulario.CantidadTotalAlimentos,
-                [.. _formulario.Distribucion.Select(d => new ProporcionDeGeneracion(d.TipoPreparacionId, d.Porcentaje / 100m))],
+                [.. _formulario.Distribucion
+                    .Where(d => d.Porcentaje > 0)
+                    .Select(d => new ProporcionDeGeneracion(d.TipoPreparacionId, d.Porcentaje / 100m))],
                 [.. _formulario.GruposNutricionalesIds]);
 
             await ApiDeMenus.GenerarAutomaticamenteAsync(solicitud);
             _aviso = "Menú generado correctamente.";
-            _paginaActual = 1;
-            await CargarMenus();
+            await Buscar();
         }
         catch (ApiException ex)
         {
@@ -236,6 +237,16 @@ else
         }
     }
 
+    /// <summary>Recarga el listado de la dieta elegida desde la primera página.</summary>
+    private async Task Buscar()
+    {
+        _paginaActual = 1;
+        await CargarMenus();
+    }
+
+    /// <summary>Al cambiar de dieta, el listado sigue a la selección en lugar de quedarse con la anterior.</summary>
+    private Task CambiarDieta() => Buscar();
+
     private async Task CargarMenus()
     {
         if (_formulario.DietaId == Guid.Empty)
@@ -243,6 +254,7 @@ else
             return;
         }
 
+        _error = null;
         _cargandoMenus = true;
         try
         {

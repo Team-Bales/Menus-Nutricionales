@@ -9,6 +9,8 @@ public sealed class GenerarMenuFormularioTests
     private static readonly Guid Dieta = Guid.NewGuid();
     private static readonly Guid TipoUno = Guid.NewGuid();
     private static readonly Guid TipoDos = Guid.NewGuid();
+    private static readonly Guid TipoTres = Guid.NewGuid();
+    private static readonly Guid TipoCuatro = Guid.NewGuid();
     private static readonly Guid Grupo = Guid.NewGuid();
 
     [Fact]
@@ -45,14 +47,14 @@ public sealed class GenerarMenuFormularioTests
     }
 
     [Theory]
-    [InlineData(0)]
+    [InlineData(-1)]
     [InlineData(101)]
-    public void Exige_porcentajes_entre_uno_y_cien(int porcentaje)
+    public void Exige_porcentajes_entre_cero_y_cien(int porcentaje)
     {
         var formulario = Valido();
         formulario.Distribucion = [new() { TipoPreparacionId = TipoUno, Porcentaje = porcentaje }];
 
-        Assert.Contains("Cada porcentaje debe estar entre 1 y 100.", Validar(formulario));
+        Assert.Contains("Cada porcentaje debe estar entre 0 y 100.", Validar(formulario));
     }
 
     [Fact]
@@ -79,6 +81,30 @@ public sealed class GenerarMenuFormularioTests
         ];
 
         Assert.Contains("Los porcentajes deben sumar 100.", Validar(formulario));
+    }
+
+    [Fact]
+    public void Acepta_un_subconjunto_de_tipos_con_alguno_en_cero()
+    {
+        var formulario = Valido();
+        formulario.Distribucion =
+        [
+            new() { TipoPreparacionId = TipoUno, Porcentaje = 25 },
+            new() { TipoPreparacionId = TipoDos, Porcentaje = 50 },
+            new() { TipoPreparacionId = TipoTres, Porcentaje = 25 },
+            new() { TipoPreparacionId = TipoCuatro, Porcentaje = 0 }
+        ];
+
+        Assert.Empty(Validar(formulario));
+    }
+
+    [Fact]
+    public void Rechaza_que_todos_los_porcentajes_sean_cero()
+    {
+        var formulario = Valido();
+        formulario.Distribucion = [new() { TipoPreparacionId = TipoUno, Porcentaje = 0 }];
+
+        Assert.Contains("Indica el porcentaje de al menos un tipo de preparación.", Validar(formulario));
     }
 
     [Fact]

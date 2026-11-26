@@ -99,13 +99,17 @@ public sealed class ProporcionFormulario
     /// <summary>Tipo de preparación elegido.</summary>
     public Guid TipoPreparacionId { get; set; }
 
-    /// <summary>Porcentaje de ítems de ese tipo; los porcentajes de todas las filas deben sumar 100.</summary>
+    /// <summary>
+    /// Porcentaje de ítems de ese tipo; 0 significa que el tipo no entra en el menú. Los porcentajes de las filas
+    /// incluidas deben sumar 100.
+    /// </summary>
     public int Porcentaje { get; set; }
 }
 
 /// <summary>
 /// Formulario de generación automática. Valida en el cliente lo mismo que exige la API (#80): dieta elegida,
-/// cantidad positiva, proporciones en (0, 100] que sumen 100 sin repetir tipos y al menos un grupo nutricional.
+/// cantidad positiva, proporciones entre 0 y 100 de las que al menos una es positiva, que sumen 100 sin repetir
+/// tipos, y al menos un grupo nutricional. Un tipo con porcentaje 0 se omite, como admite el dominio (RD-11).
 /// </summary>
 public sealed class GenerarMenuFormulario : IValidatableObject
 {
@@ -136,9 +140,14 @@ public sealed class GenerarMenuFormulario : IValidatableObject
         }
         else
         {
-            if (Distribucion.Any(d => d.Porcentaje <= 0 || d.Porcentaje > 100))
+            if (Distribucion.Any(d => d.Porcentaje < 0 || d.Porcentaje > 100))
             {
-                yield return new("Cada porcentaje debe estar entre 1 y 100.", [nameof(Distribucion)]);
+                yield return new("Cada porcentaje debe estar entre 0 y 100.", [nameof(Distribucion)]);
+            }
+
+            if (Distribucion.All(d => d.Porcentaje == 0))
+            {
+                yield return new("Indica el porcentaje de al menos un tipo de preparación.", [nameof(Distribucion)]);
             }
 
             if (Distribucion.Select(d => d.TipoPreparacionId).Distinct().Count() != Distribucion.Count)

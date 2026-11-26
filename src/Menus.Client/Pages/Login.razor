@@ -6,6 +6,7 @@
 @inject IAutenticacionApi Api
 @inject ISesionAutenticada Sesion
 @inject NavigationManager Navegacion
+@inject IWebAssemblyHostEnvironment Entorno
 
 <PageTitle>Iniciar sesión</PageTitle>
 
@@ -23,7 +24,7 @@
 
         <div class="login-brand-center">
             <span class="eyebrow">Nutrición clínica</span>
-            <h2>Nutrición clínica, <em>decisiones claras</em></h2>
+            <p class="login-brand-title">Nutrición clínica, <em>decisiones claras</em></p>
             <p>Un único lugar para el catálogo de alimentos, las dietas y el equipo nutricional.</p>
             <ul class="login-features">
                 <li>
@@ -48,7 +49,7 @@
         <div class="login-card">
             <div class="login-card-head">
                 <span class="eyebrow">Acceso al sistema</span>
-                <h1>Bienvenido de nuevo</h1>
+                <h1>Te damos la bienvenida</h1>
                 <p>Ingresa a tu cuenta para continuar.</p>
             </div>
 
@@ -78,12 +79,17 @@
                 <button class="btn btn-primary" disabled="@_enviando" type="submit">Entrar</button>
             </EditForm>
 
-            <div class="login-demo">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-                <span>En entornos de demostración, las credenciales están en <a href="https://github.com/Team-Bales/Menus-Nutricionales/blob/main/scripts/datos-ejemplo/README.md" target="_blank" rel="noopener">datos de ejemplo</a>.</span>
-            </div>
+            @* Las credenciales de ejemplo son pública y solo tienen sentido en desarrollo: no se las
+               señala en un despliegue real. *@
+            @if (Entorno.IsDevelopment())
+            {
+                <div class="login-demo">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                    <span>En entornos de demostración, las credenciales están en <a href="https://github.com/Team-Bales/Menus-Nutricionales/blob/main/scripts/datos-ejemplo/README.md" target="_blank" rel="noopener">datos de ejemplo</a>.</span>
+                </div>
+            }
 
-            <p class="login-legal">Acceso restringido al personal del centro de nutrición.</p>
+            <p class="login-legal">Acceso para el personal y los pacientes del centro.</p>
         </div>
     </section>
 </div>

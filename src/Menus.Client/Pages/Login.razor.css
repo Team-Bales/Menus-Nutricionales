@@ -1,0 +1,13 @@
+/* El lema pasa de h2 a p para que el h1 de la tarjeta sea el primer encabezado; se conserva su tamaño. */
+.login-brand-center .login-brand-title {
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.1rem);
+    line-height: 1.1;
+    letter-spacing: -.04em;
+    margin: .5rem 0 1rem;
+}
+
+.login-brand-center .login-brand-title em {
+    font-style: normal;
+    color: var(--brand-300);
+}

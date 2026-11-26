@@ -11,6 +11,19 @@ updates:
       - chore
     commit-message:
       prefix: "chore"
+    # El proyecto usa .NET 10 (#342). Estos paquetes van atados al runtime: una versión mayor nueva exige otro
+    # runtime (DevServer 11.0.0, del #275, dejó de arrancar con .NET 10). Se reciben los parches y las menores
+    # de 10.x; pasar a otra versión de .NET se decide en equipo y se hace a mano, con todos los paquetes juntos.
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      # El proveedor de EF Core para PostgreSQL sigue la versión mayor de EF Core.
+      - dependency-name: "Npgsql.EntityFrameworkCore.PostgreSQL"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"

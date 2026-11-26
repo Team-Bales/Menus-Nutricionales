@@ -69,6 +69,16 @@ docker compose up --build
 
 Servicios que levanta `docker-compose.yml`: `api` (ASP.NET Core), `client` (Blazor WebAssembly servido por nginx), `postgres`, `mongo`, `redis`.
 
+### Datos de ejemplo
+
+Para recorrer la aplicación con todos los roles y ejecutar las 6 consultas con resultados, hay un banco de datos completo (dietas, pacientes, menús, consumos, valoraciones, usuarios y fichas de MongoDB) en [`scripts/datos-ejemplo/`](scripts/datos-ejemplo/README.md). Después de aplicar las migraciones:
+
+```bash
+scripts/datos-ejemplo/cargar.sh
+```
+
+Todos los usuarios de ejemplo usan la contraseña `Demo1234!` (por ejemplo, `admin@menus.demo`). Es solo para entornos de demostración.
+
 ### Compilar y probar sin `sudo` ni Docker
 
 Si no tienes permisos de administrador o no quieres instalar Docker, puedes instalar el SDK de .NET en tu directorio personal y ejecutar las pruebas de dominio (las de integración necesitan Docker y corren en CI):

@@ -1,5 +1,4 @@
 using Menus.Application.Comun;
-using Menus.Domain;
 using Menus.Domain.Abstractions.Repositories;
 
 namespace Menus.Application.Valoraciones.ObtenerValoracion;
@@ -20,8 +19,7 @@ internal sealed class ObtenerValoracionHandler(IValoracionRepository valoracione
         var valoracion = await valoraciones.GetByIdAsync(solicitud.Id, ct)
             ?? throw new NoEncontradoException("valoración", solicitud.Id);
 
-        var esPersonal = identidad.Rol == RolesUsuario.Nutricionista || identidad.Rol == RolesUsuario.Admin;
-        if (!esPersonal && identidad.EntidadId != valoracion.PacienteId)
+        if (!identidad.EsPersonalOElPaciente(valoracion.PacienteId))
         {
             throw new AccesoDenegadoException("Solo el paciente valorado y el personal ven esta valoración.");
         }

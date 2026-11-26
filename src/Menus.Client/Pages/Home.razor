@@ -1,10 +1,52 @@
-﻿@* Página de inicio (/), para cualquier usuario con sesión. Todavía tiene el contenido de la
-   plantilla de Blazor. *@
+﻿﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
+   secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
+   nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
+   una declara su propio [Authorize]. El panel del paciente (menús, consumo y valoraciones) es el #88. *@
 @page "/"
 @attribute [Authorize]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Menús nutricionales</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="mb-4">
+    <h1 class="h2 mb-1">Menús nutricionales</h1>
+    <p class="text-muted mb-0">
+        Gestión de la generación automática de menús nutricionales en una institución de salud: alimentos y platos,
+        dietas, nutricionistas, pacientes, y la generación, validación y valoración de los menús.
+    </p>
+</div>
 
-Welcome to your new app.
+<AuthorizeView Context="estado">
+    <Authorized>
+        @if (RolesDeUsuario.EsPersonal(estado.User))
+        {
+            <section class="mb-4" aria-labelledby="portada-catalogo">
+                <h2 id="portada-catalogo" class="h4">Catálogo</h2>
+                <ul class="list-unstyled">
+                    <li><a href="catalogo/alimentos">Alimentos</a>: banco de alimentos para la elaboración de menús.</li>
+                    <li><a href="catalogo/platos">Platos</a>: banco de platos y su composición de alimentos.</li>
+                    <li><a href="catalogo/dietas">Dietas</a>: planes de alimentación por programa de atención.</li>
+                </ul>
+            </section>
+        }
+        @if (estado.User.IsInRole(RolesDeUsuario.Admin))
+        {
+            <section class="mb-4" aria-labelledby="portada-administracion">
+                <h2 id="portada-administracion" class="h4">Administración</h2>
+                <ul class="list-unstyled">
+                    <li>
+                        <a href="admin/nomencladores">Nomencladores</a>: grupos nutricionales, restricciones alimentarias,
+                        programas de atención y especialidades.
+                    </li>
+                    <li><a href="admin/nutricionistas">Nutricionistas</a>: profesionales registrados y sus dietas autorizadas.</li>
+                    <li><a href="admin/salas">Salas</a>: salas de hospitalización y sus pacientes asignados.</li>
+                </ul>
+            </section>
+        }
+        <section class="mb-4" aria-labelledby="portada-cuenta">
+            <h2 id="portada-cuenta" class="h4">Tu cuenta</h2>
+            <ul class="list-unstyled">
+                <li><a href="perfil">Mi perfil</a>: tu correo y tu rol.</li>
+            </ul>
+        </section>
+    </Authorized>
+</AuthorizeView>

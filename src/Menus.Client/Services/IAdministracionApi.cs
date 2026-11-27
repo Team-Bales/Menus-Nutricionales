@@ -3,7 +3,7 @@ using Menus.Client.Catalogo;
 
 namespace Menus.Client.Services;
 
-/// <summary>Contrato de la UI con los endpoints administrativos de nutricionistas y salas.</summary>
+/// <summary>Contrato de la UI con los endpoints administrativos de nutricionistas, pacientes y salas.</summary>
 /// <remarks>
 /// Cada método llama a un endpoint de la API con el token de la sesión. Si la API responde con un error, lanza
 /// <see cref="ApiException"/> con el mensaje que se muestra en la página.
@@ -12,6 +12,18 @@ public interface IAdministracionApi
 {
     /// <summary>Una página de nutricionistas, opcionalmente de una especialidad (<c>GET api/nutricionistas</c>).</summary>
     Task<Pagina<Nutricionista>> ListarNutricionistasAsync(Guid? especialidadId, int page, int size, CancellationToken ct = default);
+
+    /// <summary>Una página de pacientes, con filtros opcionales por sala y por dieta (<c>GET api/pacientes</c>).</summary>
+    Task<Pagina<Paciente>> ListarPacientesAsync(Guid? salaId, Guid? dietaId, int page, int size, CancellationToken ct = default);
+
+    /// <summary>Un paciente con su sala y sus dietas inscritas (<c>GET api/pacientes/{id}</c>).</summary>
+    Task<PacienteDetalle> ObtenerPacienteAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Inscribe al paciente en una dieta (<c>POST api/pacientes/{id}/dietas</c>).</summary>
+    Task InscribirPacienteEnDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default);
+
+    /// <summary>Retira la inscripción del paciente en una dieta (<c>DELETE api/pacientes/{id}/dietas/{dietaId}</c>).</summary>
+    Task DesinscribirPacienteDeDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default);
 
     /// <summary>Un nutricionista con sus dietas autorizadas (<c>GET api/nutricionistas/{id}</c>).</summary>
     Task<NutricionistaDetalle> ObtenerNutricionistaAsync(Guid id, CancellationToken ct = default);

@@ -6,7 +6,7 @@ using Menus.Client.Catalogo;
 
 namespace Menus.Client.Services;
 
-/// <summary>Adaptador HTTP para administrar nutricionistas y salas.</summary>
+/// <summary>Adaptador HTTP para administrar nutricionistas, pacientes y salas.</summary>
 public sealed class AdministracionApi(HttpClient http) : IAdministracionApi
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -14,6 +14,22 @@ public sealed class AdministracionApi(HttpClient http) : IAdministracionApi
     /// <inheritdoc />
     public Task<Pagina<Nutricionista>> ListarNutricionistasAsync(Guid? especialidadId, int page, int size, CancellationToken ct = default)
         => ObtenerAsync<Pagina<Nutricionista>>(RutaPaginada("api/nutricionistas", "especialidadId", especialidadId, page, size), ct);
+
+    /// <inheritdoc />
+    public Task<Pagina<Paciente>> ListarPacientesAsync(Guid? salaId, Guid? dietaId, int page, int size, CancellationToken ct = default)
+        => ObtenerAsync<Pagina<Paciente>>(RutaPaginada("api/pacientes", ("sala", salaId), ("dieta", dietaId), page, size), ct);
+
+    /// <inheritdoc />
+    public Task<PacienteDetalle> ObtenerPacienteAsync(Guid id, CancellationToken ct = default)
+        => ObtenerAsync<PacienteDetalle>($"api/pacientes/{id}", ct);
+
+    /// <inheritdoc />
+    public Task InscribirPacienteEnDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Post, $"api/pacientes/{pacienteId}/dietas", new { DietaId = dietaId }, ct);
+
+    /// <inheritdoc />
+    public Task DesinscribirPacienteDeDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default)
+        => EnviarSinContenidoAsync(HttpMethod.Delete, $"api/pacientes/{pacienteId}/dietas/{dietaId}", null, ct);
 
     /// <inheritdoc />
     public Task<NutricionistaDetalle> ObtenerNutricionistaAsync(Guid id, CancellationToken ct = default)
@@ -94,6 +110,24 @@ public sealed class AdministracionApi(HttpClient http) : IAdministracionApi
         return $"{route}?{string.Join("&", query)}";
     }
 
+    private static string RutaPaginada(
+        string route,
+        (string Filtro, Guid? Valor) primero,
+        (string Filtro, Guid? Valor) segundo,
+        int page,
+        int size)
+    {
+        var query = new List<string> { $"page={page}", $"size={size}" };
+        foreach (var (filtro, valor) in new[] { primero, segundo })
+        {
+            if (valor is not null)
+            {
+                query.Add($"{filtro}={valor}");
+            }
+        }
+
+        return $"{route}?{string.Join("&", query)}";
+    }
+
     private sealed record IdCreado(Guid Id);
-    private sealed record Paciente(Guid Id);
 }

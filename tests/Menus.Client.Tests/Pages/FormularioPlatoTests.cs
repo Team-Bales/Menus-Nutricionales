@@ -9,6 +9,9 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas de <see cref="FormularioPlato"/> (alta y edición, issue #65).</summary>
 public sealed class FormularioPlatoTests : BunitContext
 {
+    // El formulario encadena varias llamadas al catálogo; 1 s por defecto es poco cuando la suite corre en paralelo.
+    public FormularioPlatoTests() => DefaultWaitTimeout = TimeSpan.FromSeconds(5);
+
     [Fact]
     public void Nuevo_crea_el_plato_con_la_clasificacion_y_el_ingrediente_elegidos()
     {

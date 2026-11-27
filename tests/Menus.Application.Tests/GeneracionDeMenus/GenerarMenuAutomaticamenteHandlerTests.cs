@@ -69,6 +69,9 @@ public sealed class GenerarMenuAutomaticamenteHandlerTests
             () => Handler(nutricionista.Id).HandleAsync(NuevoComando(dieta.Id), CancellationToken.None));
 
         Assert.Equal("RS-03", error.Regla);
+        Assert.Contains("no está autorizado para la dieta", error.Message);
+        Assert.DoesNotContain(dieta.Id.ToString(), error.Message);
+        Assert.DoesNotContain(nutricionista.Id.ToString(), error.Message);
         Assert.Empty(_banco.Menus);
         Assert.Equal(0, _banco.UnidadDeTrabajo.Confirmaciones);
     }

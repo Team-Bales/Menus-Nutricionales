@@ -101,8 +101,11 @@ public sealed class EstrategiaGeneracionAleatoriaTests
         var cobertura = CoberturaGruposNutricionales.Crear([GrupoCereales]);
         var cantidad = CantidadTotalAlimentos.Crear(5);
 
-        Assert.Throws<ReglaDeNegocioException>(
+        var error = Assert.Throws<ReglaDeNegocioException>(
             () => _estrategia.SeleccionarItems(disponibles, distribucion, cobertura, cantidad));
+
+        Assert.Contains("Entrante", error.Message);
+        Assert.DoesNotContain(TipoPreparacion.Entrante.Id.ToString(), error.Message);
     }
 
     [Fact]

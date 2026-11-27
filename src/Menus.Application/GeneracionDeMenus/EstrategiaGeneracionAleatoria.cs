@@ -1,5 +1,6 @@
 using Menus.Domain.Entidades;
 using Menus.Domain.Excepciones;
+using Menus.Domain.Nomenclators;
 using Menus.Domain.ValueObjects;
 
 namespace Menus.Application.GeneracionDeMenus;
@@ -27,8 +28,9 @@ public sealed class EstrategiaGeneracionAleatoria : IEstrategiaGeneracionMenu
             var delTipo = itemsCompatibles.Where(i => i.TipoPreparacionId == tipoId).ToList();
             if (delTipo.Count < cantidad)
             {
+                var tipo = TipoPreparacion.Todos.FirstOrDefault(t => t.Id == tipoId)?.Nombre ?? "desconocido";
                 throw new ReglaDeNegocioException(
-                    $"No hay suficientes ítems compatibles con la dieta del tipo de preparación {tipoId}: " +
+                    $"No hay suficientes ítems compatibles con la dieta para el tipo de preparación «{tipo}»: " +
                     $"se necesitan {cantidad} y hay {delTipo.Count}.");
             }
 

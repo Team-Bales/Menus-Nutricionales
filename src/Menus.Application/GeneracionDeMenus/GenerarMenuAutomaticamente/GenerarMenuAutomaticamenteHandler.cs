@@ -37,7 +37,7 @@ internal sealed class GenerarMenuAutomaticamenteHandler(
         if (nutricionista.DietasAutorizadas.All(a => a.DietaId != solicitud.DietaId))
         {
             throw new ReglaDeNegocioException(
-                $"El nutricionista {nutricionistaId} no está autorizado para la dieta {solicitud.DietaId} (RF-06).",
+                "El nutricionista no está autorizado para la dieta solicitada (RF-06).",
                 "RS-03");
         }
 

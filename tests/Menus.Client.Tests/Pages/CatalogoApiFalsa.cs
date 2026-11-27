@@ -34,7 +34,8 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public DietaDetalle DietaDetalle { get; set; } = new(DietaId, "Dieta basal", Programa, [new(Grupo, TipoCobertura.Requerido)], [Restriccion]);
     public Guid IdCreado { get; set; } = Guid.NewGuid();
 
-    public ApiException? ErrorAlCargarNomencladores { get; set; }
+    // Admite también un fallo de conexión (HttpRequestException), no solo un error de la API.
+    public Exception? ErrorAlCargarNomencladores { get; set; }
     public ApiException? ErrorAlCargarAlimento { get; set; }
     public ApiException? ErrorAlCargarPlato { get; set; }
     public ApiException? ErrorAlGuardar { get; set; }
@@ -202,7 +203,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
 
     // Cede el hilo de verdad (en vez de Task.FromResult) para que las páginas pasen por su estado "cargando":
     // con una tarea ya completada, el await no suspende y ese renglón intermedio nunca se alcanza a renderizar.
-    private static async Task<T> Resultado<T>(ApiException? error, T valor)
+    private static async Task<T> Resultado<T>(Exception? error, T valor)
     {
         await Task.Yield();
         if (error is not null)
@@ -213,7 +214,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
         return valor;
     }
 
-    private static async Task Resultado(ApiException? error)
+    private static async Task Resultado(Exception? error)
     {
         await Task.Yield();
         if (error is not null)

@@ -177,6 +177,20 @@ public sealed class GeneracionDeMenusTests : BunitContext
     }
 
     [Fact]
+    public void Sin_servidor_al_cargar_los_catalogos_muestra_el_aviso_de_conexion_y_no_intenta_listar()
+    {
+        var (api, _) = Servicios(catalogo: new CatalogoApiFalsa
+        {
+            ErrorAlCargarNomencladores = new HttpRequestException("Connection refused")
+        });
+
+        var cut = Render<GeneracionDeMenus>();
+
+        cut.WaitForAssertion(() => Assert.Contains(MensajesDeConexion.SinServidor, cut.Markup));
+        Assert.Null(api.UltimaConsulta);
+    }
+
+    [Fact]
     public void Sin_dietas_muestra_un_aviso_y_no_intenta_listar()
     {
         var (api, _) = Servicios(catalogo: new CatalogoApiFalsa { Dietas = [] });

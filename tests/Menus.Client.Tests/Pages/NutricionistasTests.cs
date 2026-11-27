@@ -68,9 +68,12 @@ public sealed class NutricionistasTests : BunitContext
         cut.Find("#especialidad").Change(CatalogoApiFalsa.Especialidad.ToString());
         cut.FindAll("button").Single(b => b.TextContent == "Limpiar").Click();
         cut.WaitForAssertion(() => Assert.Equal((null, 1, 10), api.UltimaConsultaNutricionistas));
+        cut.WaitForAssertion(() => Assert.NotNull(cut.FindAll("button").SingleOrDefault(b => b.TextContent == "Siguiente")));
 
         cut.FindAll("button").Single(b => b.TextContent == "Siguiente").Click();
         cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaNutricionistas!.Value.Page));
+        cut.WaitForAssertion(() => Assert.NotNull(cut.FindAll("button").SingleOrDefault(b => b.TextContent == "Anterior")));
+
         cut.FindAll("button").Single(b => b.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaNutricionistas!.Value.Page));
     }

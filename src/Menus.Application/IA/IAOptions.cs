@@ -67,8 +67,3 @@ public sealed class IAOptions
     public override string ToString()
         => $"IAOptions {{ Habilitada = {Habilitada}, BaseUrl = {BaseUrl}, Model = {Model}, ApiKey = [redacted], TimeoutSegundos = {TimeoutSegundos}, MaxBloques = {MaxBloques}, MaxCaracteresDeContexto = {MaxCaracteresDeContexto}, VersionDePrompt = {VersionDePrompt}, KMinimo = {KMinimo} }}";
 }
-
-
-
-
-

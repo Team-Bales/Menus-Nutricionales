@@ -32,8 +32,3 @@ public sealed class AsistenteIANoDisponibleException : Exception
     {
     }
 }
-
-
-
-
-

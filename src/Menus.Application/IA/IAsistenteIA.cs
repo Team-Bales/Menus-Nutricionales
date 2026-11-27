@@ -22,8 +22,3 @@ public interface IAsistenteIA
     /// <exception cref="ArgumentNullException"><paramref name="prompt"/> es nulo.</exception>
     Task<string> CompletarAsync(PromptIA prompt, CancellationToken ct = default);
 }
-
-
-
-
-

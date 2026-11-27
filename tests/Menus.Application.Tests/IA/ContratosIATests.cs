@@ -162,22 +162,22 @@ public sealed class ContratosIATests
     }
 
     /// <summary>
-    /// Verifica que <see cref="TareaIA"/> se serializa como camelCase según el contrato HTTP (§11):
-    /// "explicarAnalisis", "sugerirAcciones", "guionParaPaciente".
+    /// Verifica que <see cref="TareaIA"/> se serializa como texto PascalCase según el contrato HTTP (§11.1):
+    /// "ExplicarAnalisis", "SugerirAcciones", "GuionParaPaciente".
     /// </summary>
     [Fact]
-    public void TareaIA_Serializacion_CamelCase()
+    public void TareaIA_Serializacion_PascalCase()
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
-        Assert.Equal("\"explicarAnalisis\"", JsonSerializer.Serialize(TareaIA.ExplicarAnalisis, options));
-        Assert.Equal("\"sugerirAcciones\"", JsonSerializer.Serialize(TareaIA.SugerirAcciones, options));
-        Assert.Equal("\"guionParaPaciente\"", JsonSerializer.Serialize(TareaIA.GuionParaPaciente, options));
+        Assert.Equal("\"ExplicarAnalisis\"", JsonSerializer.Serialize(TareaIA.ExplicarAnalisis, options));
+        Assert.Equal("\"SugerirAcciones\"", JsonSerializer.Serialize(TareaIA.SugerirAcciones, options));
+        Assert.Equal("\"GuionParaPaciente\"", JsonSerializer.Serialize(TareaIA.GuionParaPaciente, options));
 
         // Verificar deserialización round-trip
-        Assert.Equal(TareaIA.ExplicarAnalisis, JsonSerializer.Deserialize<TareaIA>("\"explicarAnalisis\"", options));
-        Assert.Equal(TareaIA.SugerirAcciones, JsonSerializer.Deserialize<TareaIA>("\"sugerirAcciones\"", options));
-        Assert.Equal(TareaIA.GuionParaPaciente, JsonSerializer.Deserialize<TareaIA>("\"guionParaPaciente\"", options));
+        Assert.Equal(TareaIA.ExplicarAnalisis, JsonSerializer.Deserialize<TareaIA>("\"ExplicarAnalisis\"", options));
+        Assert.Equal(TareaIA.SugerirAcciones, JsonSerializer.Deserialize<TareaIA>("\"SugerirAcciones\"", options));
+        Assert.Equal(TareaIA.GuionParaPaciente, JsonSerializer.Deserialize<TareaIA>("\"GuionParaPaciente\"", options));
     }
 
     #endregion
@@ -397,7 +397,3 @@ public sealed class ContratosIATests
 
     #endregion
 }
-
-
-
-

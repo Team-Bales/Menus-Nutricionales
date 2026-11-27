@@ -1,20 +1,12 @@
 namespace Menus.Application.IA;
 
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Convierte enums a/desde JSON usando camelCase.
-/// </summary>
-internal sealed class CamelCaseEnumConverter : JsonStringEnumConverter
-{
-    public CamelCaseEnumConverter() : base(JsonNamingPolicy.CamelCase) { }
-}
-
-/// <summary>
 /// Tipo de tarea que se solicita a la IA. Valores explícitos y estables para serialización.
+/// Se serializa como texto PascalCase (p. ej., "ExplicarAnalisis") según §11.1 del contrato HTTP.
 /// </summary>
-[JsonConverter(typeof(CamelCaseEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TareaIA
 {
     /// <summary>
@@ -43,13 +35,13 @@ public enum TareaIA
 public sealed record SeccionDto
 {
     /// <summary>
-    /// Título de la sección. No nulo ni vacío.
+    /// Título de la sección. No nulo.
     /// </summary>
     [JsonPropertyName("titulo")]
     public string Titulo { get; }
 
     /// <summary>
-    /// Texto de la sección. No nulo ni vacío.
+    /// Texto de la sección. No nulo.
     /// </summary>
     [JsonPropertyName("texto")]
     public string Texto { get; }
@@ -88,7 +80,7 @@ public sealed record SeccionDto
 public sealed record RespuestaIADto
 {
     /// <summary>
-    /// Resumen ejecutivo de la respuesta. No nulo ni vacío.
+    /// Resumen ejecutivo de la respuesta. No nulo.
     /// </summary>
     [JsonPropertyName("resumen")]
     public string Resumen { get; }
@@ -163,7 +155,3 @@ public sealed record RespuestaIADto
     public override string ToString()
         => $"RespuestaIADto {{ Resumen = [redacted], Secciones = {Secciones.Count}, Recomendaciones = {Recomendaciones.Count}, Advertencias = {Advertencias.Count}, FuentesUsadas = {FuentesUsadas.Count}, GeneradoPorIA = {GeneradoPorIA} }}";
 }
-
-
-
-

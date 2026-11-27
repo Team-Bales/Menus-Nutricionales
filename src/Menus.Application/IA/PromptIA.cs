@@ -12,12 +12,12 @@ namespace Menus.Application.IA;
 public sealed record PromptIA
 {
     /// <summary>
-    /// Texto del rol de sistema. No nulo ni vacío.
+    /// Texto del rol de sistema. No nulo.
     /// </summary>
     public string Sistema { get; }
 
     /// <summary>
-    /// Texto del rol de usuario. No nulo ni vacío.
+    /// Texto del rol de usuario. No nulo.
     /// </summary>
     public string Usuario { get; }
 
@@ -42,8 +42,3 @@ public sealed record PromptIA
     /// <returns>Descripción genérica sin el contenido de <see cref="Sistema"/> ni <see cref="Usuario"/>.</returns>
     public override string ToString() => "PromptIA { Sistema = [redacted], Usuario = [redacted] }";
 }
-
-
-
-
-

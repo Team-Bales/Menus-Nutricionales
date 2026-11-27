@@ -33,15 +33,17 @@ public sealed class HomeTests : BunitContext
         Assert.All(EnlacesDelCatalogo, e => Assert.Contains(e, enlaces));
         Assert.All(EnlacesDeAdministracion, e => Assert.Contains(e, enlaces));
         Assert.Contains("perfil", enlaces);
+        Assert.DoesNotContain("menus", enlaces);
     }
 
     [Fact]
-    public void Un_nutricionista_ve_el_catalogo_y_el_perfil_pero_no_la_administracion()
+    public void Un_nutricionista_ve_el_catalogo_los_menus_y_el_perfil_pero_no_la_administracion()
     {
         var enlaces = Enlaces(RenderComo("nutri@centro.test", RolesDeUsuario.Nutricionista));
 
         Assert.All(EnlacesDelCatalogo, e => Assert.Contains(e, enlaces));
         Assert.All(EnlacesDeAdministracion, e => Assert.DoesNotContain(e, enlaces));
+        Assert.Contains("menus", enlaces);
         Assert.Contains("perfil", enlaces);
     }
 

@@ -129,7 +129,10 @@ public sealed class HomeTests : BunitContext
 
         var cut = Render<Home>();
 
-        cut.WaitForAssertion(() => Assert.Equal(5, cut.FindAll(".stat-card").Count));
+        // Las tarjetas se pintan desde el primer render con «—»: hay que esperar a la última cifra (salas), que se
+        // pide después de las dietas, para comprobar la sección con la carga ya terminada.
+        cut.WaitForAssertion(() => Assert.Equal("1", cut.FindAll(".stat-value").ElementAt(4).TextContent.Trim()));
+        Assert.Equal("0", cut.FindAll(".stat-value")[2].TextContent.Trim());
         Assert.DoesNotContain("portada-dietas", cut.Markup);
     }
 

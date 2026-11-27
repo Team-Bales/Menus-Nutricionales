@@ -28,9 +28,10 @@ internal sealed class MenusApiFalsa : IMenusApi
     /// <summary>Total que se declara en la página; por defecto coincide con los menús devueltos.</summary>
     public int? Total { get; set; }
 
-    public ApiException? ErrorAlGenerar { get; set; }
-    public ApiException? ErrorAlListar { get; set; }
-    public ApiException? ErrorAlObtener { get; set; }
+    /// <summary>Errores que lanzan las operaciones: una <see cref="ApiException"/> o un fallo de conexión.</summary>
+    public Exception? ErrorAlGenerar { get; set; }
+    public Exception? ErrorAlListar { get; set; }
+    public Exception? ErrorAlObtener { get; set; }
 
     public SolicitudDeGeneracion? UltimaSolicitud { get; private set; }
     public (Guid DietaId, int Page, int Size)? UltimaConsulta { get; private set; }
@@ -52,7 +53,7 @@ internal sealed class MenusApiFalsa : IMenusApi
         return Resultado(ErrorAlObtener, Detalle);
     }
 
-    private async Task<Guid> Resultado(ApiException? error, SolicitudDeGeneracion solicitud)
+    private async Task<Guid> Resultado(Exception? error, SolicitudDeGeneracion solicitud)
     {
         await Task.Yield();
         if (error is not null)
@@ -64,7 +65,7 @@ internal sealed class MenusApiFalsa : IMenusApi
         return MenuId;
     }
 
-    private static async Task<T> Resultado<T>(ApiException? error, T valor)
+    private static async Task<T> Resultado<T>(Exception? error, T valor)
     {
         await Task.Yield();
         if (error is not null)

@@ -195,7 +195,12 @@ public sealed class GeneracionDeMenusTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
 
         cut.FindAll("button").Single(button => button.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsulta!.Value.Page));
+        // La consulta sale antes de que termine la carga, y mientras carga no hay botones de paginación (#366).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsulta!.Value.Page);
+            Assert.DoesNotContain("Cargando menús", cut.Markup);
+        });
 
         cut.FindAll("button").Single(button => button.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsulta!.Value.Page));
@@ -319,6 +324,52 @@ public sealed class GeneracionDeMenusTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.DoesNotContain("La dieta no tiene grupos configurados.", cut.Markup));
         cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
+    }
+
+    [Fact]
+    public void Sin_servidor_al_cargar_el_listado_muestra_el_aviso_de_conexion()
+    {
+        Servicios(new MenusApiFalsa { ErrorAlListar = new HttpRequestException("Connection refused") });
+
+        var cut = Render<GeneracionDeMenus>();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains(MensajesDeConexion.SinServidor, cut.Markup);
+            Assert.DoesNotContain("Ana Pérez", cut.Markup);
+        });
+    }
+
+    [Fact]
+    public void Sin_servidor_al_generar_muestra_el_aviso_de_conexion()
+    {
+        var (api, _) = Servicios(new MenusApiFalsa { ErrorAlGenerar = new TaskCanceledException() });
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
+
+        CompletarFormulario(cut);
+        cut.Find("form").Submit();
+
+        cut.WaitForAssertion(() => Assert.Contains(MensajesDeConexion.SinServidor, cut.Markup));
+        Assert.Null(api.UltimaSolicitud);
+    }
+
+    [Fact]
+    public void Elegir_ninguna_dieta_vacia_el_listado()
+    {
+        var (api, _) = Servicios();
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
+        var consultaAnterior = api.UltimaConsulta;
+
+        cut.Find("#dieta").Change(Guid.Empty.ToString());
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Selecciona una dieta para ver sus menús.", cut.Markup);
+            Assert.DoesNotContain("Ana Pérez", cut.Markup);
+        });
+        Assert.Equal(consultaAnterior, api.UltimaConsulta);
     }
 
     private (MenusApiFalsa Menus, CatalogoApiFalsa Catalogo) Servicios(

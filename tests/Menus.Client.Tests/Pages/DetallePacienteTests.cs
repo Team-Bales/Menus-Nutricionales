@@ -122,6 +122,85 @@ public sealed class DetallePacienteTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("El paciente no existe.", cut.Markup));
     }
 
+    [Fact]
+    public void Inscribir_sin_elegir_dieta_muestra_un_error()
+    {
+        ComoAdmin();
+        Servicios(new AdministracionApiFalsa());
+
+        var cut = Render<DetallePaciente>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.PacienteId));
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Inscribir en dieta").Click();
+
+        cut.WaitForAssertion(() => Assert.Contains("Selecciona una dieta.", cut.Markup));
+    }
+
+    [Fact]
+    public void Un_error_al_inscribir_se_muestra_junto_al_detalle()
+    {
+        ComoAdmin();
+        var api = new AdministracionApiFalsa
+        {
+            DetalleDelPaciente = new(
+                AdministracionApiFalsa.PacienteId,
+                "Yudivián Almeida",
+                45,
+                new(AdministracionApiFalsa.SalaId, "Sala 101"),
+                []),
+        };
+        Servicios(api);
+
+        var cut = Render<DetallePaciente>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.PacienteId));
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+
+        api.ErrorAlInscribir = new(HttpStatusCode.Conflict, "No se pudo inscribir.");
+        cut.Find("#dieta").Change(CatalogoApiFalsa.DietaId.ToString());
+        cut.FindAll("button").Single(b => b.TextContent == "Inscribir en dieta").Click();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudo inscribir.", cut.Markup));
+        Assert.Contains("Yudivián Almeida", cut.Markup);
+    }
+
+    [Fact]
+    public void Sin_dietas_en_el_catalogo_no_muestra_el_selector()
+    {
+        ComoAdmin();
+        Services.AddSingleton<IAdministracionApi>(new AdministracionApiFalsa());
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa { Dietas = [] });
+
+        var cut = Render<DetallePaciente>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.PacienteId));
+
+        cut.WaitForAssertion(() => Assert.Contains("No hay dietas registradas.", cut.Markup));
+        Assert.Empty(cut.FindAll("#dieta"));
+    }
+
+    [Fact]
+    public void Un_nutricionista_sin_entidad_id_no_puede_abrir_el_paciente()
+    {
+        AddAuthorization().SetAuthorized("nutri@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+        Servicios(new AdministracionApiFalsa());
+
+        var cut = Render<DetallePaciente>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.PacienteId));
+
+        cut.WaitForAssertion(() => Assert.Contains("La sesión no identifica al nutricionista.", cut.Markup));
+    }
+
+    [Fact]
+    public void Volver_navega_al_listado_de_pacientes()
+    {
+        ComoAdmin();
+        Servicios(new AdministracionApiFalsa());
+        var nav = Services.GetRequiredService<BunitNavigationManager>();
+
+        var cut = Render<DetallePaciente>(ps => ps.Add(p => p.Id, AdministracionApiFalsa.PacienteId));
+        cut.WaitForAssertion(() => Assert.Contains("Volver a pacientes", cut.Markup));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Volver a pacientes").Click();
+
+        Assert.EndsWith("/admin/pacientes", nav.Uri);
+    }
+
     private void Servicios(AdministracionApiFalsa api)
     {
         Services.AddSingleton<IAdministracionApi>(api);

@@ -15,9 +15,13 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     public NutricionistaDetalle Detalle { get; set; } = new(NutricionistaId, "Ana Pérez", CatalogoApiFalsa.Especialidad, false, [new(CatalogoApiFalsa.DietaId)]);
     public List<Sala> Salas { get; set; } = [new(SalaId, "Sala 101")];
     public List<Paciente> Pacientes { get; set; } = [new(PacienteId, "Yudivián Almeida", 45, SalaId)];
+    public HashSet<Guid> PacientesSinDetalle { get; } = [];
     public PacienteDetalle DetalleDelPaciente { get; set; } = new(PacienteId, "Yudivián Almeida", 45, new(SalaId, "Sala 101"), [new(CatalogoApiFalsa.DietaId, "Dieta basal")]);
     public Dictionary<Guid, int> PacientesPorSala { get; } = new() { [SalaId] = 2 };
     public ApiException? Error { get; set; }
+    public ApiException? ErrorAlListarPacientes { get; set; }
+    public ApiException? ErrorAlInscribir { get; set; }
+    public ApiException? ErrorAlDesinscribir { get; set; }
     public ApiException? ErrorAlGuardarSala { get; set; }
     public ApiException? ErrorAlEliminarSala { get; set; }
     public (Guid? Especialidad, int Page, int Size)? UltimaConsultaNutricionistas { get; private set; }
@@ -43,14 +47,14 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     {
         UltimaConsultaPacientes = (salaId, dietaId, page, size);
         var filtrados = Pacientes.Where(p => salaId is null || p.SalaId == salaId).ToList();
-        return Resultado(new Pagina<Paciente>(filtrados, filtrados.Count, page, size));
+        return Resultado(ErrorAlListarPacientes, new Pagina<Paciente>(filtrados, filtrados.Count, page, size));
     }
 
     public Task<PacienteDetalle> ObtenerPacienteAsync(Guid id, CancellationToken ct = default)
     {
         PacienteConsultado = id;
         var paciente = Pacientes.FirstOrDefault(p => p.Id == id);
-        return Resultado(paciente is null
+        return Resultado(paciente is null || PacientesSinDetalle.Contains(id)
             ? DetalleDelPaciente
             : DetalleDelPaciente with { Id = paciente.Id, Nombre = paciente.Nombre, Edad = paciente.Edad });
     }
@@ -58,13 +62,13 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     public Task InscribirPacienteEnDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default)
     {
         UltimaInscripcion = (pacienteId, dietaId);
-        return Resultado();
+        return Resultado(ErrorAlInscribir);
     }
 
     public Task DesinscribirPacienteDeDietaAsync(Guid pacienteId, Guid dietaId, CancellationToken ct = default)
     {
         UltimaDesinscripcion = (pacienteId, dietaId);
-        return Resultado();
+        return Resultado(ErrorAlDesinscribir);
     }
 
     public Task<NutricionistaDetalle> ObtenerNutricionistaAsync(Guid id, CancellationToken ct = default)

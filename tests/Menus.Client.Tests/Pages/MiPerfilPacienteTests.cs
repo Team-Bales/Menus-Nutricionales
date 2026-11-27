@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using Bunit;
 using Bunit.TestDoubles;
@@ -37,6 +38,39 @@ public sealed class MiPerfilPacienteTests : BunitContext
         var cut = Render<MiPerfilPaciente>();
 
         cut.WaitForAssertion(() => Assert.Contains("La sesión no identifica al paciente.", cut.Markup));
+    }
+
+    [Fact]
+    public void Sin_dietas_muestra_ninguna()
+    {
+        ComoPaciente();
+        Services.AddSingleton<IAdministracionApi>(new AdministracionApiFalsa
+        {
+            DetalleDelPaciente = new(
+                AdministracionApiFalsa.PacienteId,
+                "Yudivián Almeida",
+                45,
+                new(AdministracionApiFalsa.SalaId, "Sala 101"),
+                []),
+        });
+
+        var cut = Render<MiPerfilPaciente>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Ninguna.", cut.Markup));
+    }
+
+    [Fact]
+    public void Un_error_de_la_api_se_muestra()
+    {
+        ComoPaciente();
+        Services.AddSingleton<IAdministracionApi>(new AdministracionApiFalsa
+        {
+            Error = new(HttpStatusCode.InternalServerError, "No se pudo cargar tu ficha."),
+        });
+
+        var cut = Render<MiPerfilPaciente>();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudo cargar tu ficha.", cut.Markup));
     }
 
     private void ComoPaciente()

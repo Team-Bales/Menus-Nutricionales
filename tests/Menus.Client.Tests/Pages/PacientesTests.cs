@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Bunit;
 using Bunit.TestDoubles;
 using Menus.Client;
+using Menus.Client.Administracion;
 using Menus.Client.Catalogo;
 using Menus.Client.Pages;
 using Menus.Client.Services;
@@ -128,6 +129,10 @@ public sealed class PacientesTests : BunitContext
         cut.FindAll("button").Single(b => b.TextContent == "Filtrar").Click();
 
         Assert.Null(api.UltimaConsultaPacientes);
+
+        cut.FindAll("button").Single(b => b.TextContent == "Limpiar").Click();
+        cut.WaitForAssertion(() => Assert.Contains("Selecciona una de tus dietas", cut.Markup));
+        Assert.Null(api.UltimaConsultaPacientes);
     }
 
     [Fact]
@@ -170,6 +175,124 @@ public sealed class PacientesTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("Sin permisos para esta página", cut.Markup));
         Assert.DoesNotContain("Pacientes ingresados", cut.Markup);
+    }
+
+    [Fact]
+    public void Un_nutricionista_sin_entidad_id_muestra_un_error()
+    {
+        AddAuthorization().SetAuthorized("nutri@centro.test").SetRoles(RolesDeUsuario.Nutricionista);
+        var api = new AdministracionApiFalsa();
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<Pacientes>();
+
+        cut.WaitForAssertion(() => Assert.Contains("La sesión no identifica al nutricionista.", cut.Markup));
+        Assert.Null(api.UltimaConsultaPacientes);
+    }
+
+    [Fact]
+    public void Limpiar_quita_los_filtros_y_reinicia_la_pagina()
+    {
+        ComoAdmin();
+        var api = new AdministracionApiFalsa();
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+        var cut = Render<Pacientes>();
+        cut.WaitForAssertion(() => Assert.Contains("Yudivián Almeida", cut.Markup));
+
+        cut.Find("#sala").Change(AdministracionApiFalsa.SalaId.ToString());
+        cut.Find("#dieta").Change(CatalogoApiFalsa.DietaId.ToString());
+        cut.FindAll("button").Single(b => b.TextContent == "Filtrar").Click();
+        cut.WaitForAssertion(() => Assert.Equal(
+            (AdministracionApiFalsa.SalaId, CatalogoApiFalsa.DietaId, 1, 10),
+            api.UltimaConsultaPacientes));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Limpiar").Click();
+
+        cut.WaitForAssertion(() => Assert.Equal((null, null, 1, 10), api.UltimaConsultaPacientes));
+    }
+
+    [Fact]
+    public void Un_error_al_listar_se_muestra_sin_perder_los_filtros()
+    {
+        ComoAdmin();
+        var api = new AdministracionApiFalsa { ErrorAlListarPacientes = new(HttpStatusCode.InternalServerError, "No se pudo listar.") };
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<Pacientes>();
+
+        cut.WaitForAssertion(() => Assert.Contains("No se pudo listar.", cut.Markup));
+        Assert.Contains("id=\"sala\"", cut.Markup);
+    }
+
+    [Fact]
+    public void Una_fila_sin_detalle_muestra_guion_y_cero_dietas()
+    {
+        ComoAdmin();
+        var otro = Guid.NewGuid();
+        var api = new AdministracionApiFalsa
+        {
+            Pacientes = [new(otro, "Paciente sin detalle", 30, AdministracionApiFalsa.SalaId)],
+            DetalleDelPaciente = new(
+                AdministracionApiFalsa.PacienteId,
+                "Otro paciente",
+                20,
+                new(AdministracionApiFalsa.SalaId, "Sala 101"),
+                []),
+        };
+        api.PacientesSinDetalle.Add(otro);
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+
+        var cut = Render<Pacientes>();
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("Paciente sin detalle", cut.Markup);
+            Assert.Contains("—", cut.Markup);
+            Assert.Contains(">0<", cut.Markup);
+        });
+    }
+
+    [Fact]
+    public void Un_nutricionista_con_una_dieta_la_mantiene_al_limpiar()
+    {
+        ComoNutricionista();
+        var api = new AdministracionApiFalsa();
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+        var cut = Render<Pacientes>();
+        cut.WaitForAssertion(() => Assert.Contains("Yudivián Almeida", cut.Markup));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Limpiar").Click();
+
+        cut.WaitForAssertion(() => Assert.Equal(
+            (null, CatalogoApiFalsa.DietaId, 1, 10),
+            api.UltimaConsultaPacientes));
+    }
+
+    [Fact]
+    public void Paginar_avanza_y_retrocede()
+    {
+        ComoAdmin();
+        var pacientes = Enumerable.Range(1, 11)
+            .Select(i => new Paciente(Guid.NewGuid(), $"Paciente {i}", 30, AdministracionApiFalsa.SalaId))
+            .ToList();
+        var api = new AdministracionApiFalsa { Pacientes = pacientes };
+        Services.AddSingleton<IAdministracionApi>(api);
+        Services.AddSingleton<ICatalogoApi>(new CatalogoApiFalsa());
+        var cut = Render<Pacientes>();
+        cut.WaitForAssertion(() => Assert.Contains("Paciente 1", cut.Markup));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Siguiente").Click();
+        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaPacientes!.Value.Page));
+        cut.WaitForAssertion(() => Assert.Contains("Siguiente", cut.Markup));
+
+        cut.FindAll("button").Single(b => b.TextContent == "Anterior").Click();
+
+        cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaPacientes!.Value.Page));
     }
 
     private void ComoAdmin()

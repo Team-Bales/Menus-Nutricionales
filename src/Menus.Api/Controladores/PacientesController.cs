@@ -20,9 +20,9 @@ namespace Menus.Api.Controladores;
 /// </summary>
 /// <remarks>
 /// No hay <c>POST /api/pacientes</c>: el alta se hace con la cuenta del paciente, en
-/// <c>/api/auth/registro/paciente</c> (#70). La gestión es para un nutricionista o el administrador (#74); los menús
-/// asignados (#84) y el histórico de consumo (#85) los ve además el propio paciente. Por eso la política va en cada
-/// acción y no en la clase: la de la clase se sumaría a la de cada acción.
+/// <c>/api/auth/registro/paciente</c> (#70). La gestión es para un nutricionista o el administrador (#74); el detalle
+/// del paciente, los menús asignados (#84) y el histórico de consumo (#85) los ve además el propio paciente. Por eso
+/// la política va en cada acción y no en la clase: la de la clase se sumaría a la de cada acción.
 /// </remarks>
 [ApiController]
 [Route("api/pacientes")]
@@ -51,10 +51,12 @@ public sealed class PacientesController(IDespachador despachador) : ControllerBa
 
     /// <summary>Detalle de un paciente, con su sala y sus dietas inscritas (identificador y nombre).</summary>
     /// <response code="200">El paciente.</response>
+    /// <response code="403">El token es de otro paciente.</response>
     /// <response code="404">No existe.</response>
-    [Authorize(Policy = Politicas.NutricionistaOAdmin)]
+    [Authorize(Policy = Politicas.PacientePropioOPersonal)]
     [HttpGet("{id:guid}")]
     [ProducesResponseType<PacienteDetalleDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<PacienteDetalleDto> Obtener(Guid id, CancellationToken ct)
         => despachador.EnviarAsync(new ObtenerPacienteQuery(id), ct);

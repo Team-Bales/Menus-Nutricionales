@@ -48,7 +48,7 @@ Sin token, todo responde 401 salvo el login (y el OpenAPI en Development). Leyen
 | Dieta | Crear, editar o borrar | ✗ | ✗ | ✓ |
 | Menú | Generar, listar, validar, reemplazar o asignar | ✗ | ✓ | ✗ |
 | Paciente | Gestionar | ✗ | ✓ | ✓ |
-| Paciente | Ver sus menús, consumos o valoraciones | · | ✓ | ✓ |
+| Paciente | Ver su ficha, menús, consumos o valoraciones | · | ✓ | ✓ |
 | Sala | Leer | ✗ | ✓ | ✓ |
 | Sala | Crear, editar o borrar | ✗ | ✗ | ✓ |
 | Nomenclador | Leer | ✓ | ✓ | ✓ |
@@ -142,15 +142,15 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 | Endpoint | Anónimo | Paciente | Nutricionista | Admin | Política |
 |---|---|---|---|---|---|
 | `GET /api/pacientes` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
-| `GET /api/pacientes/{id}` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `GET /api/pacientes/{id}` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 | `PUT /api/pacientes/{id}` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
 | `POST /api/pacientes/{id}/dietas` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
 | `DELETE /api/pacientes/{id}/dietas/{dietaId}` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
 | `GET /api/pacientes/{id}/menus` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 | `GET /api/pacientes/{id}/consumos` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 
-> En `menus` y `consumos`, el Paciente solo pasa si el `entidad_id` del token coincide con el `id` de la
-> ruta; si no, 403 (#285).
+> En el detalle (`GET /api/pacientes/{id}`), `menus` y `consumos`, el Paciente solo pasa si el `entidad_id`
+> del token coincide con el `id` de la ruta; si no, 403 (#77, #285).
 
 ### Salas
 

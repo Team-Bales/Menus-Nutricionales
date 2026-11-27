@@ -36,6 +36,7 @@ builder.Services.AddScoped(sp =>
 // Clientes tipados de la API que usan las páginas.
 builder.Services.AddScoped<ICatalogoApi, CatalogoApi>();
 builder.Services.AddScoped<IAdministracionApi, AdministracionApi>();
+builder.Services.AddScoped<IMenusApi, MenusApi>();
 builder.Services.AddScoped<IAutenticacionApi, AutenticacionApi>();
 
 await builder.Build().RunAsync();

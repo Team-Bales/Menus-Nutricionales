@@ -1,0 +1,382 @@
+@* Generación y consulta de menús (/menus), solo para nutricionistas: pide un menú
+   automático con sus parámetros y lista los menús de la dieta elegida con su
+   creador, su fecha y los parámetros usados. El nutricionista solo ve las dietas
+   para las que está autorizado (RF-06); la API también lo comprueba. *@
+@page "/menus"
+@attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
+@inject IMenusApi Api
+@inject IAdministracionApi Administracion
+@inject ICatalogoApi Catalogo
+@inject AuthenticationStateProvider Autenticacion
+
+<PageTitle>Menús</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Menús</h1>
+        <p class="text-muted mb-0">Genera menús automáticos y consulta los de cada dieta.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_mensaje))
+{
+    <div class="alert alert-success" role="status">@_mensaje</div>
+}
+
+@if (_cargando)
+{
+    <p class="text-muted">Cargando menús…</p>
+}
+else if (_dietas.Count == 0)
+{
+    if (string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-info" role="status">No tienes dietas asignadas.</div>
+    }
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Generar menú automático</h2>
+            <div class="row g-3">
+                <div class="col-12 col-md-5">
+                    <label class="form-label" for="dieta">Dieta</label>
+                    <select id="dieta" class="form-select" value="@_dietaId" @onchange="SeleccionarDieta">
+                        <option value="@Guid.Empty">Selecciona una dieta</option>
+                        @foreach (var dieta in _dietas)
+                        {
+                            <option value="@dieta.Id">@dieta.Nombre</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label" for="cantidad">Cantidad total de alimentos</label>
+                    <input id="cantidad" class="form-control" type="number" min="1" step="1" @bind="_cantidad" />
+                </div>
+            </div>
+
+            <h3 class="h6 mt-4">Distribución por tipo de preparación</h3>
+            <p class="text-muted small mb-2">
+                Indica la proporción de cada tipo; las proporciones deben sumar 1.
+                Suma actual: <strong>@SumaProporciones</strong>.
+            </p>
+            <div class="row g-3">
+                @for (var i = 0; i < _proporciones.Count; i++)
+                {
+                    var indice = i;
+                    var proporcion = _proporciones[indice];
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="proporcion-@proporcion.TipoPreparacionId">@NombreDe(_tipos, proporcion.TipoPreparacionId)</label>
+                        <input id="proporcion-@proporcion.TipoPreparacionId" class="form-control" type="number"
+                               min="0" max="1" step="0.01" @bind="proporcion.Proporcion" />
+                    </div>
+                }
+            </div>
+
+            <h3 class="h6 mt-4">Grupos nutricionales a cubrir</h3>
+            <div class="row g-2">
+                @foreach (var grupo in _grupos)
+                {
+                    <div class="col-12 col-md-4">
+                        <div class="form-check">
+                            <input id="grupo-@grupo.Id" class="form-check-input" type="checkbox"
+                                   checked="@_gruposSeleccionados.Contains(grupo.Id)"
+                                   @onchange="e => AlternarGrupo(grupo.Id, e)" />
+                            <label class="form-check-label" for="grupo-@grupo.Id">@grupo.Nombre</label>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-primary" disabled="@_generando" @onclick="Generar">
+                    @(_generando ? "Generando…" : "Generar menú")
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h5 mb-0">Menús de la dieta</h2>
+                <div class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label small mb-1" for="estado">Estado</label>
+                        <select id="estado" class="form-select form-select-sm" @bind="_estado">
+                            <option value="">Todos</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="Final">Final</option>
+                            <option value="Rechazado">Rechazado</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="Filtrar">Filtrar</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="LimpiarFiltro">Limpiar</button>
+                </div>
+            </div>
+
+            @if (_dietaId == Guid.Empty)
+            {
+                <p class="text-muted mb-0">Selecciona una dieta para ver sus menús.</p>
+            }
+            else if (_cargandoMenus)
+            {
+                <p class="text-muted mb-0">Cargando menús de la dieta…</p>
+            }
+            else if (_pagina is not null)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr><th>Fecha de creación</th><th>Creador</th><th>Estado</th><th>Parámetros usados</th></tr>
+                        </thead>
+                        <tbody>
+                            @if (_pagina.Data.Count == 0)
+                            {
+                                <tr><td colspan="4" class="text-center text-muted py-4">Esta dieta no tiene menús generados.</td></tr>
+                            }
+                            @foreach (var menu in _pagina.Data)
+                            {
+                                <tr>
+                                    <td>@Fecha(menu.FechaCreacion)</td>
+                                    <td>@menu.Creador.Nombre</td>
+                                    <td><span class="badge @ClaseEstado(menu.Estado)">@menu.Estado</span></td>
+                                    <td>@Parametros(menu)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">@_pagina.Total resultado(s)</span>
+                    <div class="btn-group" role="group" aria-label="Paginación de menús">
+                        <button class="btn btn-outline-secondary" disabled="@(_pagina.Page == 1)" @onclick="PaginaAnterior">Anterior</button>
+                        <button class="btn btn-outline-secondary" disabled="@(_pagina.Page * _pagina.Size >= _pagina.Total)" @onclick="PaginaSiguiente">Siguiente</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<Nomenclador> _dietas = [];
+    private IReadOnlyList<Nomenclador> _tipos = [];
+    private IReadOnlyList<Nomenclador> _grupos = [];
+    private List<ProporcionDelFormulario> _proporciones = [];
+    private readonly HashSet<Guid> _gruposSeleccionados = [];
+    private Pagina<Menu>? _pagina;
+    private Dictionary<Guid, MenuDetalle> _detalles = new();
+    private Guid _dietaId;
+    private string? _estado;
+    private int _cantidad = 10;
+    private bool _cargando = true;
+    private bool _cargandoMenus;
+    private bool _generando;
+    private string? _error;
+    private string? _mensaje;
+
+    private decimal SumaProporciones => _proporciones.Sum(p => p.Proporcion);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var autenticacion = await Autenticacion.GetAuthenticationStateAsync();
+            var entidad = autenticacion.User.FindFirst("entidad_id")?.Value;
+            if (!Guid.TryParse(entidad, out var nutricionistaId))
+            {
+                _error = "La sesión no identifica al nutricionista.";
+                return;
+            }
+
+            var nutricionista = await Administracion.ObtenerNutricionistaAsync(nutricionistaId);
+            var dietas = await Catalogo.ListarTodasLasDietasAsync();
+            _dietas = [.. nutricionista.DietasAutorizadas.Select(a =>
+                new Nomenclador(a.DietaId, dietas.FirstOrDefault(d => d.Id == a.DietaId)?.Nombre ?? "—"))];
+            _tipos = await Catalogo.ListarTiposPreparacionAsync();
+            _grupos = await Catalogo.ListarGruposAsync();
+            _proporciones = [.. _tipos.Select(t => new ProporcionDelFormulario { TipoPreparacionId = t.Id })];
+
+            if (_dietas.Count == 1)
+            {
+                _dietaId = _dietas[0].Id;
+            }
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+
+        if (_error is null && _dietaId != Guid.Empty)
+        {
+            await CargarMenus(1);
+        }
+    }
+
+    private async Task SeleccionarDieta(ChangeEventArgs e)
+    {
+        _dietaId = Guid.TryParse(e.Value?.ToString(), out var id) ? id : Guid.Empty;
+        _pagina = null;
+        _detalles = new();
+        if (_dietaId != Guid.Empty)
+        {
+            await CargarMenus(1);
+        }
+    }
+
+    private async Task CargarMenus(int page)
+    {
+        _cargandoMenus = true;
+        _error = null;
+        try
+        {
+            _pagina = await Api.ListarMenusAsync(_dietaId, string.IsNullOrEmpty(_estado) ? null : _estado, page, 10);
+            var detalles = await Task.WhenAll(_pagina.Data.Select(m => Api.ObtenerMenuAsync(m.Id)));
+            _detalles = detalles.ToDictionary(d => d.Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargandoMenus = false;
+        }
+    }
+
+    private async Task Generar()
+    {
+        _mensaje = null;
+        _error = null;
+
+        if (_dietaId == Guid.Empty)
+        {
+            _error = "Selecciona una dieta.";
+            return;
+        }
+
+        if (_cantidad <= 0)
+        {
+            _error = "La cantidad total de alimentos debe ser mayor que cero.";
+            return;
+        }
+
+        if (_proporciones.Any(p => p.Proporcion < 0 || p.Proporcion > 1))
+        {
+            _error = "Cada proporción debe estar entre 0 y 1.";
+            return;
+        }
+
+        var distribucion = _proporciones
+            .Where(p => p.Proporcion > 0)
+            .Select(p => new ProporcionDeMenu(p.TipoPreparacionId, p.Proporcion))
+            .ToList();
+
+        if (distribucion.Sum(p => p.Proporcion) != 1m)
+        {
+            _error = "Las proporciones deben sumar 1.";
+            return;
+        }
+
+        if (_gruposSeleccionados.Count == 0)
+        {
+            _error = "Selecciona al menos un grupo nutricional.";
+            return;
+        }
+
+        _generando = true;
+        try
+        {
+            await Api.GenerarMenuAsync(new(
+                _dietaId,
+                _cantidad,
+                distribucion,
+                [.. _gruposSeleccionados]));
+            _mensaje = "Menú generado correctamente.";
+            _gruposSeleccionados.Clear();
+            foreach (var proporcion in _proporciones)
+            {
+                proporcion.Proporcion = 0;
+            }
+
+            await CargarMenus(1);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _generando = false;
+        }
+    }
+
+    private Task Filtrar() => CargarMenus(1);
+
+    private async Task LimpiarFiltro()
+    {
+        _estado = null;
+        await CargarMenus(1);
+    }
+
+    private Task PaginaAnterior() => CargarMenus(Math.Max(1, _pagina!.Page - 1));
+
+    private Task PaginaSiguiente() => CargarMenus(_pagina!.Page + 1);
+
+    private void AlternarGrupo(Guid grupoId, ChangeEventArgs e)
+    {
+        var marcado = e.Value is true or "true";
+        if (marcado)
+        {
+            _gruposSeleccionados.Add(grupoId);
+        }
+        else
+        {
+            _gruposSeleccionados.Remove(grupoId);
+        }
+    }
+
+    private string Parametros(Menu menu)
+    {
+        if (!_detalles.TryGetValue(menu.Id, out var detalle))
+        {
+            return $"{menu.CantidadTotalAlimentos} alimentos";
+        }
+
+        var distribucion = string.Join(" · ", detalle.Distribucion.Select(d => $"{d.Proporcion:P0} {d.Nombre}"));
+        var grupos = detalle.GruposNutricionales.Count == 0
+            ? "sin grupos"
+            : string.Join(", ", detalle.GruposNutricionales.Select(g => g.Nombre));
+        return $"{menu.CantidadTotalAlimentos} alimentos · {distribucion} · Grupos: {grupos}";
+    }
+
+    private static string Fecha(DateTime fecha) => fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    private static string ClaseEstado(string estado) => estado switch
+    {
+        "Final" => "text-bg-success",
+        "Rechazado" => "text-bg-danger",
+        _ => "text-bg-warning",
+    };
+
+    private static string NombreDe(IEnumerable<Nomenclador> nomencladores, Guid id)
+        => nomencladores.FirstOrDefault(n => n.Id == id)?.Nombre ?? "—";
+
+    private sealed class ProporcionDelFormulario
+    {
+        public Guid TipoPreparacionId { get; init; }
+
+        public decimal Proporcion { get; set; }
+    }
+}

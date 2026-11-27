@@ -1,7 +1,8 @@
 ﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
    secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
-   nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
-   una declara su propio [Authorize]. El panel del paciente (menús, consumo y valoraciones) es el #88. *@
+   nutricionista), los menús al nutricionista, la administración al Admin y el perfil a todos. Ocultar un acceso no
+   protege la página: cada una declara su propio [Authorize]. El panel del paciente (menús, consumo y valoraciones)
+   es el #88. *@
 @page "/"
 @attribute [Authorize]
 
@@ -25,6 +26,15 @@
                     <li><a href="catalogo/alimentos">Alimentos</a>: banco de alimentos para la elaboración de menús.</li>
                     <li><a href="catalogo/platos">Platos</a>: banco de platos y su composición de alimentos.</li>
                     <li><a href="catalogo/dietas">Dietas</a>: planes de alimentación por programa de atención.</li>
+                </ul>
+            </section>
+        }
+        @if (estado.User.IsInRole(RolesDeUsuario.Nutricionista))
+        {
+            <section class="mb-4" aria-labelledby="portada-menus">
+                <h2 id="portada-menus" class="h4">Menús</h2>
+                <ul class="list-unstyled">
+                    <li><a href="menus">Menús</a>: generación automática y consulta de los menús de cada dieta.</li>
                 </ul>
             </section>
         }

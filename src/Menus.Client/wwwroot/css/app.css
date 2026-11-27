@@ -1259,19 +1259,6 @@ hr { border-color: var(--border); opacity: 1; }
 
 .login-brand-center .eyebrow { color: var(--brand-300); }
 
-.login-brand-center h2 {
-    color: #fff;
-    font-size: clamp(2rem, 4vw, 3.1rem);
-    line-height: 1.1;
-    letter-spacing: -.04em;
-    margin: .5rem 0 1rem;
-}
-
-.login-brand-center h2 em {
-    font-style: normal;
-    color: var(--brand-300);
-}
-
 .login-brand-center p {
     color: rgba(255, 255, 255, .72);
     font-size: 1rem;

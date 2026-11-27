@@ -255,6 +255,8 @@ else
         }
 
         _error = null;
+        _pagina = null;
+        _filas = [];
         _cargandoMenus = true;
         try
         {
@@ -266,6 +268,8 @@ else
         catch (ApiException ex)
         {
             _error = ex.Message;
+            _pagina = null;
+            _filas = [];
         }
         finally
         {

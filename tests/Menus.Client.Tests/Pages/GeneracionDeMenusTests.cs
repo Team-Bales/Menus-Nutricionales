@@ -260,7 +260,11 @@ public sealed class GeneracionDeMenusTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
 
         cut.FindAll("button").Single(button => button.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsulta!.Value.Page));
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsulta!.Value.Page);
+            Assert.DoesNotContain("Cargando menús", cut.Markup);
+        });
 
         cut.Find("#dieta").Change(otraDieta.ToString());
 
@@ -268,6 +272,32 @@ public sealed class GeneracionDeMenusTests : BunitContext
         {
             Assert.Equal(otraDieta, api.UltimaConsulta!.Value.DietaId);
             Assert.Equal(1, api.UltimaConsulta!.Value.Page);
+        });
+    }
+
+    [Fact]
+    public void Cambiar_de_dieta_con_fallo_en_el_listado_no_muestra_filas_de_la_dieta_anterior()
+    {
+        var otraDieta = Guid.NewGuid();
+        var catalogo = new CatalogoApiFalsa
+        {
+            Dietas =
+            [
+                new(CatalogoApiFalsa.DietaId, "Dieta basal", CatalogoApiFalsa.Programa, 1, 1),
+                new(otraDieta, "Blanda oncológica", CatalogoApiFalsa.Programa, 1, 1)
+            ]
+        };
+        var (api, _) = Servicios(new MenusApiFalsa { Total = 25 }, catalogo);
+        var cut = Render<GeneracionDeMenus>();
+        cut.WaitForAssertion(() => Assert.Contains("Ana Pérez", cut.Markup));
+
+        api.ErrorAlListar = ErrorDePrueba.Conflicto("No se pudieron cargar los menús.");
+        cut.Find("#dieta").Change(otraDieta.ToString());
+
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Contains("No se pudieron cargar los menús.", cut.Markup);
+            Assert.DoesNotContain("Ana Pérez", cut.Markup);
         });
     }
 

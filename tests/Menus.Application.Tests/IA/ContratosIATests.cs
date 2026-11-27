@@ -161,6 +161,25 @@ public sealed class ContratosIATests
         Assert.Equal(2, (int)TareaIA.GuionParaPaciente);
     }
 
+    /// <summary>
+    /// Verifica que <see cref="TareaIA"/> se serializa como camelCase según el contrato HTTP (§11):
+    /// "explicarAnalisis", "sugerirAcciones", "guionParaPaciente".
+    /// </summary>
+    [Fact]
+    public void TareaIA_Serializacion_CamelCase()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        Assert.Equal("\"explicarAnalisis\"", JsonSerializer.Serialize(TareaIA.ExplicarAnalisis, options));
+        Assert.Equal("\"sugerirAcciones\"", JsonSerializer.Serialize(TareaIA.SugerirAcciones, options));
+        Assert.Equal("\"guionParaPaciente\"", JsonSerializer.Serialize(TareaIA.GuionParaPaciente, options));
+
+        // Verificar deserialización round-trip
+        Assert.Equal(TareaIA.ExplicarAnalisis, JsonSerializer.Deserialize<TareaIA>("\"explicarAnalisis\"", options));
+        Assert.Equal(TareaIA.SugerirAcciones, JsonSerializer.Deserialize<TareaIA>("\"sugerirAcciones\"", options));
+        Assert.Equal(TareaIA.GuionParaPaciente, JsonSerializer.Deserialize<TareaIA>("\"guionParaPaciente\"", options));
+    }
+
     #endregion
 
     #region SeccionDto

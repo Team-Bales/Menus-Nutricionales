@@ -1,11 +1,20 @@
 namespace Menus.Application.IA;
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
+
+/// <summary>
+/// Convierte enums a/desde JSON usando camelCase.
+/// </summary>
+internal sealed class CamelCaseEnumConverter : JsonStringEnumConverter
+{
+    public CamelCaseEnumConverter() : base(JsonNamingPolicy.CamelCase) { }
+}
 
 /// <summary>
 /// Tipo de tarea que se solicita a la IA. Valores explícitos y estables para serialización.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(CamelCaseEnumConverter))]
 public enum TareaIA
 {
     /// <summary>

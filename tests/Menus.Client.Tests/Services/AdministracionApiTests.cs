@@ -50,6 +50,77 @@ public sealed class AdministracionApiTests
     }
 
     [Fact]
+    public async Task ListarPacientesAsync_usa_la_ruta_paginada_con_los_filtros_de_sala_y_dieta()
+    {
+        var sala = Guid.NewGuid();
+        var dieta = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":1,"size":10}"""));
+
+        await Crear(handler).ListarPacientesAsync(sala, dieta, 1, 10);
+
+        Assert.Equal("/api/pacientes", handler.Recibida!.RequestUri!.AbsolutePath);
+        Assert.Contains($"sala={sala}", handler.Recibida.RequestUri.Query);
+        Assert.Contains($"dieta={dieta}", handler.Recibida.RequestUri.Query);
+        Assert.Contains("page=1", handler.Recibida.RequestUri.Query);
+        Assert.Contains("size=10", handler.Recibida.RequestUri.Query);
+    }
+
+    [Fact]
+    public async Task ListarPacientesAsync_omite_los_filtros_que_no_se_indican()
+    {
+        var handler = new HandlerFalso(req => Json(req, """{"data":[],"total":0,"page":1,"size":10}"""));
+
+        await Crear(handler).ListarPacientesAsync(null, null, 1, 10);
+
+        Assert.DoesNotContain("sala=", handler.Recibida!.RequestUri!.Query);
+        Assert.DoesNotContain("dieta=", handler.Recibida.RequestUri.Query);
+    }
+
+    [Fact]
+    public async Task ObtenerPacienteAsync_deserializa_la_sala_y_las_dietas_inscritas()
+    {
+        var paciente = Guid.NewGuid();
+        var sala = Guid.NewGuid();
+        var dieta = Guid.NewGuid();
+        var handler = new HandlerFalso(req => Json(req, $$"""{"id":"{{paciente}}","nombre":"Luis","edad":45,"sala":{"id":"{{sala}}","nombre":"Sala 101"},"dietas":[{"id":"{{dieta}}","nombre":"Dieta basal"}]}"""));
+
+        var detalle = await Crear(handler).ObtenerPacienteAsync(paciente);
+
+        Assert.Equal($"/api/pacientes/{paciente}", handler.Recibida!.RequestUri!.AbsolutePath);
+        Assert.Equal(new SalaDelPaciente(sala, "Sala 101"), detalle.Sala);
+        Assert.Equal(new DietaInscrita(dieta, "Dieta basal"), Assert.Single(detalle.Dietas));
+    }
+
+    [Fact]
+    public async Task Inscribir_y_desinscribir_envian_las_rutas_y_el_cuerpo()
+    {
+        var solicitudes = new List<HttpRequestMessage>();
+        string? cuerpo = null;
+        var handler = new HandlerFalso(req =>
+        {
+            solicitudes.Add(req);
+            if (req.Method == HttpMethod.Post)
+            {
+                cuerpo = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NoContent);
+        });
+        var paciente = Guid.NewGuid();
+        var dieta = Guid.NewGuid();
+        var api = Crear(handler);
+
+        await api.InscribirPacienteEnDietaAsync(paciente, dieta);
+        await api.DesinscribirPacienteDeDietaAsync(paciente, dieta);
+
+        Assert.Equal(HttpMethod.Post, solicitudes[0].Method);
+        Assert.Equal($"/api/pacientes/{paciente}/dietas", solicitudes[0].RequestUri!.AbsolutePath);
+        Assert.Contains(dieta.ToString(), cuerpo);
+        Assert.Equal(HttpMethod.Delete, solicitudes[1].Method);
+        Assert.Equal($"/api/pacientes/{paciente}/dietas/{dieta}", solicitudes[1].RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
     public async Task Operaciones_de_autorizacion_y_jefatura_envian_las_rutas_correctas()
     {
         var rutas = new List<(HttpMethod Metodo, string Ruta)>();

@@ -28,6 +28,7 @@ public sealed class NavMenuTests : BunitContext
         Assert.Contains("admin/nomencladores", cut.Markup);
         Assert.Contains("admin/nutricionistas", cut.Markup);
         Assert.Contains("admin/salas", cut.Markup);
+        Assert.Contains("admin/pacientes", cut.Markup);
     }
 
     [Fact]
@@ -40,6 +41,7 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.Contains("catalogo/alimentos", cut.Markup);
         Assert.Contains("catalogo/dietas", cut.Markup);
+        Assert.Contains("admin/pacientes", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
         Assert.DoesNotContain("admin/nutricionistas", cut.Markup);
         Assert.DoesNotContain("admin/salas", cut.Markup);
@@ -55,7 +57,8 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.DoesNotContain("catalogo/", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
-        Assert.Contains("perfil", cut.Markup);
+        Assert.DoesNotContain("admin/pacientes", cut.Markup);
+        Assert.Contains("mi-perfil", cut.Markup);
         Assert.Contains(cut.FindAll("button"), b => b.TextContent == "Cerrar sesión");
     }
 

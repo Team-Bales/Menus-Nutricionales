@@ -26,6 +26,9 @@ public sealed class PermisosPorRolTests : BunitContext
     [InlineData(typeof(Nutricionistas), RolesDeUsuario.Admin)]
     [InlineData(typeof(DetalleNutricionista), RolesDeUsuario.Admin)]
     [InlineData(typeof(Salas), RolesDeUsuario.Admin)]
+    [InlineData(typeof(Pacientes), RolesDeUsuario.Personal)]
+    [InlineData(typeof(DetallePaciente), RolesDeUsuario.Personal)]
+    [InlineData(typeof(MiPerfilPaciente), RolesDeUsuario.Paciente)]
     public void Cada_pagina_exige_los_roles_de_la_api(Type pagina, string roles)
     {
         var atributo = pagina.GetCustomAttribute<AuthorizeAttribute>();

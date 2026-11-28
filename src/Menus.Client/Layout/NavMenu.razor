@@ -1,81 +1,91 @@
 ﻿@* Menú lateral. Muestra solo los enlaces que permite el rol de la sesión: el catálogo al personal
    (Admin y nutricionista), la administración al Admin, y el perfil y cerrar sesión a cualquiera
-   con sesión. Ocultar un enlace no protege la página: cada una declara su propio [Authorize]. *@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Menús nutricionales</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
+   con sesión. Ocultar un enlace no protege la página: cada una declara su propio [Authorize].
+   La forma (secciones, iconos y tarjeta de usuario) cambia en el #347; las reglas no. *@
+<div class="sidebar-header">
+    <a class="sidebar-brand" href="">
+        <span class="brand-mark"><Icon Name="leaf" /></span>
+        <span class="brand-text">
+            <span class="brand-name">Menús nutricionales</span>
+            <span class="brand-tagline">Centro de nutrición</span>
+        </span>
+    </a>
+    <button aria-label="Menú de navegación" aria-expanded="@(collapseNavMenu ? "false" : "true")" class="navbar-toggler sidebar-toggle" @onclick="ToggleNavMenu">
+        <Icon Name="menu" />
+    </button>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
+<div class="@NavMenuCssClass nav-scrollable sidebar-body" @onclick="ToggleNavMenu">
+    <nav class="sidebar-nav">
         <AuthorizeView Context="estado">
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-                    </NavLink>
-                </div>
+                <span class="sidebar-section-label">General</span>
+                <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+                    <Icon Name="home" /> Inicio
+                </NavLink>
+
                 @if (RolesDeUsuario.EsPersonal(estado.User))
                 {
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="catalogo/alimentos">
-                            <span class="bi bi-basket-fill-nav-menu" aria-hidden="true"></span> Alimentos
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="catalogo/platos">
-                            <span class="bi bi-card-list-nav-menu" aria-hidden="true"></span> Platos
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="catalogo/dietas">
-                            <span class="bi bi-clipboard2-pulse-fill-nav-menu" aria-hidden="true"></span> Dietas
-                        </NavLink>
-                    </div>
+                    <span class="sidebar-section-label">Catálogo</span>
+                    <NavLink class="sidebar-link" href="catalogo/alimentos">
+                        <Icon Name="basket" /> Alimentos
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="catalogo/platos">
+                        <Icon Name="utensils" /> Platos
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="catalogo/dietas">
+                        <Icon Name="clipboard" /> Dietas
+                    </NavLink>
                 }
+
                 @if (estado.User.IsInRole(RolesDeUsuario.Admin))
                 {
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="admin/nomencladores">
-                            <span class="bi bi-gear-fill-nav-menu" aria-hidden="true"></span> Administración
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="admin/nutricionistas">
-                            <span class="bi bi-person-vcard-fill-nav-menu" aria-hidden="true"></span> Nutricionistas
-                        </NavLink>
-                    </div>
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="admin/salas">
-                            <span class="bi bi-hospital-fill-nav-menu" aria-hidden="true"></span> Salas
-                        </NavLink>
-                    </div>
-                }
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="perfil">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Mi perfil
+                    <span class="sidebar-section-label">Administración</span>
+                    <NavLink class="sidebar-link" href="admin/nomencladores">
+                        <Icon Name="settings" /> Nomencladores
                     </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <button class="btn btn-link nav-link" @onclick="CerrarSesion">Cerrar sesión</button>
-                </div>
+                    <NavLink class="sidebar-link" href="admin/nutricionistas">
+                        <Icon Name="users" /> Nutricionistas
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="admin/salas">
+                        <Icon Name="hospital" /> Salas
+                    </NavLink>
+                }
+
+                <span class="sidebar-section-label">Mi cuenta</span>
+                <NavLink class="sidebar-link" href="perfil">
+                    <Icon Name="user" /> Mi perfil
+                </NavLink>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="login">Iniciar sesión</NavLink>
-                </div>
+                <NavLink class="sidebar-link" href="login">Iniciar sesión</NavLink>
             </NotAuthorized>
         </AuthorizeView>
     </nav>
+
+    <div class="sidebar-spacer"></div>
+
+    <AuthorizeView Context="estado">
+        <Authorized>
+            <div class="sidebar-footer">
+                <div class="sidebar-footer-label">Sesión activa</div>
+                <div class="sidebar-footer-row">
+                    <span class="avatar avatar-dark" aria-hidden="true"><Icon Name="user" /></span>
+                    <div>
+                        <div class="sidebar-footer-role">@NombreRol(estado.User)</div>
+                        <div class="sidebar-footer-caption">Menús Nutricionales</div>
+                    </div>
+                </div>
+                <button class="sidebar-logout" @onclick="CerrarSesion"><Icon Name="logout" />Cerrar sesión</button>
+            </div>
+        </Authorized>
+    </AuthorizeView>
 </div>
 
 @code {
     [Inject] private ISesionAutenticada Sesion { get; set; } = null!;
     [Inject] private NavigationManager Navegacion { get; set; } = null!;
+
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
@@ -89,5 +99,15 @@
     {
         await Sesion.CerrarSesionAsync();
         Navegacion.NavigateTo(RutasDeSesion.Login);
+    }
+
+    private static string NombreRol(System.Security.Claims.ClaimsPrincipal usuario)
+    {
+        if (usuario.IsInRole(RolesDeUsuario.Admin))
+        {
+            return "Administrador";
+        }
+
+        return usuario.IsInRole(RolesDeUsuario.Nutricionista) ? "Nutricionista" : "Paciente";
     }
 }

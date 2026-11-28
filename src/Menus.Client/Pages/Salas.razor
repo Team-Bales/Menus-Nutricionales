@@ -6,7 +6,12 @@
 
 <PageTitle>Salas</PageTitle>
 
-<div class="mb-4"><h1 class="h2 mb-1">Salas</h1><p class="text-muted mb-0">Salas de hospitalización y sus pacientes asignados.</p></div>
+<div class="page-heading">
+    <div class="page-heading-main">
+        <h1 class="page-title">Salas</h1>
+        <p class="page-subtitle">Salas de hospitalización y sus pacientes asignados.</p>
+    </div>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(_error))
 {
@@ -24,12 +29,12 @@
 
 @if (_cargando)
 {
-    <p class="text-muted">Cargando salas…</p>
+    <EstadoDeCarga Texto="Cargando salas…" />
 }
 else
 {
-    <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Nombre</th><th>Pacientes</th><th class="text-end">Acciones</th></tr></thead><tbody>
-        @if (_salas.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-4">No hay salas registradas.</td></tr> }
+    <div class="table-responsive data-table"><table class="table table-hover align-middle"><thead><tr><th>Nombre</th><th>Pacientes</th><th class="text-end">Acciones</th></tr></thead><tbody>
+        @if (_salas.Count == 0) { <tr><td colspan="3"><EstadoVacio Texto="No hay salas registradas." /></td></tr> }
         @foreach (var sala in _salas) { <tr><td>@sala.Nombre</td><td>@CantidadPacientes(sala.Id)</td><td class="text-end"><button class="btn btn-sm btn-outline-primary me-2" @onclick="(() => Editar(sala))">Editar</button><button class="btn btn-sm btn-outline-danger" @onclick="(() => Eliminar(sala.Id))">Eliminar</button></td></tr> }
     </tbody></table></div>
 }

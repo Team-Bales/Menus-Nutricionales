@@ -14,6 +14,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // desde el que se sirve el cliente.
 var configuredApiBaseUrl = builder.Configuration["Api:BaseUrl"];
 var apiBaseUrl = Uri.TryCreate(configuredApiBaseUrl, UriKind.Absolute, out var configuredApiUri)
+    && (configuredApiUri.Scheme == Uri.UriSchemeHttp || configuredApiUri.Scheme == Uri.UriSchemeHttps)
     ? configuredApiUri.AbsoluteUri
     : builder.HostEnvironment.BaseAddress;
 

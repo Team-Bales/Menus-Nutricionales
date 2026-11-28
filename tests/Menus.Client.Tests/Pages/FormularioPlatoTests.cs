@@ -147,4 +147,17 @@ public sealed class FormularioPlatoTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.Contains("No se pudo crear el plato.", cut.Markup));
     }
+
+    [Fact]
+    public void Muestra_el_estado_de_carga_hasta_que_llegan_los_datos()
+    {
+        var api = new CatalogoApiPendiente();
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<FormularioPlato>(ps => ps.Add(p => p.Id, null));
+
+        Assert.Contains("Cargando formulario", cut.Markup);
+        api.Completar();
+        cut.WaitForElement("#nombre");
+    }
 }

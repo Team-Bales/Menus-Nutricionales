@@ -1,6 +1,6 @@
 # Contrato de la integración de IA: `IAsistenteIA`
 
-**Estado:** Aceptado con el ADR-015 (actualización del 2026-11-24). Desarrolla el ADR-015 y amplía su alcance (ver §1).
+**Estado:** Aceptado con el ADR-015 (actualización del 2026-11-28). Desarrolla el ADR-015 y amplía su alcance (ver §1).
 **Entrega:** la IA entra en v1.0 (informe final: 17-12-2026).
 
 Este documento fija **la interfaz, los datos y la regla de privacidad**, no la implementación. Quien tome una
@@ -97,10 +97,14 @@ public sealed record BloqueDeContexto(
     string Resumen,                                 // forma compacta en texto, la que va al prompt
     IReadOnlyDictionary<string, double> Cifras);    // las cifras que contiene, para verificar (§6)
 
+public sealed record ResultadoDeContexto(
+    BloqueDeContexto? Bloque,                       // null si no hay datos para esta fuente
+    IReadOnlyList<string> Advertencias);            // advertencias de construcción (p. ej., generalización por privacidad)
+
 public interface IProveedorDeContexto
 {
     string Fuente { get; }
-    Task<BloqueDeContexto?> ConstruirAsync(ContextoDeCaso caso, CancellationToken ct);  // null si no hay datos
+    Task<ResultadoDeContexto?> ConstruirAsync(ContextoDeCaso caso, CancellationToken ct = default);
 }
 ```
 
@@ -110,6 +114,12 @@ public interface IProveedorDeContexto
   Application**: el proveedor lo usa para leer y devuelve solo el bloque ya transformado.
 - **Cada proveedor aplica las reglas de §5 a su fuente.** Las transformaciones comunes (edad → categoría, código
   opaco, fechas relativas) viven en un único `TransformadorDePaciente` que todos reutilizan, para que la regla sea una sola.
+- **`ResultadoDeContexto` es el envoltorio que devuelve el proveedor.** Contiene el `BloqueDeContexto` (o `null` si no hay datos)
+  y las `Advertencias` generadas durante la construcción (p. ej., por generalización de datos poco frecuentes).
+  **Las advertencias no forman parte de `Resumen` ni llegan al modelo**: son metadatos para el orquestador y la UI.
+- **`BloqueDeContexto` conserva exactamente cuatro campos:** `Fuente`, `Version`, `Resumen`, `Cifras`.
+  Rechaza fuente vacía, versión < 1 y cifras NaN/Infinity. Copia defensivamente `Cifras`.
+  Su `ToString` no expone `Resumen` ni `Cifras`.
 
 Fuentes previstas:
 
@@ -129,7 +139,7 @@ reduce coste, latencia y ruido; enviar más da más contexto. No hay una cantida
 1. El **nutricionista elige** los bloques en la pestaña de IA, cualquiera de los disponibles (por defecto, los de la
    tabla siguiente).
 2. Un tope técnico, para no pasar el límite del modelo: `IA:MaxBloques` y `IA:MaxCaracteresDeContexto`. Si se pasa,
-   se descartan los de menor prioridad y se avisa en `Advertencias`. Se pueden subir según el modelo que se use.
+   se descartan los de menor prioridad y se avisa en `Advertencias` de la respuesta final. Se pueden subir según el modelo que se use.
 3. Fase 2: un clasificador de intención sugiere los bloques a partir de la pregunta (ADR-015 §6).
 
 | Tarea | Bloques por defecto |
@@ -169,7 +179,7 @@ clínica, en el soporte de IA.
 | Paciente | Qué entra en el prompt |
 |---|---|
 | **Con consentimiento** (`ConsentimientoIA` = sí) | Todos los datos clínicos, incluidas las combinaciones raras (§5.1) |
-| **Sin consentimiento** (por defecto) | Los mismos datos, pero las combinaciones que aparecen en menos de `IA:KMinimo` pacientes (propuesta: 5) se generalizan o se omiten, y se anota en `Advertencias` |
+| **Sin consentimiento** (por defecto) | Los mismos datos, pero las combinaciones que aparecen en menos de `IA:KMinimo` pacientes (propuesta: 5) se generalizan o se omiten, y se anota en `Advertencias` de `ResultadoDeContexto` |
 
 - El **consentimiento es un dato del paciente**: sí/no, fecha y quién lo registró. **El defecto es «no»**, y se puede
   revocar; al revocarlo deja de aplicarse desde la siguiente petición (la caché no lo impide, porque su clave es el
@@ -180,7 +190,38 @@ clínica, en el soporte de IA.
   cuentan como «sin consentimiento».
 - Además, el prompt nunca se registra (§3). Con **Ollama local** no sale del servidor.
 
-### 5.3 Red de seguridad: `AuditorDePrompt`
+### 5.3 Transformador de paciente (`TransformadorDePaciente`)
+
+Función pura, sin DI, reloj, repositorios ni estado mutable. Recibe un `PacienteSnapshot` interno con:
+- id, nombre, edad, sala, fechas exactas, consentimiento y datos clínicos tipados (dietas y alérgenos).
+- **No existe campo de texto libre.**
+
+`EstadoConsentimientoIA` tiene `NoRegistrado`, `No` y `Si`. El valor omitido es `NoRegistrado`, tratado igual que `No`.
+
+Cada dato raro se limita a `Dieta` o `Alergeno` e incluye su valor y `PacientesConMismaCombinacion`; la combinación
+significa rango de edad + tipo + valor clínico y el conteo es de pacientes distintos de todo el sistema.
+El cálculo del conteo queda para los proveedores; #324 solo lo recibe.
+
+- Conteo ausente equivale a 0.
+- Conteo negativo o `KMinimo < 2` lanza error antes de producir salida.
+- Con consentimiento `Si`, el valor pasa.
+- Sin consentimiento, si el conteo es menor que K, sustituirlo por el marcador fijo
+  «dato clínico no detallado por privacidad» y emitir la advertencia fija
+  «Se generalizó información clínica poco frecuente por privacidad.»
+  - La advertencia **nunca incluye el valor, nombre, id ni tipo concreto**.
+  - El marcador **nunca significa ausencia**.
+- Con conteo >= K, el valor pasa.
+
+El resultado solo contiene: referencia opaca, rango de edad, datos clínicos transformados, fechas relativas y advertencias.
+**Nunca** nombre, Guid, sala, edad exacta ni texto libre.
+
+#### Edades y fechas
+
+Rangos exactos: 0-12, 13-17, 18-39, 40-64 y 65+. Edad negativa falla.
+Fechas se expresan respecto a `FechaReferencia` como «hoy», «hace N días» o «dentro de N días».
+«Semana N del menú» queda para el proveedor que conozca el inicio del menú.
+
+### 5.4 Red de seguridad: `AuditorDePrompt`
 
 Después de construir el texto y antes de enviarlo, un auditor determinista comprueba que **no contiene**:
 - ningún `Guid`;
@@ -190,7 +231,7 @@ Después de construir el texto y antes de enviarlo, un auditor determinista comp
 
 Si encuentra algo, **aborta la llamada** con `AsistenteIANoDisponibleException` y deja una advertencia: no envía.
 
-### 5.4 Pruebas de privacidad
+### 5.5 Pruebas de privacidad
 
 - Por proveedor: serializa el bloque y falla si hay `Guid`, nombre, edad en años o sala.
 - Del constructor: con un paciente de prueba cuyos datos se conocen, el prompt completo no contiene ninguno.
@@ -278,7 +319,7 @@ Texto vigente (versión `1`):
 - Manejadores y endpoint con un `IAsistenteIA` falso. **Cero llamadas reales al proveedor en CI.**
 - Adaptador con `HttpClient` simulado: éxito, timeout, respuesta vacía, 5xx; y que la `ApiKey` va solo en la cabecera.
 - `VerificadorDeCifras`: cifra inventada (rechaza) y cifra redondeada (acepta).
-- Las pruebas de privacidad de §5.4, con y sin consentimiento (la combinación rara entra solo con él).
+- Las pruebas de privacidad de §5.5, con y sin consentimiento (la combinación rara entra solo con él).
 - Validación de opciones: proveedor externo sin términos aceptados no arranca; con Ollama local sí.
 - La demo y las pruebas manuales usan **Ollama**, que se ejecuta en otra máquina (`IA:BaseUrl`).
 - **Spike (#297):** con 2 o 3 valoraciones reales se mide la latencia, el porcentaje de respuestas que pasan el

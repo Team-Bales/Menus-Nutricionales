@@ -705,6 +705,154 @@ public sealed class ContratosIA324Tests
 
     #endregion
 
+    #region Privacidad - el valor generalizado no se puede recuperar (revisión de #324)
+
+    private const string NombrePaciente = "CentinelaNombrePaciente";
+    private const string DietaRara = "CentinelaDietaRarisima";
+    private const string AlergenoRaro = "CentinelaAlergenoRaro";
+    private const string TipoClinicoRaro = "centinela-tipo-clinico";
+
+    private static PacienteSnapshot PacienteConDatosRaros(Guid id, Guid sala, EstadoConsentimientoIA consentimiento)
+        => CrearPacienteBasico(
+            id: id,
+            nombre: NombrePaciente,
+            edad: 47,
+            salaId: sala,
+            consentimiento: consentimiento,
+            dietas: new Dictionary<string, string> { { DietaRara, TipoClinicoRaro } },
+            alergenos: new Dictionary<string, string> { { AlergenoRaro, TipoClinicoRaro } });
+
+    private static void AssertSinCentinelas(string texto, params string[] centinelas)
+    {
+        foreach (var centinela in centinelas)
+        {
+            Assert.DoesNotContain(centinela, texto, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void TransformadorDePaciente_DatoGeneralizado_NoConservaValorOriginalEnObjetoJsonNiToString()
+    {
+        var id = Guid.NewGuid();
+        var sala = Guid.NewGuid();
+        var paciente = PacienteConDatosRaros(id, sala, EstadoConsentimientoIA.No);
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today));
+
+        var resultado = TransformadorDePaciente.Transformar(paciente, contexto, 5, (_, _, _) => 1);
+
+        // Ambos datos se generalizaron...
+        Assert.Equal("dato clínico no detallado por privacidad", Assert.Single(resultado.Dietas).ValorFinal);
+        Assert.Equal("dato clínico no detallado por privacidad", Assert.Single(resultado.Alergenos).ValorFinal);
+
+        // ...y el valor real no sale por ninguna vía: JSON, ToString (del resultado y de cada dato) ni reflexión.
+        var json = JsonSerializer.Serialize(resultado);
+        var textos = new[] { json, resultado.ToString(), resultado.Dietas[0].ToString(), resultado.Alergenos[0].ToString() };
+        foreach (var texto in textos)
+        {
+            AssertSinCentinelas(texto, DietaRara, AlergenoRaro, TipoClinicoRaro, NombrePaciente, id.ToString(), sala.ToString(), "47");
+        }
+
+        var propiedades = typeof(DatoClinicoTransformado).GetProperties().Select(p => p.Name).Order().ToArray();
+        Assert.Equal(new[] { nameof(DatoClinicoTransformado.Tipo), nameof(DatoClinicoTransformado.ValorFinal) }, propiedades);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(4)]
+    public void TransformadorDePaciente_ConteoBajo_NoSeFiltraEnLaSalida(int conteo)
+    {
+        var paciente = PacienteConDatosRaros(Guid.NewGuid(), Guid.NewGuid(), EstadoConsentimientoIA.NoRegistrado);
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today));
+
+        var resultado = TransformadorDePaciente.Transformar(paciente, contexto, 5, (_, _, _) => conteo);
+
+        var json = JsonSerializer.Serialize(resultado);
+        Assert.DoesNotContain("Conteo", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"" + conteo + "\"", json);
+        Assert.DoesNotContain(":" + conteo + ",", json);
+        Assert.DoesNotContain(":" + conteo + "}", json);
+    }
+
+    [Fact]
+    public void TransformadorDePaciente_DatoQuePasa_ConservaSoloTipoYValor()
+    {
+        var paciente = PacienteConDatosRaros(Guid.NewGuid(), Guid.NewGuid(), EstadoConsentimientoIA.Si);
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today));
+
+        var resultado = TransformadorDePaciente.Transformar(paciente, contexto, 5, (_, _, _) => 1);
+
+        var dieta = Assert.Single(resultado.Dietas);
+        Assert.Equal("Dieta", dieta.Tipo);
+        Assert.Equal($"{TipoClinicoRaro}:{DietaRara}", dieta.ValorFinal);
+        var alergeno = Assert.Single(resultado.Alergenos);
+        Assert.Equal("Alergeno", alergeno.Tipo);
+        Assert.Equal($"{TipoClinicoRaro}:{AlergenoRaro}", alergeno.ValorFinal);
+    }
+
+    [Fact]
+    public void ContextoDeCaso_Serializado_NoContienePacientesNiSusDatos()
+    {
+        var id = Guid.NewGuid();
+        var sala = Guid.NewGuid();
+        var paciente = PacienteConDatosRaros(id, sala, EstadoConsentimientoIA.No);
+        var contexto = new ContextoDeCaso(
+            new[] { paciente },
+            DateOnly.FromDateTime(DateTime.Today),
+            valoracionId: Guid.NewGuid(),
+            pacienteId: id,
+            menuId: Guid.NewGuid(),
+            dietaId: Guid.NewGuid());
+
+        var json = JsonSerializer.Serialize(contexto);
+
+        AssertSinCentinelas(json, NombrePaciente, DietaRara, AlergenoRaro, TipoClinicoRaro, id.ToString(), sala.ToString(), "Pacientes", "\"Edad\"");
+        AssertSinCentinelas(contexto.ToString(), NombrePaciente, DietaRara, id.ToString(), sala.ToString());
+        Assert.Contains("FechaReferencia", json);
+    }
+
+    [Fact]
+    public void ContextoDeCaso_Pacientes_NoEsPublico()
+    {
+        var propiedad = typeof(ContextoDeCaso).GetProperty(nameof(ContextoDeCaso.Pacientes), BindingFlags.Public | BindingFlags.Instance);
+
+        Assert.Null(propiedad);
+    }
+
+    [Fact]
+    public void PacienteSnapshot_ToString_NoExponeDatosDelPaciente()
+    {
+        var id = Guid.NewGuid();
+        var sala = Guid.NewGuid();
+        var paciente = PacienteConDatosRaros(id, sala, EstadoConsentimientoIA.Si) with
+        {
+            FechaIngreso = new DateOnly(2026, 3, 14),
+        };
+
+        var texto = paciente.ToString();
+
+        AssertSinCentinelas(texto, NombrePaciente, DietaRara, AlergenoRaro, TipoClinicoRaro, id.ToString(), sala.ToString(), "47", "2026");
+        Assert.Contains("Dietas = 1", texto);
+        Assert.Contains("Alergenos = 1", texto);
+    }
+
+    [Theory]
+    [InlineData("Dieta")]
+    [InlineData("Alergeno")]
+    public void TransformadorDePaciente_ConteoNegativo_MensajeDeErrorNoIncluyeElValorClinico(string tipo)
+    {
+        var paciente = PacienteConDatosRaros(Guid.NewGuid(), Guid.NewGuid(), EstadoConsentimientoIA.No);
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today));
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            TransformadorDePaciente.Transformar(paciente, contexto, 5, (_, t, _) => t == tipo ? -1 : 10));
+
+        AssertSinCentinelas(ex.Message, DietaRara, AlergenoRaro, TipoClinicoRaro);
+        Assert.Contains(tipo, ex.Message);
+    }
+
+    #endregion
+
     #region Helpers
 
     private static PacienteSnapshot CrearPacienteBasico(

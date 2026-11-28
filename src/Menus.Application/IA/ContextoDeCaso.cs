@@ -12,7 +12,8 @@ using System.Text.Json.Serialization;
 /// completa de pacientes de la petición y una <see cref="FechaReferencia"/>.
 /// Construye una sola vez el mapa opaco ordenando los <see cref="Guid"/> distintos de forma estable.
 /// Con un paciente devuelve la referencia "el paciente"; con varios, "P1", "P2"... coherentes para todos los proveedores.
-/// Los ids y el mapa llevan <see cref="JsonIgnoreAttribute"/>; <see cref="ToString"/> no muestra valores.
+/// Los ids, los pacientes y el mapa llevan <see cref="JsonIgnoreAttribute"/> (y son <c>internal</c>);
+/// <see cref="ToString"/> no muestra valores.
 /// El mapa nunca forma parte de ningún resultado serializable.
 /// </remarks>
 public sealed class ContextoDeCaso
@@ -42,9 +43,11 @@ public sealed class ContextoDeCaso
     internal Guid? DietaId { get; }
 
     /// <summary>
-    /// Colección completa de pacientes de la petición (solo lectura).
+    /// Colección completa de pacientes de la petición (solo lectura). Interna y fuera del JSON: los snapshots
+    /// llevan id, nombre, edad exacta y sala, que no deben salir del servidor.
     /// </summary>
-    public IReadOnlyList<PacienteSnapshot> Pacientes { get; }
+    [JsonIgnore]
+    internal IReadOnlyList<PacienteSnapshot> Pacientes { get; }
 
     /// <summary>
     /// Fecha de referencia para expresar fechas relativas.
@@ -179,4 +182,12 @@ public sealed record PacienteSnapshot
     /// Alérgenos del paciente (clave = nombre del alérgeno, valor = tipo clínico).
     /// </summary>
     public IReadOnlyDictionary<string, string> Alergenos { get; init; } = FrozenDictionary<string, string>.Empty;
+
+    /// <summary>
+    /// Devuelve una representación textual que no expone nombre, ids, edad, sala, fechas ni datos clínicos
+    /// (el <c>ToString</c> autogenerado de un record los imprime todos).
+    /// </summary>
+    /// <returns>Descripción genérica con solo los conteos.</returns>
+    public override string ToString()
+        => $"PacienteSnapshot {{ Dietas = {Dietas.Count}, Alergenos = {Alergenos.Count} }}";
 }

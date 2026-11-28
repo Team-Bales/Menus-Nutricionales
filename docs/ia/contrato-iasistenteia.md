@@ -192,15 +192,21 @@ clínica, en el soporte de IA.
 
 ### 5.3 Transformador de paciente (`TransformadorDePaciente`)
 
-Función pura, sin DI, reloj, repositorios ni estado mutable. Recibe un `PacienteSnapshot` interno con:
+Función pura, sin DI, reloj, repositorios ni estado mutable. Recibe un `PacienteSnapshot` con:
 - id, nombre, edad, sala, fechas exactas, consentimiento y datos clínicos tipados (dietas y alérgenos).
 - **No existe campo de texto libre.**
 
+Los snapshots nunca salen del servidor: `ContextoDeCaso.Pacientes` es `internal` y `[JsonIgnore]`, y el `ToString` de
+`PacienteSnapshot` solo muestra conteos (no nombre, ids, edad, sala, fechas ni datos clínicos). Los mensajes de error del
+transformador tampoco incluyen el valor clínico, porque pueden acabar en logs.
+
 `EstadoConsentimientoIA` tiene `NoRegistrado`, `No` y `Si`. El valor omitido es `NoRegistrado`, tratado igual que `No`.
 
-Cada dato raro se limita a `Dieta` o `Alergeno` e incluye su valor y `PacientesConMismaCombinacion`; la combinación
-significa rango de edad + tipo + valor clínico y el conteo es de pacientes distintos de todo el sistema.
-El cálculo del conteo queda para los proveedores; #324 solo lo recibe.
+Cada dato clínico transformado es un `DatoClinicoTransformado` con **solo** `Tipo` (`Dieta` o `Alergeno`) y
+`ValorFinal`. No conserva el nombre ni el tipo clínico originales ni el conteo: si el valor se generalizó, nada en el
+objeto, en su JSON ni en su `ToString` permite recuperarlo, y un conteo bajo (p. ej. 1) delataría que el dato es raro.
+La combinación para el conteo es rango de edad + tipo + valor clínico, y el conteo es de pacientes distintos de todo el
+sistema. El cálculo del conteo queda para los proveedores; #324 solo lo recibe a través de la función de frecuencia.
 
 - Conteo ausente equivale a 0.
 - Conteo negativo o `KMinimo < 2` lanza error antes de producir salida.

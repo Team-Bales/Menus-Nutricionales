@@ -62,11 +62,11 @@ public static class TransformadorDePaciente
             var count = frecuenciaCombinaciones(rangoEdad, "Dieta", valor);
             if (count < 0)
             {
-                throw new ArgumentException($"El conteo para la combinación (rango={rangoEdad}, tipo=Dieta, valor={valor}) es negativo: {count}.", nameof(frecuenciaCombinaciones));
+                throw new ArgumentException($"El conteo para una combinación (rango={rangoEdad}, tipo=Dieta) es negativo: {count}.", nameof(frecuenciaCombinaciones));
             }
 
             var (valorFinal, generaAdvertencia) = AplicarReglaPrivacidad(paciente.ConsentimientoIA, count, kMinimo, valor);
-            dietasTransformadas.Add(new DatoClinicoTransformado("Dieta", nombre, tipo, valorFinal, count));
+            dietasTransformadas.Add(new DatoClinicoTransformado("Dieta", valorFinal));
 
             if (generaAdvertencia)
             {
@@ -82,11 +82,11 @@ public static class TransformadorDePaciente
             var count = frecuenciaCombinaciones(rangoEdad, "Alergeno", valor);
             if (count < 0)
             {
-                throw new ArgumentException($"El conteo para la combinación (rango={rangoEdad}, tipo=Alergeno, valor={valor}) es negativo: {count}.", nameof(frecuenciaCombinaciones));
+                throw new ArgumentException($"El conteo para una combinación (rango={rangoEdad}, tipo=Alergeno) es negativo: {count}.", nameof(frecuenciaCombinaciones));
             }
 
             var (valorFinal, generaAdvertencia) = AplicarReglaPrivacidad(paciente.ConsentimientoIA, count, kMinimo, valor);
-            alergenosTransformados.Add(new DatoClinicoTransformado("Alergeno", nombre, tipo, valorFinal, count));
+            alergenosTransformados.Add(new DatoClinicoTransformado("Alergeno", valorFinal));
 
             if (generaAdvertencia)
             {
@@ -161,12 +161,12 @@ public static class TransformadorDePaciente
 }
 
 /// <summary>
-/// Dato clínico transformado (dieta o alérgeno) con su valor final y conteo de frecuencia.
+/// Dato clínico transformado (dieta o alérgeno) tal como puede entrar al prompt.
 /// </summary>
 /// <remarks>
-/// <see cref="ValorFinal"/> es el valor que entra al prompt (puede ser el original o el marcador de privacidad).
-/// <see cref="ConteoPacientesMismaCombinacion"/> es el número de pacientes distintos con la misma combinación
-/// (rango de edad + tipo + valor clínico) en todo el sistema. Ausente = 0.
+/// Solo lleva <see cref="Tipo"/> y <see cref="ValorFinal"/>. Deliberadamente no conserva el nombre ni el tipo
+/// clínico originales ni el conteo de pacientes: si el valor se generalizó, nada en el objeto, en su JSON ni en su
+/// <c>ToString</c> permite recuperarlo, y un conteo bajo (p. ej. 1) delataría que el dato es raro.
 /// </remarks>
 public sealed record DatoClinicoTransformado
 {
@@ -176,51 +176,22 @@ public sealed record DatoClinicoTransformado
     public string Tipo { get; }
 
     /// <summary>
-    /// Nombre del dato (nombre de la dieta o del alérgeno).
-    /// </summary>
-    public string Nombre { get; }
-
-    /// <summary>
-    /// Tipo clínico del dato (p. ej., "terapeutica", "preventiva", "alimentario", "farmacologico").
-    /// </summary>
-    public string TipoClinico { get; }
-
-    /// <summary>
     /// Valor final que entra al prompt. Puede ser el original o el marcador "dato clínico no detallado por privacidad".
     /// </summary>
     public string ValorFinal { get; }
 
     /// <summary>
-    /// Número de pacientes distintos con la misma combinación (rango de edad + tipo + valor clínico) en todo el sistema.
-    /// Ausente = 0.
-    /// </summary>
-    public int ConteoPacientesMismaCombinacion { get; }
-
-    /// <summary>
     /// Inicializa una nueva instancia de <see cref="DatoClinicoTransformado"/>.
     /// </summary>
     /// <param name="tipo">Tipo del dato: "Dieta" o "Alergeno".</param>
-    /// <param name="nombre">Nombre del dato.</param>
-    /// <param name="tipoClinico">Tipo clínico.</param>
     /// <param name="valorFinal">Valor final para el prompt.</param>
-    /// <param name="conteoPacientesMismaCombinacion">Conteo de pacientes con la misma combinación.</param>
-    public DatoClinicoTransformado(
-        string tipo,
-        string nombre,
-        string tipoClinico,
-        string valorFinal,
-        int conteoPacientesMismaCombinacion)
+    public DatoClinicoTransformado(string tipo, string valorFinal)
     {
         ArgumentNullException.ThrowIfNull(tipo);
-        ArgumentNullException.ThrowIfNull(nombre);
-        ArgumentNullException.ThrowIfNull(tipoClinico);
         ArgumentNullException.ThrowIfNull(valorFinal);
 
         Tipo = tipo;
-        Nombre = nombre;
-        TipoClinico = tipoClinico;
         ValorFinal = valorFinal;
-        ConteoPacientesMismaCombinacion = conteoPacientesMismaCombinacion;
     }
 }
 

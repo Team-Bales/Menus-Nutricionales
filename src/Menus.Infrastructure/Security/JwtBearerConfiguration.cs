@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using System.Text;
+using Menus.Domain.Abstractions.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Menus.Infrastructure.Security;
@@ -10,9 +13,7 @@ public static class JwtBearerConfiguration
     /// <param name="options">Configuración del token.</param>
     /// <returns>Los parámetros de validación.</returns>
     /// <exception cref="ArgumentNullException">Si <paramref name="options"/> es nulo.</exception>
-    /// <exception cref="InvalidOperationException">
-    /// Si la clave o el emisor están vacíos, la clave es demasiado corta o la vigencia no es positiva.
-    /// </exception>
+    /// <exception cref="InvalidOperationException">Si la configuración del token no es válida (vea <see cref="Validate"/>).</exception>
     public static TokenValidationParameters CreateTokenValidationParameters(JwtOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -22,21 +23,48 @@ public static class JwtBearerConfiguration
         {
             ValidateIssuer = true,
             ValidIssuer = options.Issuer,
-            ValidateAudience = false,
+            ValidateAudience = true,
+            ValidAudience = options.Audience,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key)),
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1),
+            RequireExpirationTime = true,
+            RequireSignedTokens = true,
+            ClockSkew = TimeSpan.FromSeconds(options.ClockSkewSeconds),
             RoleClaimType = JwtClaimTypes.Role,
             NameClaimType = JwtClaimTypes.Subject,
         };
     }
 
+    /// <summary>
+    /// Eventos que rechazan los tokens sin los claims obligatorios, aunque la firma y la vigencia sean correctas.
+    /// Es lo que convierte un token incompleto en un 401.
+    /// </summary>
+    public static JwtBearerEvents CreateJwtBearerEvents() => new()
+    {
+        OnTokenValidated = context =>
+        {
+            if (!TieneClaimsObligatorios(context.Principal))
+            {
+                context.Fail("El token JWT no incluye los claims obligatorios sub y role.");
+            }
+
+            return Task.CompletedTask;
+        },
+    };
+
+    /// <summary>Comprueba que el principal lleve identificador de usuario y rol.</summary>
+    public static bool TieneClaimsObligatorios(ClaimsPrincipal? principal) =>
+        principal is not null &&
+        !string.IsNullOrWhiteSpace(principal.FindFirst(JwtClaimTypes.Subject)?.Value) &&
+        !string.IsNullOrWhiteSpace(principal.FindFirst(JwtClaimTypes.Role)?.Value);
+
     /// <summary>Comprueba que la configuración del token sea utilizable.</summary>
     /// <param name="options">Configuración del token.</param>
     /// <exception cref="ArgumentNullException">Si <paramref name="options"/> es nulo.</exception>
     /// <exception cref="InvalidOperationException">
-    /// Si la clave o el emisor están vacíos, la clave es demasiado corta o la vigencia no es positiva.
+    /// Si la clave, el emisor o la audiencia están vacíos, la clave es demasiado corta, la vigencia está fuera de
+    /// rango o el desfase de reloj es negativo o excesivo.
     /// </exception>
     public static void Validate(JwtOptions options)
     {
@@ -59,9 +87,21 @@ public static class JwtBearerConfiguration
             throw new InvalidOperationException("El emisor JWT (Jwt:Issuer) no está configurado.");
         }
 
-        if (options.ExpiresMinutes <= 0)
+        if (string.IsNullOrWhiteSpace(options.Audience))
         {
-            throw new InvalidOperationException("La vigencia del token JWT (Jwt:ExpiresMinutes) debe ser positiva.");
+            throw new InvalidOperationException("La audiencia JWT (Jwt:Audience) no está configurada.");
+        }
+
+        if (options.ExpiresMinutes <= 0 || options.ExpiresMinutes > JwtOptions.MaxExpiresMinutes)
+        {
+            throw new InvalidOperationException(
+                $"La vigencia del token JWT (Jwt:ExpiresMinutes) debe estar entre 1 y {JwtOptions.MaxExpiresMinutes} minutos.");
+        }
+
+        if (options.ClockSkewSeconds < 0 || options.ClockSkewSeconds > JwtOptions.MaxClockSkewSeconds)
+        {
+            throw new InvalidOperationException(
+                $"El desfase permitido (Jwt:ClockSkewSeconds) debe estar entre 0 y {JwtOptions.MaxClockSkewSeconds} segundos.");
         }
     }
 }

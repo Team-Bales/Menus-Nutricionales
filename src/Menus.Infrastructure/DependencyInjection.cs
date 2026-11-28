@@ -79,6 +79,7 @@ public static class DependencyInjection
             {
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = JwtBearerConfiguration.CreateTokenValidationParameters(jwtOptions);
+                options.Events = JwtBearerConfiguration.CreateJwtBearerEvents();
             });
         services.AddAuthorization();
 

@@ -77,6 +77,7 @@ public sealed class JwtTokenService : ITokenEmitter
         var expira = ahora.AddMinutes(_options.ExpiresMinutes);
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,
+            audience: _options.Audience,
             claims: claims,
             notBefore: ahora,
             expires: expira,

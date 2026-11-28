@@ -14,6 +14,7 @@ internal static class ApiEnMemoria
 {
     private const string Clave = "clave-de-prueba-de-al-menos-treinta-y-dos-bytes";
     private const string Emisor = "pruebas";
+    private const string Audiencia = "pruebas-api";
 
     /// <summary>Levanta la API en el entorno indicado, con ajustes de configuración adicionales.</summary>
     /// <param name="entorno"><c>Development</c> o <c>Production</c>.</param>
@@ -29,6 +30,7 @@ internal static class ApiEnMemoria
                     .UseSetting("ConnectionStrings:Postgres", "Host=localhost;Database=sin_uso")
                     .UseSetting("Jwt:Key", Clave)
                     .UseSetting("Jwt:Issuer", Emisor)
+                    .UseSetting("Jwt:Audience", Audiencia)
                     .UseSetting("RateLimiting:PermitLimit", "1000")
                     .UseSetting("RateLimiting:WindowSeconds", "60");
 
@@ -49,5 +51,11 @@ internal static class ApiEnMemoria
         => EmisorCon("otra-clave-de-al-menos-treinta-y-dos-bytes-distinta").Emitir(Guid.NewGuid(), rol).Token;
 
     private static JwtTokenService EmisorCon(string clave)
-        => new(Options.Create(new JwtOptions { Key = clave, Issuer = Emisor, ExpiresMinutes = 5 }));
+        => new(Options.Create(new JwtOptions
+        {
+            Key = clave,
+            Issuer = Emisor,
+            Audience = Audiencia,
+            ExpiresMinutes = 5,
+        }));
 }

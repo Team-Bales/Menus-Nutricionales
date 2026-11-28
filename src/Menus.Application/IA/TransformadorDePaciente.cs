@@ -122,8 +122,7 @@ public static class TransformadorDePaciente
             >= 13 and <= 17 => "13-17",
             >= 18 and <= 39 => "18-39",
             >= 40 and <= 64 => "40-64",
-            >= 65 => "65+",
-            _ => throw new ArgumentException("La edad no puede ser negativa.", nameof(edad))
+            _ => "65+" // la edad negativa ya se rechazó en Transformar
         };
     }
 

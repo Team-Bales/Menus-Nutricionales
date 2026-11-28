@@ -621,33 +621,86 @@ public sealed class ContratosIA324Tests
     }
 
     [Fact]
-    public void AddApplication_InvocaAddIA()
+    public void AddApplication_DosLlamadas_NoDuplicaProveedoresDeContexto()
     {
-        // AddApplication() sin parámetros llama a AddIA() con el ensamblado de Application
-        // Para probar que AddApplication invoca AddIA, verificamos que al llamar al método público
-        // se registran los proveedores del ensamblado de Application.
-        // En este test usamos el ensamblado de tests para que los proveedores falsos se registren.
         var services = new ServiceCollection();
-        // Llamamos al método público AddApplication() que internamente llama a AddIA()
         services.AddApplication();
+        var tras1 = services.Count(d => d.ServiceType == typeof(IProveedorDeContexto));
+        services.AddApplication();
+        var tras2 = services.Count(d => d.ServiceType == typeof(IProveedorDeContexto));
 
-        var proveedores = services.Where(d => d.ServiceType == typeof(IProveedorDeContexto)).ToArray();
-        // Como AddApplication usa typeof(DependencyInjection).Assembly (Menus.Application),
-        // no encontrará los proveedores falsos que están en el ensamblado de tests.
-        // La prueba verifica que AddIA se invoca sin error.
-        Assert.True(true); // Si llegamos aquí, AddApplication invocó AddIA correctamente
+        Assert.Equal(tras1, tras2);
+        // Los proveedores falsos están en el ensamblado de tests: AddApplication solo escanea Application.
+        Assert.DoesNotContain(services, d => d.ImplementationType == typeof(ProveedorFalso1));
     }
 
     [Fact]
-    public void AddIA_NoValidaUnicidadDeFuenteEnRegistro()
+    public void AddIA_RegistraPorTipo_SinInstanciarProveedores()
     {
-        // El registro no debe instanciar proveedores para validar unicidad de Fuente
-        // Solo registra los tipos por reflexión con TryAddEnumerable
+        // Registrar no debe instanciar proveedores (ni validar unicidad de Fuente): solo tipos, con ciclo Scoped.
         var services = new ServiceCollection();
-        // Esto no debe lanzar aunque dos proveedores tengan la misma Fuente
         services.AddIA(typeof(ContratosIA324Tests).Assembly);
-        // Si llegamos aquí sin excepción, la prueba pasa
-        Assert.True(true);
+
+        var proveedores = services.Where(d => d.ServiceType == typeof(IProveedorDeContexto)).ToArray();
+        Assert.All(proveedores, d =>
+        {
+            Assert.NotNull(d.ImplementationType);
+            Assert.Null(d.ImplementationInstance);
+            Assert.Null(d.ImplementationFactory);
+            Assert.Equal(ServiceLifetime.Scoped, d.Lifetime);
+        });
+    }
+
+    #endregion
+
+    #region Ramas de cobertura (#324)
+
+    [Fact]
+    public void BloqueDeContexto_ClaveDeCifraNula_Lanza()
+    {
+        Assert.Throws<ArgumentException>(() => new BloqueDeContexto("fuente", 1, "Resumen", new CifrasConClaveNula()));
+    }
+
+    [Fact]
+    public void ContextoDeCaso_IdentificadoresOpcionales_SeConservanInternamente()
+    {
+        var paciente = CrearPacienteBasico();
+        var (val, pac, menu, dieta) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today),
+            valoracionId: val, pacienteId: pac, menuId: menu, dietaId: dieta);
+
+        Assert.Equal(val, contexto.ValoracionId);
+        Assert.Equal(pac, contexto.PacienteId);
+        Assert.Equal(menu, contexto.MenuId);
+        Assert.Equal(dieta, contexto.DietaId);
+    }
+
+    [Fact]
+    public void ContextoDeCaso_PacientesNulos_Lanza()
+    {
+        Assert.Throws<ArgumentException>(() => new ContextoDeCaso(null!, DateOnly.FromDateTime(DateTime.Today)));
+    }
+
+    [Fact]
+    public void TransformadorDePaciente_PacienteAjenoAlContexto_UsaCodigoDesconocido()
+    {
+        var enContexto = CrearPacienteBasico();
+        var ajeno = CrearPacienteBasico();
+        var contexto = new ContextoDeCaso(new[] { enContexto }, DateOnly.FromDateTime(DateTime.Today));
+
+        var resultado = TransformadorDePaciente.Transformar(ajeno, contexto, 5, (_, _, _) => 10);
+
+        Assert.Equal("desconocido", resultado.Referencia);
+    }
+
+    [Fact]
+    public void TransformadorDePaciente_ConteoNegativoEnAlergeno_Lanza()
+    {
+        var paciente = CrearPacienteBasico(alergenos: new Dictionary<string, string> { { "Gluten", "alergia" } });
+        var contexto = new ContextoDeCaso(new[] { paciente }, DateOnly.FromDateTime(DateTime.Today));
+
+        Assert.Throws<ArgumentException>(() =>
+            TransformadorDePaciente.Transformar(paciente, contexto, 5, (_, tipo, _) => tipo == "Alergeno" ? -1 : 10));
     }
 
     #endregion
@@ -677,6 +730,22 @@ public sealed class ContratosIA324Tests
             Dietas = dietas?.ToFrozenDictionary() ?? FrozenDictionary<string, string>.Empty,
             Alergenos = alergenos?.ToFrozenDictionary() ?? FrozenDictionary<string, string>.Empty
         };
+    }
+
+    // Diccionario de solo lectura que enumera una clave nula, imposible con un Dictionary real.
+    private sealed class CifrasConClaveNula : IReadOnlyDictionary<string, double>
+    {
+        public double this[string key] => throw new KeyNotFoundException();
+        public IEnumerable<string> Keys => new string[] { null! };
+        public IEnumerable<double> Values => new[] { 1.0 };
+        public int Count => 1;
+        public bool ContainsKey(string key) => false;
+        public bool TryGetValue(string key, out double value) { value = 0; return false; }
+        public IEnumerator<KeyValuePair<string, double>> GetEnumerator()
+        {
+            yield return new KeyValuePair<string, double>(null!, 1.0);
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     // Proveedores falsos para pruebas de registro

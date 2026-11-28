@@ -1,6 +1,7 @@
 using Menus.Application.Catalogo;
 using Menus.Application.Catalogo.Fichas;
 using Menus.Application.Comun;
+using Menus.Application.IA;
 using Menus.Application.Reportes;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -8,6 +9,7 @@ using Menus.Domain.Abstractions.Security;
 using Menus.Domain.Entidades;
 using Menus.Domain.Nomenclators;
 using Menus.Infrastructure.Cache;
+using Menus.Infrastructure.IA;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Persistence;
 using Menus.Infrastructure.Persistence.Consultas;
@@ -31,7 +33,9 @@ public static class DependencyInjection
     /// <returns>El mismo contenedor, para encadenar registros.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si la configuración JWT no es utilizable (clave ausente o demasiado corta, emisor vacío o
-    /// vigencia no positiva). La clave se toma de variables de entorno o de user secrets.
+    /// vigencia no positiva); la clave se toma de variables de entorno o de user secrets. También si la IA
+    /// está habilitada con una configuración no utilizable (<c>IA:Model</c> vacío, <c>IA:BaseUrl</c> que no
+    /// es http o https, o <c>IA:TimeoutSegundos</c> no positivo).
     /// </exception>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
@@ -133,6 +137,46 @@ public static class DependencyInjection
         else
         {
             services.AddSingleton<ICache, CacheNula>();
+        }
+
+        // IA (#323): adaptador OpenAI-compatible y feature flag. Con Habilitada=false no se crea ningún cliente
+        // HTTP: se registra una implementación que solo informa de que la IA no está disponible.
+        var seccionIA = configuration.GetSection(IAOptions.SectionName);
+        services.Configure<IAOptions>(seccionIA);
+        var ia = new IAOptions();
+        seccionIA.Bind(ia);
+        if (ia.Habilitada)
+        {
+            if (string.IsNullOrWhiteSpace(ia.Model))
+            {
+                throw new InvalidOperationException(
+                    "La integración de IA está habilitada pero el modelo (IA:Model) está vacío.");
+            }
+
+            if (!Uri.TryCreate(ia.BaseUrl, UriKind.Absolute, out var baseUrl)
+                || (baseUrl.Scheme != Uri.UriSchemeHttp && baseUrl.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new InvalidOperationException(
+                    "La URL base de la IA (IA:BaseUrl) debe ser una URL absoluta http o https.");
+            }
+
+            if (ia.TimeoutSegundos <= 0)
+            {
+                throw new InvalidOperationException(
+                    "El tiempo de espera de la IA (IA:TimeoutSegundos) debe ser mayor que cero.");
+            }
+
+            // La barra final conserva /v1 al resolver la ruta relativa «chat/completions».
+            var baseConBarra = AsistenteIAOpenAICompatible.BaseConBarra(baseUrl);
+            services.AddHttpClient<IAsistenteIA, AsistenteIAOpenAICompatible>((_, cliente) =>
+            {
+                cliente.BaseAddress = baseConBarra;
+                cliente.Timeout = TimeSpan.FromSeconds(ia.TimeoutSegundos);
+            });
+        }
+        else
+        {
+            services.AddSingleton<IAsistenteIA, AsistenteIADeshabilitado>();
         }
 
         return services;

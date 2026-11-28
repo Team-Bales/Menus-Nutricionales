@@ -8,6 +8,7 @@ using Menus.Client.Services;
 using Menus.Client.Tests.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Menus.Client.Tests.Pages;
@@ -229,6 +230,44 @@ public sealed class AutenticacionPagesTests : BunitContext
         Assert.EndsWith("/login?returnUrl=%2Fperfil", Services.GetRequiredService<BunitNavigationManager>().Uri);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void La_nota_de_credenciales_de_ejemplo_solo_se_muestra_en_desarrollo(bool desarrollo)
+    {
+        Servicios(new AutenticacionApiFalsa(), new SesionAutenticadaFalsa(), desarrollo);
+
+        var cut = Render<Login>();
+
+        if (desarrollo)
+        {
+            Assert.Contains("datos de ejemplo", cut.Markup);
+        }
+        else
+        {
+            Assert.DoesNotContain("datos de ejemplo", cut.Markup);
+        }
+    }
+
+    [Fact]
+    public void La_pantalla_de_acceso_incluye_a_los_pacientes_y_empieza_por_el_h1()
+    {
+        Servicios(new AutenticacionApiFalsa(), new SesionAutenticadaFalsa());
+
+        var cut = Render<Login>();
+
+        Assert.Contains("Acceso para el personal y los pacientes del centro.", cut.Markup);
+        Assert.DoesNotContain("restringido al personal", cut.Markup);
+        Assert.Equal("Te damos la bienvenida", cut.Find("h1").TextContent);
+        Assert.Empty(cut.FindAll(".login-brand-center h2"));
+    }
+
+    private sealed class EntornoFalso(string environment) : IWebAssemblyHostEnvironment
+    {
+        public string BaseAddress => "http://localhost/";
+        public string Environment { get; } = environment;
+    }
+
     private sealed class EstadoFijo(ClaimsPrincipal usuario) : AuthenticationStateProvider
     {
         public override Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -242,9 +281,11 @@ public sealed class AutenticacionPagesTests : BunitContext
         cut.Find("form").Submit();
     }
 
-    private void Servicios(IAutenticacionApi api, ISesionAutenticada sesion)
+    private void Servicios(IAutenticacionApi api, ISesionAutenticada sesion, bool desarrollo = false)
     {
         Services.AddSingleton(api);
         Services.AddSingleton(sesion);
+        Services.AddSingleton<IWebAssemblyHostEnvironment>(
+            new EntornoFalso(desarrollo ? "Development" : "Production"));
     }
 }

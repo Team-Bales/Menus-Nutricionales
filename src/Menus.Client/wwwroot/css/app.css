@@ -810,6 +810,10 @@ hr { border-color: var(--border); opacity: 1; }
 
 .badge.text-bg-success { background: var(--brand-100) !important; color: var(--brand-800) !important; }
 .badge.text-bg-secondary { background: var(--ink-100) !important; color: var(--ink-700) !important; }
+.badge-neutral { background: var(--ink-100); color: var(--ink-700); }
+.badge-success { background: var(--brand-100); color: var(--brand-800); }
+.badge-warning { background: var(--warning-bg); color: var(--warning); }
+.badge-danger { background: var(--danger-bg); color: var(--danger); }
 
 .chip {
     display: inline-flex;

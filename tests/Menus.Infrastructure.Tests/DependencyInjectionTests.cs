@@ -20,6 +20,8 @@ public sealed class DependencyInjectionTests
 
     private static IConfiguration CreateConfiguration(
         string? jwtKey = Key,
+        string? jwtAudience = "menus-nutricionales-api",
+        string? jwtClockSkewSeconds = "30",
         string? mongo = null,
         string? redis = null,
         bool? conciliacionHabilitada = null)
@@ -29,6 +31,8 @@ public sealed class DependencyInjectionTests
             ["ConnectionStrings:Default"] = "Host=localhost;Database=menus;Username=menus;Password=menus",
             ["Jwt:Key"] = jwtKey,
             ["Jwt:Issuer"] = "menus-nutricionales-api",
+            ["Jwt:Audience"] = jwtAudience,
+            ["Jwt:ClockSkewSeconds"] = jwtClockSkewSeconds,
             ["Jwt:ExpiresMinutes"] = "60",
         };
 
@@ -81,6 +85,24 @@ public sealed class DependencyInjectionTests
 
         Assert.Throws<InvalidOperationException>(
             () => services.AddInfrastructure(CreateConfiguration(jwtKey: null)));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithoutJwtAudience_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<InvalidOperationException>(
+            () => services.AddInfrastructure(CreateConfiguration(jwtAudience: null)));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithInvalidClockSkew_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<InvalidOperationException>(
+            () => services.AddInfrastructure(CreateConfiguration(jwtClockSkewSeconds: "-1")));
     }
 
     [Fact]

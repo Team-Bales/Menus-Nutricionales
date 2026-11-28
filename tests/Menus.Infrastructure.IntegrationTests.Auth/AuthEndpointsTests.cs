@@ -42,6 +42,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
     // Configuración JWT de prueba (clave de 32+ bytes para HS256)
     private const string TestJwtKey = "clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256";
     private const string TestJwtIssuer = "Menus.Test";
+    private const string TestJwtAudience = "menus-nutricionales-api";
     private const string TestJwtExpiresMinutes = "60";
 
     public AuthEndpointsTests(PostgresFixture fixture)
@@ -60,6 +61,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
                 // UseSetting establece valores en la configuración del host que WebApplication.CreateBuilder recoge.
                 builder.UseSetting("Jwt:Key", TestJwtKey);
                 builder.UseSetting("Jwt:Issuer", TestJwtIssuer);
+                builder.UseSetting("Jwt:Audience", TestJwtAudience);
                 builder.UseSetting("Jwt:ExpiresMinutes", TestJwtExpiresMinutes);
                 // No configurar AuthBootstrap para que no interfiera
 
@@ -101,6 +103,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         }
         var token = new JwtSecurityToken(
             issuer: TestJwtIssuer,
+            audience: TestJwtAudience,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddHours(1),
@@ -120,9 +123,31 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
         };
         var token = new JwtSecurityToken(
             issuer: TestJwtIssuer,
+            audience: TestJwtAudience,
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: creds);
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static string GenerarToken(
+        string issuer,
+        string audience,
+        string key,
+        IEnumerable<Claim> claims,
+        DateTime notBefore,
+        DateTime expires)
+    {
+        var creds = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            notBefore: notBefore,
+            expires: expires,
             signingCredentials: creds);
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -345,6 +370,82 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Perfil_ConTokenValido_Devuelve200()
+    {
+        var usuarioId = Guid.NewGuid();
+        await using (var ctx = _fixture.CrearContexto())
+        {
+            var hash = new BCryptPasswordHasher().Hash("password123");
+            ctx.Usuarios.Add(Usuario.Crear(usuarioId, "jwt-valido@test.com", hash, RolesUsuario.Admin, null));
+            await ctx.SaveChangesAsync();
+        }
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", GenerarTokenAdmin(usuarioId));
+
+        var response = await _client.GetAsync("/api/auth/perfil");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Perfil_ConTokenExpirado_Devuelve401()
+    {
+        var token = GenerarToken(
+            TestJwtIssuer,
+            TestJwtAudience,
+            TestJwtKey,
+            [new Claim(JwtClaimTypes.Subject, Guid.NewGuid().ToString())],
+            DateTime.UtcNow.AddMinutes(-10),
+            DateTime.UtcNow.AddMinutes(-5));
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/auth/perfil");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Perfil_ConFirmaInvalida_Devuelve401()
+    {
+        var token = GenerarToken(
+            TestJwtIssuer,
+            TestJwtAudience,
+            "esta-no-es-la-clave-correcta-1234567890",
+            [new Claim(JwtClaimTypes.Subject, Guid.NewGuid().ToString())],
+            DateTime.UtcNow.AddMinutes(-1),
+            DateTime.UtcNow.AddMinutes(10));
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/auth/perfil");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Perfil_SinClaimsObligatorios_Devuelve401()
+    {
+        var token = GenerarToken(
+            TestJwtIssuer,
+            TestJwtAudience,
+            TestJwtKey,
+            [new Claim("otro", "valor")],
+            DateTime.UtcNow.AddMinutes(-1),
+            DateTime.UtcNow.AddMinutes(10));
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/auth/perfil");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task BootstrapAdmin_Idempotente_PrimeraCreaSegundaNoDuplica()
     {
         // Este test verifica el comportamiento del AuthBootstrapService
@@ -356,6 +457,7 @@ public sealed class AuthEndpointsTests : IAsyncLifetime
                 ["AuthBootstrap:Password"] = "bootstrap123",
                 ["Jwt:Key"] = "clave-secreta-de-prueba-que-es-suficientemente-larga-para-hs256",
                 ["Jwt:Issuer"] = "Menus.Test",
+                ["Jwt:Audience"] = "menus-nutricionales-api",
                 ["Jwt:ExpiresMinutes"] = "60",
             })
             .Build();

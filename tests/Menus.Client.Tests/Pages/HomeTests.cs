@@ -144,14 +144,15 @@ public sealed class HomeTests : BunitContext
 
         var cut = Render<Home>();
 
-        cut.WaitForAssertion(() => Assert.Contains("portada-dietas", cut.Markup));
-        Assert.Contains("Dieta basal", cut.Markup);
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+        Assert.Contains("Dietas del catálogo", cut.Markup);
+        Assert.Contains($"catalogo/dietas/{CatalogoApiFalsa.DietaId}", Enlaces(cut));
         Assert.Contains("Ver todas", cut.Markup);
         Assert.DoesNotContain("Dietas recientes", cut.Markup);
     }
 
     [Fact]
-    public void Solo_se_pide_una_pagina_de_dietas_para_el_total_y_la_lista()
+    public void El_total_de_dietas_se_pide_de_a_una_fila_y_la_lista_de_a_cinco()
     {
         AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
         var catalogo = new CatalogoApiFalsa();
@@ -159,9 +160,56 @@ public sealed class HomeTests : BunitContext
 
         var cut = Render<Home>();
 
-        cut.WaitForAssertion(() => Assert.Contains("Ver todas", cut.Markup));
-        Assert.Equal(1, catalogo.ConsultasDeDietas);
-        Assert.Equal(5, catalogo.UltimaConsultaDietas!.Value.Size);
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+        Assert.Equal(new[] { 1, 5 }, catalogo.TamanosDeConsultaDietas);
+        Assert.Equal(1, catalogo.UltimaConsultaAlimentos!.Value.Size);
+        Assert.Equal(1, catalogo.UltimaConsultaPlatos!.Value.Size);
+    }
+
+    [Fact]
+    public void Mientras_carga_muestra_el_estado_de_carga_compartido()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+        var pausa = new TaskCompletionSource();
+        Servicios(new CatalogoApiFalsa { PausaAlListarDietas = pausa }, new AdministracionApiFalsa());
+
+        var cut = Render<Home>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Cargando dietas…", cut.Markup));
+        Assert.NotEmpty(cut.FindAll(".loading-state"));
+
+        pausa.SetResult();
+
+        cut.WaitForAssertion(() => Assert.Contains("Dieta basal", cut.Markup));
+        Assert.Empty(cut.FindAll(".loading-state"));
+    }
+
+    [Theory]
+    [InlineData(RolesDeUsuario.Admin, 7)]
+    [InlineData(RolesDeUsuario.Nutricionista, 4)]
+    [InlineData(RolesDeUsuario.Paciente, 1)]
+    public void Los_accesos_rapidos_son_tarjetas_con_icono_segun_el_rol(string rol, int tarjetas)
+    {
+        var cut = RenderComo("usuario@centro.test", rol);
+
+        var accesos = cut.FindAll("a.quick-card");
+        Assert.Equal(tarjetas, accesos.Count);
+        Assert.All(accesos, a => Assert.Equal(2, a.QuerySelectorAll("svg.icon").Length));
+    }
+
+    [Fact]
+    public void Un_error_usa_el_aviso_compartido()
+    {
+        AddAuthorization().SetAuthorized("admin@centro.test").SetRoles(RolesDeUsuario.Admin);
+        Servicios(new CatalogoApiFalsa
+        {
+            ErrorAlCargarAlimento = new ApiException(HttpStatusCode.InternalServerError, "Fallo del catálogo.")
+        }, new AdministracionApiFalsa());
+
+        var cut = Render<Home>();
+
+        cut.WaitForAssertion(() => Assert.Equal("Fallo del catálogo.", cut.Find("[role=alert]").TextContent.Trim()));
+        Assert.Contains("alert-danger", cut.Find("[role=alert]").ClassName);
     }
 
     [Theory]

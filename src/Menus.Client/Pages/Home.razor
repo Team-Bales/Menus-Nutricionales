@@ -1,7 +1,8 @@
 ﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
    secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
    nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
-   una declara su propio [Authorize]. El #349 añade las métricas del catálogo sobre esa portada; el panel del
+   una declara su propio [Authorize]. El #349 añade las métricas del catálogo, presenta esos accesos como
+   tarjetas del sistema de diseño (#346) y lista las primeras dietas; el panel del
    paciente con menús, consumo y valoraciones llegará con el #88. *@
 @page "/"
 @attribute [Authorize]
@@ -22,30 +23,27 @@
     </div>
 </div>
 
-@if (!string.IsNullOrWhiteSpace(_error))
-{
-    <div class="alert alert-danger" role="alert">@_error</div>
-}
+<AvisoDeError Mensaje="@_error" />
 
 @if (_esPersonal)
 {
     <section class="stats-grid" aria-label="Resumen del catálogo">
         <div class="stat-card">
-            <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.5h15l-1.3 10.7a2 2 0 0 1-2 1.8H7.8a2 2 0 0 1-2-1.8L4.5 8.5Z"/><path d="m8.5 8.5 3.5-5.5 3.5 5.5"/></svg></span>
+            <span class="stat-icon"><Icon Name="basket" /></span>
             <div class="stat-body">
                 <div class="stat-value">@(_alimentos?.ToString() ?? "—")</div>
                 <div class="stat-label">Alimentos</div>
             </div>
         </div>
         <div class="stat-card">
-            <span class="stat-icon stat-icon-amber"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v6.5a3 3 0 0 0 6 0V3"/><path d="M7 3v18"/><path d="M17.5 3c-1.9 2-3 5-3 9h6c0-4-1.1-7-3-9Z"/><path d="M17.5 12v9"/></svg></span>
+            <span class="stat-icon stat-icon-amber"><Icon Name="utensils" /></span>
             <div class="stat-body">
                 <div class="stat-value">@(_platos?.ToString() ?? "—")</div>
                 <div class="stat-label">Platos</div>
             </div>
         </div>
         <div class="stat-card">
-            <span class="stat-icon stat-icon-blue"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8 12.5h2l1.8-3.2 2 6.4 1.7-3.2H16"/></svg></span>
+            <span class="stat-icon stat-icon-blue"><Icon Name="clipboard" /></span>
             <div class="stat-body">
                 <div class="stat-value">@(_totalDietas?.ToString() ?? "—")</div>
                 <div class="stat-label">Dietas</div>
@@ -54,14 +52,14 @@
         @if (_esAdmin)
         {
             <div class="stat-card">
-                <span class="stat-icon stat-icon-violet"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.3"/><path d="M5.3 17c.7-1.9 2.1-2.8 3.7-2.8s3 1 3.7 2.8"/><path d="M15 9.5h4M15 13h4"/></svg></span>
+                <span class="stat-icon stat-icon-violet"><Icon Name="users" /></span>
                 <div class="stat-body">
                     <div class="stat-value">@(_nutricionistas?.ToString() ?? "—")</div>
                     <div class="stat-label">Nutricionistas</div>
                 </div>
             </div>
             <div class="stat-card">
-                <span class="stat-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 21V5.8a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2V21"/><path d="M2.5 21h19"/><path d="M12 7v6M9 10h6"/><path d="M9.5 21v-4h5v4"/></svg></span>
+                <span class="stat-icon"><Icon Name="hospital" /></span>
                 <div class="stat-body">
                     <div class="stat-value">@(_salas?.ToString() ?? "—")</div>
                     <div class="stat-label">Salas</div>
@@ -71,57 +69,72 @@
     </section>
 }
 
+@* Accesos rápidos: los mismos enlaces y criterios de rol que la portada de #337, ahora como tarjetas. *@
 <AuthorizeView Context="estado">
     <Authorized>
         @if (RolesDeUsuario.EsPersonal(estado.User))
         {
-            <section class="mb-4" aria-labelledby="portada-catalogo">
-                <h2 id="portada-catalogo" class="h4">Catálogo</h2>
-                <ul class="list-unstyled">
-                    <li><a href="catalogo/alimentos">Alimentos</a>: banco de alimentos para la elaboración de menús.</li>
-                    <li><a href="catalogo/platos">Platos</a>: banco de platos y su composición de alimentos.</li>
-                    <li><a href="catalogo/dietas">Dietas</a>: planes de alimentación por programa de atención.</li>
-                </ul>
+            <section aria-labelledby="portada-catalogo">
+                <h2 id="portada-catalogo" class="section-title">Catálogo</h2>
+                <div class="quick-grid">
+                    @AccesoRapido("catalogo/alimentos", "basket", "Alimentos", "Banco de alimentos para los menús")
+                    @AccesoRapido("catalogo/platos", "utensils", "Platos", "Platos y su composición")
+                    @AccesoRapido("catalogo/dietas", "clipboard", "Dietas", "Planes por programa de atención")
+                </div>
             </section>
-
-            @* Las dietas no tienen fecha de creación: el listado viene ordenado por nombre, así que se presentan
-               como las primeras del catálogo, no como «recientes». *@
-            @if (_dietas.Count > 0)
-            {
-                <section class="mb-4" aria-labelledby="portada-dietas">
-                    <h2 id="portada-dietas" class="h4">Dietas</h2>
-                    <ul class="list-unstyled">
-                        @foreach (var dieta in _dietas)
-                        {
-                            <li><a href="@($"catalogo/dietas/{dieta.Id}")">@dieta.Nombre</a></li>
-                        }
-                    </ul>
-                    <a href="catalogo/dietas">Ver todas</a>
-                </section>
-            }
         }
         @if (estado.User.IsInRole(RolesDeUsuario.Admin))
         {
-            <section class="mb-4" aria-labelledby="portada-administracion">
-                <h2 id="portada-administracion" class="h4">Administración</h2>
-                <ul class="list-unstyled">
-                    <li>
-                        <a href="admin/nomencladores">Nomencladores</a>: grupos nutricionales, restricciones alimentarias,
-                        programas de atención y especialidades.
-                    </li>
-                    <li><a href="admin/nutricionistas">Nutricionistas</a>: profesionales registrados y sus dietas autorizadas.</li>
-                    <li><a href="admin/salas">Salas</a>: salas de hospitalización y sus pacientes asignados.</li>
-                </ul>
+            <section aria-labelledby="portada-administracion">
+                <h2 id="portada-administracion" class="section-title">Administración</h2>
+                <div class="quick-grid">
+                    @AccesoRapido("admin/nomencladores", "folder", "Nomencladores", "Grupos, restricciones, programas y especialidades")
+                    @AccesoRapido("admin/nutricionistas", "users", "Nutricionistas", "Profesionales y dietas autorizadas")
+                    @AccesoRapido("admin/salas", "hospital", "Salas", "Salas y pacientes asignados")
+                </div>
             </section>
         }
-        <section class="mb-4" aria-labelledby="portada-cuenta">
-            <h2 id="portada-cuenta" class="h4">Tu cuenta</h2>
-            <ul class="list-unstyled">
-                <li><a href="perfil">Mi perfil</a>: tu correo y tu rol.</li>
-            </ul>
+        <section aria-labelledby="portada-cuenta">
+            <h2 id="portada-cuenta" class="section-title">Tu cuenta</h2>
+            <div class="quick-grid">
+                @AccesoRapido("perfil", "user", "Mi perfil", "Tu correo y tu rol")
+            </div>
         </section>
     </Authorized>
 </AuthorizeView>
+
+@* Las dietas no tienen fecha de creación ni la API ofrece otro orden que el nombre, así que la lista no puede
+   ser «las últimas»: se presentan como las primeras del catálogo, con enlace al detalle y al listado completo. *@
+@if (_esPersonal && (_cargando || _dietas.Count > 0))
+{
+    <section class="panel mb-4" aria-labelledby="portada-dietas">
+        <div class="panel-head">
+            <h2 id="portada-dietas" class="section-title">Dietas del catálogo</h2>
+            <a class="panel-link" href="catalogo/dietas">Ver todas <Icon Name="chevron-right" /></a>
+        </div>
+        <div class="panel-body">
+            @if (_cargando)
+            {
+                <EstadoDeCarga Texto="Cargando dietas…" />
+            }
+            else
+            {
+                @foreach (var dieta in _dietas)
+                {
+                    <div class="list-row">
+                        <span class="list-dot"><Icon Name="clipboard" /></span>
+                        <div class="list-row-main">
+                            <div class="list-row-title"><a href="@($"catalogo/dietas/{dieta.Id}")">@dieta.Nombre</a></div>
+                            <div class="list-row-sub">
+                                @dieta.CantidadDeGrupos grupos · @dieta.CantidadDeRestricciones restricciones
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+}
 
 @code {
     private int? _alimentos;
@@ -133,6 +146,7 @@
     private bool _esPersonal;
     private bool _esAdmin;
     private string? _error;
+    private bool _cargando = true;
 
     /// <summary>Carga los totales que permite el rol de la sesión, sin añadir endpoints nuevos.</summary>
     protected override async Task OnInitializedAsync()
@@ -150,24 +164,23 @@
         {
             await CargarAdministracion();
         }
+
+        _cargando = false;
     }
 
     /// <summary>
-    /// Cada cifra se pide y se asigna por separado: si falla una, las demás tarjetas conservan su número.
-    /// Una sola petición de dietas de a cinco sirve para el total y para la lista.
+    /// Cada cifra se pide y se asigna por separado: si falla una, las demás tarjetas conservan su número. Los
+    /// totales se piden de a una fila; la lista de dietas, de a cinco.
     /// </summary>
     private async Task CargarCatalogo()
     {
         _alimentos = (await ConsultarPaginaAsync(() => Catalogo.ListarAlimentosAsync(null, null, null, 1, 1)))?.Total;
         _platos = (await ConsultarPaginaAsync(() => Catalogo.ListarPlatosAsync(null, null, null, 1, 1)))?.Total;
-        var dietas = await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 5));
-        if (dietas is not null)
-        {
-            _totalDietas = dietas.Total;
-            _dietas = dietas.Data;
-        }
+        _totalDietas = (await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 1)))?.Total;
+        _dietas = (await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 5)))?.Data ?? [];
     }
 
+    /// <summary>Totales de nutricionistas y salas, solo para el Admin.</summary>
     private async Task CargarAdministracion()
     {
         _nutricionistas = (await ConsultarPaginaAsync(() => Administracion.ListarNutricionistasAsync(null, 1, 1)))?.Total;
@@ -220,4 +233,17 @@
             _error = mensaje;
         }
     }
+
+    /// <summary>Tarjeta de acceso rápido con el icono del sistema de diseño.</summary>
+    private static RenderFragment AccesoRapido(string href, string icono, string titulo, string detalle) => __builder =>
+    {
+        <a class="quick-card" href="@href">
+            <Icon Name="@icono" />
+            <div>
+                <span>@titulo</span>
+                <small>@detalle</small>
+            </div>
+            <Icon Name="chevron-right" />
+        </a>
+    };
 }

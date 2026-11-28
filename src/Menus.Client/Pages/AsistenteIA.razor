@@ -1,0 +1,227 @@
+@* Pestaña de asistencia para nutricionistas (#332). Solo permite seleccionar los datos que el contrato
+   autoriza enviar; la privacidad, el prompt y cualquier llamada al proveedor se resuelven en el servidor. *@
+@page "/asistente-ia"
+@attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
+@inject IAsistenteIAApi Api
+
+<PageTitle>Asistente de IA</PageTitle>
+
+<section class="ia-page" aria-labelledby="titulo-ia">
+    <header class="ia-hero">
+        <div class="ia-hero-icon"><Icon Name="sparkles" /></div>
+        <div>
+            <p class="eyebrow">Herramientas clínicas</p>
+            <h1 id="titulo-ia">Asistente de IA</h1>
+            <p>Prepara explicaciones y borradores a partir de una valoración, con contexto elegido por ti.</p>
+        </div>
+    </header>
+
+    <div class="ia-layout">
+        <form class="ia-card ia-form" @onsubmit="Consultar" @onsubmit:preventDefault="true">
+            <div class="ia-card-head">
+                <div>
+                    <p class="eyebrow">Nueva consulta</p>
+                    <h2>Configura la asistencia</h2>
+                </div>
+                <span class="badge badge-neutral">Solo nutricionistas</span>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="tarea-ia">Tarea</label>
+                <select id="tarea-ia" class="form-select" @bind="_tarea" @bind:after="ActualizarPorTarea">
+                    <option value="@TareaDeIA.ExplicarAnalisis">Explicar análisis</option>
+                    <option value="@TareaDeIA.SugerirAcciones">Sugerir acciones</option>
+                    <option value="@TareaDeIA.GuionParaPaciente">Guion para paciente</option>
+                </select>
+                <div class="form-text">@DescripcionDeTarea</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="valoracion-ia">Identificador de la valoración</label>
+                <input id="valoracion-ia" class="form-control" @bind="_valoracionId" placeholder="00000000-0000-0000-0000-000000000000" aria-describedby="ayuda-valoracion" />
+                <div id="ayuda-valoracion" class="form-text">Selecciona la valoración desde su ficha y copia su identificador.</div>
+            </div>
+
+            <fieldset class="ia-context mb-4">
+                <legend class="form-label">Bloques de contexto</legend>
+                <p class="form-text mt-0 mb-3">Puedes ajustar la información compartida. Una selección vacía usa los valores por defecto del contrato.</p>
+                <div class="ia-context-grid">
+                    @foreach (var bloque in BloquesDisponibles)
+                    {
+                        <label class="ia-context-option" @key="bloque.Clave">
+                            <input type="checkbox" value="@bloque.Clave" checked="@_bloquesSeleccionados.Contains(bloque.Clave)" @onchange="(() => AlternarBloque(bloque.Clave))" />
+                            <span>
+                                <strong>@bloque.Nombre</strong>
+                                <small>@bloque.Detalle</small>
+                            </span>
+                        </label>
+                    }
+                </div>
+            </fieldset>
+
+            <div class="mb-4">
+                <label class="form-label" for="pregunta-ia">Pregunta opcional</label>
+                <textarea id="pregunta-ia" class="form-control" rows="3" @bind="_pregunta" disabled="@EsGuion" placeholder="¿Qué aspecto deseas aclarar?"></textarea>
+                <div class="form-text">@(EsGuion ? "El guion para paciente no admite pregunta libre." : "Máximo 500 caracteres. No incluyas datos personales.")</div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="ia-alert" role="alert"><Icon Name="alert" />@_error</div>
+            }
+
+            <button class="btn btn-primary ia-submit" type="submit" disabled="@_consultando">
+                <Icon Name="sparkles" />@(_consultando ? "Consultando…" : "Generar respuesta")
+            </button>
+        </form>
+
+        <section class="ia-card ia-result" aria-live="polite" aria-labelledby="titulo-resultado">
+            <div class="ia-card-head">
+                <div>
+                    <p class="eyebrow">Resultado</p>
+                    <h2 id="titulo-resultado">@(_respuesta is null ? "Aún no hay una consulta" : "Respuesta verificada")</h2>
+                </div>
+                @if (_respuesta is not null)
+                {
+                    <span class="badge @(_respuesta.GeneradoPorIA ? "badge-success" : "badge-neutral")">
+                        @(_respuesta.GeneradoPorIA ? "Asistencia de IA" : "Explicación determinista")
+                    </span>
+                }
+            </div>
+
+            @if (_consultando)
+            {
+                <div class="ia-pending"><Icon Name="activity" /><p>Estamos preparando una respuesta segura para esta valoración.</p></div>
+            }
+            else if (_respuesta is null)
+            {
+                <div class="ia-empty"><Icon Name="sparkles" /><p>El resultado aparecerá aquí con sus fuentes y advertencias.</p></div>
+            }
+            else
+            {
+                @if (_respuesta.GeneradoPorIA)
+                {
+                    <div class="ia-disclaimer"><Icon Name="shield" />generado con asistencia de IA, revisado por el nutricionista</div>
+                }
+
+                <div class="ia-summary">@_respuesta.Resumen</div>
+
+                @if (_respuesta.Secciones.Count > 0)
+                {
+                    <div class="ia-result-section">
+                        <h3>Secciones</h3>
+                        @foreach (var seccion in _respuesta.Secciones)
+                        {
+                            <article class="ia-section" @key="seccion.Titulo"><h4>@seccion.Titulo</h4><p>@seccion.Texto</p></article>
+                        }
+                    </div>
+                }
+
+                @if (_respuesta.Recomendaciones.Count > 0)
+                {
+                    <div class="ia-result-section"><h3>Recomendaciones</h3><ul class="ia-list">@foreach (var recomendacion in _respuesta.Recomendaciones) { <li>@recomendacion</li> }</ul></div>
+                }
+
+                @if (_respuesta.Advertencias.Count > 0)
+                {
+                    <div class="ia-result-section ia-warnings"><h3><Icon Name="alert" />Advertencias</h3><ul class="ia-list">@foreach (var advertencia in _respuesta.Advertencias) { <li>@advertencia</li> }</ul></div>
+                }
+
+                <div class="ia-sources"><span>Fuentes usadas</span>@foreach (var fuente in _respuesta.FuentesUsadas) { <span class="ia-source" @key="fuente">@fuente</span> }</div>
+            }
+        </section>
+    </div>
+</section>
+
+@code {
+    private static readonly IReadOnlyList<BloqueDisponible> BloquesDisponibles =
+    [
+        new("valoracion", "Valoración", "Resultado nutricional y dieta"),
+        new("aceptacion", "Aceptación", "Consumo y alimentos rechazados"),
+        new("ficha", "Ficha nutricional", "Nutrientes, alérgenos y preparación"),
+        new("menu", "Menú", "Composición del menú asignado"),
+        new("dieta", "Dieta", "Niveles calóricos y restricciones"),
+        new("reporte-1", "Reporte", "Resumen de un reporte disponible"),
+    ];
+
+    private TareaDeIA _tarea = TareaDeIA.ExplicarAnalisis;
+    private string _valoracionId = string.Empty;
+    private string? _pregunta;
+    private HashSet<string> _bloquesSeleccionados = ValoresPorDefecto(TareaDeIA.ExplicarAnalisis);
+    private RespuestaDeIA? _respuesta;
+    private string? _error;
+    private bool _consultando;
+
+    private bool EsGuion => _tarea == TareaDeIA.GuionParaPaciente;
+
+    private string DescripcionDeTarea => _tarea switch
+    {
+        TareaDeIA.ExplicarAnalisis => "Aclara el resultado de una valoración en lenguaje natural.",
+        TareaDeIA.SugerirAcciones => "Propone borradores que debes revisar antes de usar.",
+        _ => "Crea pasos claros para que el paciente comprenda su valoración.",
+    };
+
+    private void ActualizarPorTarea()
+    {
+        _bloquesSeleccionados = ValoresPorDefecto(_tarea);
+        if (EsGuion)
+        {
+            _pregunta = null;
+        }
+    }
+
+    private void AlternarBloque(string bloque)
+    {
+        if (!_bloquesSeleccionados.Add(bloque))
+        {
+            _bloquesSeleccionados.Remove(bloque);
+        }
+    }
+
+    private async Task Consultar()
+    {
+        _error = null;
+        _respuesta = null;
+        if (!Guid.TryParse(_valoracionId, out var valoracionId))
+        {
+            _error = "Indica un identificador de valoración válido.";
+            return;
+        }
+
+        if (!EsGuion && _pregunta?.Length > 500)
+        {
+            _error = "La pregunta no puede superar los 500 caracteres.";
+            return;
+        }
+
+        _consultando = true;
+        try
+        {
+            _respuesta = await Api.ConsultarAsync(new SolicitudDeIA(
+                _tarea,
+                valoracionId,
+                _bloquesSeleccionados.ToArray(),
+                EsGuion ? null : string.IsNullOrWhiteSpace(_pregunta) ? null : _pregunta.Trim()));
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "La IA no está disponible ahora. Inténtalo de nuevo más tarde.";
+        }
+        finally
+        {
+            _consultando = false;
+        }
+    }
+
+    private static HashSet<string> ValoresPorDefecto(TareaDeIA tarea) => tarea switch
+    {
+        TareaDeIA.SugerirAcciones => ["valoracion", "aceptacion", "ficha"],
+        _ => ["valoracion", "aceptacion"],
+    };
+
+    private sealed record BloqueDisponible(string Clave, string Nombre, string Detalle);
+}

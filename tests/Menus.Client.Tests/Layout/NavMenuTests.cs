@@ -40,6 +40,7 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.Contains("catalogo/alimentos", cut.Markup);
         Assert.Contains("catalogo/dietas", cut.Markup);
+        Assert.Contains("asistente-ia", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
         Assert.DoesNotContain("admin/nutricionistas", cut.Markup);
         Assert.DoesNotContain("admin/salas", cut.Markup);
@@ -55,6 +56,7 @@ public sealed class NavMenuTests : BunitContext
 
         Assert.DoesNotContain("catalogo/", cut.Markup);
         Assert.DoesNotContain("admin/nomencladores", cut.Markup);
+        Assert.DoesNotContain("asistente-ia", cut.Markup);
         Assert.Contains("perfil", cut.Markup);
         Assert.Contains("Cerrar sesión", cut.Markup);
         Assert.NotNull(cut.Find("button.sidebar-logout"));

@@ -15,6 +15,9 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     public List<Sala> Salas { get; set; } = [new(SalaId, "Sala 101")];
     public Dictionary<Guid, int> PacientesPorSala { get; } = new() { [SalaId] = 2 };
     public ApiException? Error { get; set; }
+    public ApiException? ErrorAlListarNutricionistas { get; set; }
+    public ApiException? ErrorAlListarSalas { get; set; }
+    public Exception? ErrorDeConexion { get; set; }
     public ApiException? ErrorAlGuardarSala { get; set; }
     public ApiException? ErrorAlEliminarSala { get; set; }
     public (Guid? Especialidad, int Page, int Size)? UltimaConsultaNutricionistas { get; private set; }
@@ -29,7 +32,7 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     public Task<Pagina<Nutricionista>> ListarNutricionistasAsync(Guid? especialidadId, int page, int size, CancellationToken ct = default)
     {
         UltimaConsultaNutricionistas = (especialidadId, page, size);
-        return Resultado(new Pagina<Nutricionista>([.. Nutricionistas], Nutricionistas.Count, page, size));
+        return Resultado(ErrorAlListarNutricionistas ?? Error, new Pagina<Nutricionista>([.. Nutricionistas], Nutricionistas.Count, page, size));
     }
 
     public Task<NutricionistaDetalle> ObtenerNutricionistaAsync(Guid id, CancellationToken ct = default)
@@ -41,7 +44,10 @@ internal sealed class AdministracionApiFalsa : IAdministracionApi
     public Task AutorizarDietaAsync(Guid nutricionistaId, Guid dietaId, CancellationToken ct = default) { UltimaAutorizacion = (nutricionistaId, dietaId); return Resultado(); }
     public Task RevocarDietaAsync(Guid nutricionistaId, Guid dietaId, CancellationToken ct = default) { UltimaRevocacion = (nutricionistaId, dietaId); return Resultado(); }
     public Task AsignarRolJefeAsync(Guid nutricionistaId, CancellationToken ct = default) { UltimoJefe = nutricionistaId; return Resultado(); }
-    public Task<IReadOnlyList<Sala>> ListarSalasAsync(CancellationToken ct = default) => Resultado<IReadOnlyList<Sala>>([.. Salas]);
+    public Task<IReadOnlyList<Sala>> ListarSalasAsync(CancellationToken ct = default)
+        => ErrorDeConexion is not null
+            ? Task.FromException<IReadOnlyList<Sala>>(ErrorDeConexion)
+            : Resultado(ErrorAlListarSalas ?? Error, (IReadOnlyList<Sala>)[.. Salas]);
     public Task<int> ContarPacientesEnSalaAsync(Guid salaId, CancellationToken ct = default) => Resultado(PacientesPorSala.GetValueOrDefault(salaId));
     public Task<Guid> CrearSalaAsync(SalaFormulario formulario, CancellationToken ct = default) { SalaCreada = formulario.Nombre; return Resultado(ErrorAlGuardarSala, Guid.NewGuid()); }
     public Task ActualizarSalaAsync(Guid salaId, SalaFormulario formulario, CancellationToken ct = default) { SalaActualizada = (salaId, formulario.Nombre); return Resultado(ErrorAlGuardarSala); }

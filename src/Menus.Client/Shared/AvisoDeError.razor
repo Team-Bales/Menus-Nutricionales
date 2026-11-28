@@ -1,0 +1,12 @@
+@* Aviso de error compartido: el mismo estilo y el mismo rol de alerta en todas las páginas. Si no hay mensaje
+   no pinta nada, así la página puede dejarlo siempre en su sitio. *@
+@if (!string.IsNullOrWhiteSpace(Mensaje))
+{
+    <div class="alert alert-danger" role="alert">@Mensaje</div>
+}
+
+@code {
+    /// <summary>Texto del error; nulo o vacío oculta el aviso.</summary>
+    [Parameter]
+    public string? Mensaje { get; set; }
+}

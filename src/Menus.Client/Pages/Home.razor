@@ -1,52 +1,249 @@
 ﻿@* Portada (/), para cualquier usuario con sesión (#337). Explica qué es la aplicación y ofrece accesos a las
    secciones que ya existen, con los mismos criterios de rol que NavMenu: el catálogo al personal (Admin y
    nutricionista), la administración al Admin y el perfil a todos. Ocultar un acceso no protege la página: cada
-   una declara su propio [Authorize]. El panel del paciente (menús, consumo y valoraciones) es el #88. *@
+   una declara su propio [Authorize]. El #349 añade las métricas del catálogo, presenta esos accesos como
+   tarjetas del sistema de diseño (#346) y lista las primeras dietas; el panel del
+   paciente con menús, consumo y valoraciones llegará con el #88. *@
 @page "/"
 @attribute [Authorize]
+@inject ICatalogoApi Catalogo
+@inject IAdministracionApi Administracion
+@inject AuthenticationStateProvider Estado
 
 <PageTitle>Menús nutricionales</PageTitle>
 
-<div class="mb-4">
-    <h1 class="h2 mb-1">Menús nutricionales</h1>
-    <p class="text-muted mb-0">
-        Gestión de la generación automática de menús nutricionales en una institución de salud: alimentos y platos,
-        dietas, nutricionistas, pacientes, y la generación, validación y valoración de los menús.
-    </p>
+<div class="dashboard-hero">
+    <div class="dashboard-hero-copy">
+        <span class="eyebrow">Panel de trabajo</span>
+        <h1>Menús nutricionales</h1>
+        <p>
+            Gestión de la generación automática de menús nutricionales en una institución de salud: alimentos y platos,
+            dietas, nutricionistas, pacientes, y la generación, validación y valoración de los menús.
+        </p>
+    </div>
 </div>
 
+<AvisoDeError Mensaje="@_error" />
+
+@if (_esPersonal)
+{
+    <section class="stats-grid" aria-label="Resumen del catálogo">
+        <div class="stat-card">
+            <span class="stat-icon"><Icon Name="basket" /></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_alimentos?.ToString() ?? "—")</div>
+                <div class="stat-label">Alimentos</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon stat-icon-amber"><Icon Name="utensils" /></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_platos?.ToString() ?? "—")</div>
+                <div class="stat-label">Platos</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon stat-icon-blue"><Icon Name="clipboard" /></span>
+            <div class="stat-body">
+                <div class="stat-value">@(_totalDietas?.ToString() ?? "—")</div>
+                <div class="stat-label">Dietas</div>
+            </div>
+        </div>
+        @if (_esAdmin)
+        {
+            <div class="stat-card">
+                <span class="stat-icon stat-icon-violet"><Icon Name="users" /></span>
+                <div class="stat-body">
+                    <div class="stat-value">@(_nutricionistas?.ToString() ?? "—")</div>
+                    <div class="stat-label">Nutricionistas</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon"><Icon Name="hospital" /></span>
+                <div class="stat-body">
+                    <div class="stat-value">@(_salas?.ToString() ?? "—")</div>
+                    <div class="stat-label">Salas</div>
+                </div>
+            </div>
+        }
+    </section>
+}
+
+@* Accesos rápidos: los mismos enlaces y criterios de rol que la portada de #337, ahora como tarjetas. *@
 <AuthorizeView Context="estado">
     <Authorized>
         @if (RolesDeUsuario.EsPersonal(estado.User))
         {
-            <section class="mb-4" aria-labelledby="portada-catalogo">
-                <h2 id="portada-catalogo" class="h4">Catálogo</h2>
-                <ul class="list-unstyled">
-                    <li><a href="catalogo/alimentos">Alimentos</a>: banco de alimentos para la elaboración de menús.</li>
-                    <li><a href="catalogo/platos">Platos</a>: banco de platos y su composición de alimentos.</li>
-                    <li><a href="catalogo/dietas">Dietas</a>: planes de alimentación por programa de atención.</li>
-                </ul>
+            <section aria-labelledby="portada-catalogo">
+                <h2 id="portada-catalogo" class="section-title">Catálogo</h2>
+                <div class="quick-grid">
+                    @AccesoRapido("catalogo/alimentos", "basket", "Alimentos", "Banco de alimentos para los menús")
+                    @AccesoRapido("catalogo/platos", "utensils", "Platos", "Platos y su composición")
+                    @AccesoRapido("catalogo/dietas", "clipboard", "Dietas", "Planes por programa de atención")
+                </div>
             </section>
         }
         @if (estado.User.IsInRole(RolesDeUsuario.Admin))
         {
-            <section class="mb-4" aria-labelledby="portada-administracion">
-                <h2 id="portada-administracion" class="h4">Administración</h2>
-                <ul class="list-unstyled">
-                    <li>
-                        <a href="admin/nomencladores">Nomencladores</a>: grupos nutricionales, restricciones alimentarias,
-                        programas de atención y especialidades.
-                    </li>
-                    <li><a href="admin/nutricionistas">Nutricionistas</a>: profesionales registrados y sus dietas autorizadas.</li>
-                    <li><a href="admin/salas">Salas</a>: salas de hospitalización y sus pacientes asignados.</li>
-                </ul>
+            <section aria-labelledby="portada-administracion">
+                <h2 id="portada-administracion" class="section-title">Administración</h2>
+                <div class="quick-grid">
+                    @AccesoRapido("admin/nomencladores", "folder", "Nomencladores", "Grupos, restricciones, programas y especialidades")
+                    @AccesoRapido("admin/nutricionistas", "users", "Nutricionistas", "Profesionales y dietas autorizadas")
+                    @AccesoRapido("admin/salas", "hospital", "Salas", "Salas y pacientes asignados")
+                </div>
             </section>
         }
-        <section class="mb-4" aria-labelledby="portada-cuenta">
-            <h2 id="portada-cuenta" class="h4">Tu cuenta</h2>
-            <ul class="list-unstyled">
-                <li><a href="perfil">Mi perfil</a>: tu correo y tu rol.</li>
-            </ul>
+        <section aria-labelledby="portada-cuenta">
+            <h2 id="portada-cuenta" class="section-title">Tu cuenta</h2>
+            <div class="quick-grid">
+                @AccesoRapido("perfil", "user", "Mi perfil", "Tu correo y tu rol")
+            </div>
         </section>
     </Authorized>
 </AuthorizeView>
+
+@* Las dietas no tienen fecha de creación ni la API ofrece otro orden que el nombre, así que la lista no puede
+   ser «las últimas»: se presentan como las primeras del catálogo, con enlace al detalle y al listado completo. *@
+@if (_esPersonal && (_cargando || _dietas.Count > 0))
+{
+    <section class="panel mb-4" aria-labelledby="portada-dietas">
+        <div class="panel-head">
+            <h2 id="portada-dietas" class="section-title">Dietas del catálogo</h2>
+            <a class="panel-link" href="catalogo/dietas">Ver todas <Icon Name="chevron-right" /></a>
+        </div>
+        <div class="panel-body">
+            @if (_cargando)
+            {
+                <EstadoDeCarga Texto="Cargando dietas…" />
+            }
+            else
+            {
+                @foreach (var dieta in _dietas)
+                {
+                    <div class="list-row">
+                        <span class="list-dot"><Icon Name="clipboard" /></span>
+                        <div class="list-row-main">
+                            <div class="list-row-title"><a href="@($"catalogo/dietas/{dieta.Id}")">@dieta.Nombre</a></div>
+                            <div class="list-row-sub">
+                                @dieta.CantidadDeGrupos grupos · @dieta.CantidadDeRestricciones restricciones
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </section>
+}
+
+@code {
+    private int? _alimentos;
+    private int? _platos;
+    private int? _totalDietas;
+    private int? _nutricionistas;
+    private int? _salas;
+    private IReadOnlyList<Dieta> _dietas = [];
+    private bool _esPersonal;
+    private bool _esAdmin;
+    private string? _error;
+    private bool _cargando = true;
+
+    /// <summary>Carga los totales que permite el rol de la sesión, sin añadir endpoints nuevos.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var usuario = (await Estado.GetAuthenticationStateAsync()).User;
+        _esPersonal = RolesDeUsuario.EsPersonal(usuario);
+        _esAdmin = usuario.IsInRole(RolesDeUsuario.Admin);
+
+        if (_esPersonal)
+        {
+            await CargarCatalogo();
+        }
+
+        if (_esAdmin)
+        {
+            await CargarAdministracion();
+        }
+
+        _cargando = false;
+    }
+
+    /// <summary>
+    /// Cada cifra se pide y se asigna por separado: si falla una, las demás tarjetas conservan su número. Los
+    /// totales se piden de a una fila; la lista de dietas, de a cinco.
+    /// </summary>
+    private async Task CargarCatalogo()
+    {
+        _alimentos = (await ConsultarPaginaAsync(() => Catalogo.ListarAlimentosAsync(null, null, null, 1, 1)))?.Total;
+        _platos = (await ConsultarPaginaAsync(() => Catalogo.ListarPlatosAsync(null, null, null, 1, 1)))?.Total;
+        _totalDietas = (await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 1)))?.Total;
+        _dietas = (await ConsultarPaginaAsync(() => Catalogo.ListarDietasAsync(null, 1, 5)))?.Data ?? [];
+    }
+
+    /// <summary>Totales de nutricionistas y salas, solo para el Admin.</summary>
+    private async Task CargarAdministracion()
+    {
+        _nutricionistas = (await ConsultarPaginaAsync(() => Administracion.ListarNutricionistasAsync(null, 1, 1)))?.Total;
+        _salas = (await ConsultarListaAsync(() => Administracion.ListarSalasAsync()))?.Count;
+    }
+
+    /// <summary>Una página, o nulo si falló esa consulta; el aviso se guarda sin borrar el primero.</summary>
+    private async Task<Pagina<T>?> ConsultarPaginaAsync<T>(Func<Task<Pagina<T>>> consulta)
+    {
+        try
+        {
+            return await consulta();
+        }
+        catch (ApiException ex)
+        {
+            MostrarPrimerError(ex.Message);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            MostrarPrimerError(MensajesDeConexion.SinServidor);
+        }
+
+        return null;
+    }
+
+    /// <summary>Una lista, o nula si falló esa consulta; el aviso se guarda sin borrar el primero.</summary>
+    private async Task<IReadOnlyList<T>?> ConsultarListaAsync<T>(Func<Task<IReadOnlyList<T>>> consulta)
+    {
+        try
+        {
+            return await consulta();
+        }
+        catch (ApiException ex)
+        {
+            MostrarPrimerError(ex.Message);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            MostrarPrimerError(MensajesDeConexion.SinServidor);
+        }
+
+        return null;
+    }
+
+    /// <summary>Conserva el primer error: un fallo posterior no debe tapar la causa original.</summary>
+    private void MostrarPrimerError(string mensaje)
+    {
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            _error = mensaje;
+        }
+    }
+
+    /// <summary>Tarjeta de acceso rápido con el icono del sistema de diseño.</summary>
+    private static RenderFragment AccesoRapido(string href, string icono, string titulo, string detalle) => __builder =>
+    {
+        <a class="quick-card" href="@href">
+            <Icon Name="@icono" />
+            <div>
+                <span>@titulo</span>
+                <small>@detalle</small>
+            </div>
+            <Icon Name="chevron-right" />
+        </a>
+    };
+}

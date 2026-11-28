@@ -42,6 +42,7 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public ApiException? ErrorAlAgregarIngrediente { get; set; }
     public ApiException? ErrorAlQuitarIngrediente { get; set; }
     public ApiException? ErrorAlCargarDieta { get; set; }
+    public Exception? ErrorDeConexion { get; set; }
     public ApiException? ErrorAlGuardarDieta { get; set; }
     public ApiException? ErrorAlEliminarDieta { get; set; }
 
@@ -57,6 +58,10 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaAlimentos { get; private set; }
     public (Guid? Grupo, Guid? Tipo, Guid? Nivel, int Page, int Size)? UltimaConsultaPlatos { get; private set; }
     public (Guid? Programa, int Page, int Size)? UltimaConsultaDietas { get; private set; }
+    public List<int> TamanosDeConsultaDietas { get; } = [];
+
+    // Si se asigna, el listado de dietas espera a que se complete: sirve para ver el estado de carga.
+    public TaskCompletionSource? PausaAlListarDietas { get; set; }
     public (Guid DietaId, Guid GrupoId, TipoCobertura Tipo)? UltimoGrupoDeDietaAgregado { get; private set; }
     public (Guid DietaId, Guid GrupoId)? UltimoGrupoDeDietaQuitado { get; private set; }
     public (Guid DietaId, Guid RestriccionId)? UltimaRestriccionAgregada { get; private set; }
@@ -94,10 +99,16 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
         return Resultado(ErrorAlEliminar);
     }
 
-    public Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
+    public async Task<Pagina<Dieta>> ListarDietasAsync(Guid? programa, int page, int size, CancellationToken ct = default)
     {
         UltimaConsultaDietas = (programa, page, size);
-        return Resultado(ErrorAlCargarDieta, new Pagina<Dieta>([.. Dietas], Dietas.Count, page, size));
+        TamanosDeConsultaDietas.Add(size);
+        if (PausaAlListarDietas is not null)
+        {
+            await PausaAlListarDietas.Task;
+        }
+
+        return await Resultado(ErrorAlCargarDieta, new Pagina<Dieta>([.. Dietas], Dietas.Count, page, size));
     }
 
     public Task<IReadOnlyList<Dieta>> ListarTodasLasDietasAsync(CancellationToken ct = default)
@@ -133,7 +144,9 @@ internal sealed class CatalogoApiFalsa : ICatalogoApi
     public Task<Pagina<Alimento>> ListarAlimentosAsync(Guid? grupo, Guid? tipo, Guid? nivel, int page, int size, CancellationToken ct = default)
     {
         UltimaConsultaAlimentos = (grupo, tipo, nivel, page, size);
-        return Resultado(ErrorAlCargarAlimento, new Pagina<Alimento>([.. Alimentos], Alimentos.Count, page, size));
+        return ErrorDeConexion is not null
+            ? Task.FromException<Pagina<Alimento>>(ErrorDeConexion)
+            : Resultado(ErrorAlCargarAlimento, new Pagina<Alimento>([.. Alimentos], Alimentos.Count, page, size));
     }
 
     public Task<IReadOnlyList<Alimento>> ListarTodosLosAlimentosAsync(CancellationToken ct = default)

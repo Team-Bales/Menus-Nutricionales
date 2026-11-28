@@ -128,7 +128,7 @@ Fuentes previstas:
 | `valoracion` | Resultado (nombre y valor 1 a 5), dieta | Ya |
 | `aceptacion` | Tasa de aceptación global y por nivel calórico; ítems más rechazados (máx. 5) | Ya |
 | `reporte-1` … `reporte-6` | Resumen de cada consulta informacional (#90) | Con #90 |
-| `ficha` | Macro y micronutrientes, alérgenos, preparación | Con #283 |
+| `ficha` | Macro y micronutrientes, alérgenos, técnica y tiempo de preparación de cada ítem del menú valorado | Ya (#336) |
 | `menu` / `dieta` | Composición y niveles calóricos | Ya |
 
 ### Qué bloques entran en cada petición
@@ -247,6 +247,8 @@ Es el requisito central de «explicaciones confiables».
 2. **`VerificadorDeCifras` (determinista, después del LLM):** extrae los números del texto y comprueba que cada uno
    aparece en `Cifras` de algún bloque (con tolerancia de redondeo). Si alguno no aparece, la respuesta se
    **descarta** y se cae al determinista, o se devuelve con advertencia donde no hay determinista.
+   Los números de los bloques van con coma decimal y a lo sumo un decimal («31,5 g», #336), así que el verificador
+   lee la coma como separador decimal.
 3. **Trazabilidad:** `FuentesUsadas` dice qué bloques entraron; la UI los muestra.
 4. **Aviso fijo** en la UI: «generado con asistencia de IA, revisado por el nutricionista».
 5. Las sugerencias son **borradores**: nada se aplica solo ni se guarda en la base.

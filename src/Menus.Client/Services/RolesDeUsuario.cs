@@ -17,6 +17,8 @@ namespace Menus.Client.Services;
 /// </remarks>
 public static class RolesDeUsuario
 {
+    /// <summary>Claim que identifica al nutricionista jefe de nutrición.</summary>
+    public const string JefeNutricion = "jefe_nutricion";
     /// <summary>Administrador del sistema.</summary>
     public const string Admin = "Admin";
 
@@ -37,4 +39,10 @@ public static class RolesDeUsuario
     /// <param name="usuario">Usuario de la sesión, con un claim de rol por valor.</param>
     /// <returns><see langword="true"/> si tiene alguno de los roles de <see cref="Personal"/>.</returns>
     public static bool EsPersonal(ClaimsPrincipal usuario) => Personal.Split(',').Any(usuario.IsInRole);
+
+    /// <summary>Indica si el token corresponde a un nutricionista que ocupa el cargo de jefe.</summary>
+    public static bool EsJefeNutricion(ClaimsPrincipal usuario)
+        => usuario.IsInRole(Nutricionista)
+           && bool.TryParse(usuario.FindFirst(JefeNutricion)?.Value, out var esJefe)
+           && esJefe;
 }

@@ -29,4 +29,16 @@ public sealed class RolesDeUsuarioTests
         Assert.False(RolesDeUsuario.EsPersonal(Con()));
         Assert.False(RolesDeUsuario.EsPersonal(new ClaimsPrincipal(new ClaimsIdentity())));
     }
+
+    [Fact]
+    public void Reconoce_al_nutricionista_jefe_desde_el_claim_del_token()
+    {
+        var jefe = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Role, RolesDeUsuario.Nutricionista), new Claim(RolesDeUsuario.JefeNutricion, bool.TrueString)],
+            "prueba"));
+
+        Assert.True(RolesDeUsuario.EsJefeNutricion(jefe));
+        Assert.False(RolesDeUsuario.EsJefeNutricion(Con(RolesDeUsuario.Nutricionista)));
+        Assert.False(RolesDeUsuario.EsJefeNutricion(Con(RolesDeUsuario.Admin)));
+    }
 }

@@ -38,6 +38,14 @@
                     </NavLink>
                 }
 
+                @if (estado.User.IsInRole(RolesDeUsuario.Paciente))
+                {
+                    <span class="sidebar-section-label">Mi atención</span>
+                    <NavLink class="sidebar-link" href="mi-atencion">
+                        <Icon Name="heart" /> Panel nutricional
+                    </NavLink>
+                }
+
                 @if (estado.User.IsInRole(RolesDeUsuario.Admin))
                 {
                     <span class="sidebar-section-label">Administración</span>

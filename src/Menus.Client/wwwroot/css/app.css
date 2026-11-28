@@ -810,6 +810,10 @@ hr { border-color: var(--border); opacity: 1; }
 
 .badge.text-bg-success { background: var(--brand-100) !important; color: var(--brand-800) !important; }
 .badge.text-bg-secondary { background: var(--ink-100) !important; color: var(--ink-700) !important; }
+.badge-neutral { background: var(--ink-100); color: var(--ink-700); }
+.badge-success { background: var(--brand-100); color: var(--brand-800); }
+.badge-warning { background: var(--warning-bg); color: var(--warning); }
+.badge-danger { background: var(--danger-bg); color: var(--danger); }
 
 .chip {
     display: inline-flex;
@@ -824,6 +828,25 @@ hr { border-color: var(--border); opacity: 1; }
 }
 
 .chip-success { background: var(--brand-50); color: var(--brand-700); }
+
+.patient-menu-card {
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--ink-50);
+    padding: 1.15rem;
+}
+
+.patient-assessment {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--brand-50);
+}
 
 .loading-state {
     display: flex;

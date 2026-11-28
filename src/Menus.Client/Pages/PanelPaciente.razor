@@ -1,0 +1,87 @@
+@page "/mi-atencion"
+@attribute [Authorize(Roles = RolesDeUsuario.Paciente)]
+@inject IPanelPacienteApi Api
+@inject AuthenticationStateProvider EstadoDeAutenticacion
+
+<PageTitle>Mi atención nutricional</PageTitle>
+
+@if (_cargando)
+{
+    <EstadoDeCarga Texto="Cargando tu información nutricional…" />
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+else
+{
+    <div class="page-heading">
+        <div class="page-heading-main">
+            <div class="eyebrow">Mi atención</div>
+            <h1 class="page-title">Mi información nutricional</h1>
+            <p class="page-subtitle">Consulta tus menús asignados, consumo registrado y valoraciones.</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4" aria-label="Resumen de atención">
+        <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><span class="eyebrow mb-2"><Icon Name="clipboard" /> Menús</span><div class="display-6 fw-bold">@_menus.Count</div><p class="text-muted mb-0">asignados</p></div></div></div>
+        <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><span class="eyebrow mb-2"><Icon Name="activity" /> Servicios</span><div class="display-6 fw-bold">@_servicios.Count</div><p class="text-muted mb-0">con consumo registrado</p></div></div></div>
+        <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><span class="eyebrow mb-2"><Icon Name="heart" /> Última valoración</span><div class="h3 mb-1">@(_valoraciones.FirstOrDefault()?.Resultado.Nombre ?? "Pendiente")</div><p class="text-muted mb-0">@TextoUltimaValoracion()</p></div></div></div>
+    </div>
+
+    <section class="card mb-4" aria-labelledby="menus-asignados">
+        <div class="card-header d-flex justify-content-between align-items-center gap-3"><h2 id="menus-asignados" class="h5 mb-0">Menús asignados</h2><span class="badge badge-neutral">@_menus.Count</span></div>
+        <div class="card-body">
+            @if (_menus.Count == 0)
+            {
+                <EstadoVacio Texto="Aún no tienes menús asignados" Detalle="Cuando el equipo nutricional te asigne un menú, podrás consultarlo aquí." />
+            }
+            else
+            {
+                <div class="row g-3">@foreach (var menu in _menus) { <article class="col-12 col-lg-6"><div class="patient-menu-card"><div class="d-flex justify-content-between gap-2 align-items-start mb-3"><div><h3 class="h6 mb-1">Menú del @menu.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy")</h3><p class="small text-muted mb-0">Preparado por @menu.Creador.Nombre</p></div><span class="badge @ClaseEstado(menu.Estado)">@menu.Estado</span></div><p class="small text-muted mb-2">@menu.CantidadTotalAlimentos ítems · @(menu.EsAutomatico ? "Generado automáticamente" : "Confección manual")</p><div class="d-flex flex-wrap gap-2">@foreach (var item in menu.Items) { <span class="chip">@item.Nombre</span> }</div></div></article> }</div>
+            }
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <section class="col-12 col-xl-7" aria-labelledby="consumos"><div class="card h-100"><div class="card-header"><h2 id="consumos" class="h5 mb-0">Consumo registrado</h2></div><div class="card-body p-0">
+            @if (_servicios.Count == 0) { <div class="p-4"><EstadoVacio Texto="Sin consumos registrados" Detalle="El historial aparecerá cuando se registre un servicio de menú." /></div> }
+            else { <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Ítems</th><th class="text-end">Resultado</th></tr></thead><tbody>@foreach (var servicio in _servicios) { <tr><td>@servicio.Fecha.ToString("dd/MM/yyyy")</td><td>@string.Join(", ", servicio.Consumos.Select(c => c.Nombre))</td><td class="text-end"><span class="badge @(servicio.Consumos.All(c => c.Aceptacion) ? "badge-success" : "badge-warning")">@TextoConsumo(servicio)</span></td></tr> }</tbody></table></div> }
+        </div></div></section>
+        <section class="col-12 col-xl-5" aria-labelledby="valoraciones"><div class="card h-100"><div class="card-header"><h2 id="valoraciones" class="h5 mb-0">Valoraciones nutricionales</h2></div><div class="card-body">
+            @if (_valoraciones.Count == 0) { <EstadoVacio Texto="Sin valoraciones todavía" Detalle="Tu equipo nutricional registrará aquí tus resultados clínicos." /> }
+            else { <div class="d-grid gap-3">@foreach (var valoracion in _valoraciones) { <div class="patient-assessment"><div><strong>@valoracion.Resultado.Nombre</strong><div class="small text-muted">@valoracion.FechaValoracion.ToLocalTime().ToString("dd/MM/yyyy")</div></div><span class="badge badge-success">@valoracion.Resultado.Valor / 5</span></div> }</div> }
+        </div></div></section>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<MenuDetalle> _menus = [];
+    private IReadOnlyList<ServicioDePaciente> _servicios = [];
+    private IReadOnlyList<ValoracionDePaciente> _valoraciones = [];
+    private string? _error;
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var estado = await EstadoDeAutenticacion.GetAuthenticationStateAsync();
+            if (!Guid.TryParse(estado.User.FindFirst("entidad_id")?.Value, out var pacienteId)) { _error = "La sesión no identifica al paciente."; return; }
+            var menus = Api.ListarMenusAsync(pacienteId);
+            var consumos = Api.ListarConsumosAsync(pacienteId);
+            var valoraciones = Api.ListarValoracionesAsync(pacienteId);
+            await Task.WhenAll(menus, consumos, valoraciones);
+            _menus = await menus;
+            _servicios = await consumos;
+            _valoraciones = await valoraciones;
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { _error = MensajesDeConexion.SinServidor; }
+        finally { _cargando = false; }
+    }
+
+    private string TextoUltimaValoracion() => _valoraciones.FirstOrDefault() is { } valoracion ? $"Registrada el {valoracion.FechaValoracion.ToLocalTime():dd/MM/yyyy}" : "Sin resultado registrado";
+    private static string TextoConsumo(ServicioDePaciente servicio) => servicio.Consumos.Count == 0 ? "Sin detalle" : $"{servicio.Consumos.Count(c => c.Aceptacion)}/{servicio.Consumos.Count} aceptados";
+    private static string ClaseEstado(string estado) => estado switch { "Final" => "badge-success", "Rechazado" => "badge-danger", _ => "badge-warning" };
+}

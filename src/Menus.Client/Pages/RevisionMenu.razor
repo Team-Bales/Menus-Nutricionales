@@ -1,0 +1,129 @@
+@* Revisión de un menú por el jefe de nutrición (#82). La entrada desde el listado se integrará cuando #81 llegue a main. *@
+@page "/menus/{Id:guid}/revision"
+@attribute [Authorize(Roles = RolesDeUsuario.Nutricionista)]
+@inject IMenusApi Api
+@inject AuthenticationStateProvider EstadoDeAutenticacion
+
+<PageTitle>Revisión de menú</PageTitle>
+
+@if (!_esJefe)
+{
+    <AccesoDenegado />
+}
+else if (_menu is null && string.IsNullOrWhiteSpace(_error))
+{
+    <EstadoDeCarga Texto="Cargando menú para revisión…" />
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+else if (_exito is not null)
+{
+    <div class="alert alert-success" role="status">@_exito</div>
+}
+else if (_menu is not null)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <div class="eyebrow">Revisión clínica</div>
+            <h1 class="h2 mb-1">Dictamen del menú</h1>
+            <p class="page-subtitle mb-0">Revisa su composición y registra la decisión clínica.</p>
+        </div>
+        <span class="badge @(ClaseEstado(_menu.Estado))">@_menu.Estado</span>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-7">
+            <section class="card h-100" aria-labelledby="resumen-menu">
+                <div class="card-header"><h2 id="resumen-menu" class="h5 mb-0">Resumen del menú</h2></div>
+                <div class="card-body">
+                    <dl class="row mb-4">
+                        <dt class="col-sm-5 text-muted">Creador</dt><dd class="col-sm-7">@_menu.Creador.Nombre</dd>
+                        <dt class="col-sm-5 text-muted">Fecha de creación</dt><dd class="col-sm-7">@_menu.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt class="col-sm-5 text-muted">Origen</dt><dd class="col-sm-7">@(_menu.EsAutomatico ? "Generado automáticamente" : "Confección manual")</dd>
+                        <dt class="col-sm-5 text-muted">Cantidad de ítems</dt><dd class="col-sm-7">@_menu.CantidadTotalAlimentos</dd>
+                    </dl>
+
+                    <h3 class="h6 mb-2">Distribución por preparación</h3>
+                    <div class="table-responsive mb-4"><table class="table align-middle mb-0"><thead><tr><th>Tipo</th><th class="text-end">Proporción</th></tr></thead><tbody>
+                        @foreach (var proporcion in _menu.Distribucion)
+                        {
+                            <tr><td>@proporcion.Nombre</td><td class="text-end">@proporcion.Proporcion.ToString("P0")</td></tr>
+                        }
+                    </tbody></table></div>
+
+                    <h3 class="h6 mb-2">Grupos nutricionales cubiertos</h3>
+                    <div class="d-flex flex-wrap gap-2 mb-4">@foreach (var grupo in _menu.GruposNutricionales) { <span class="badge badge-neutral">@grupo.Nombre</span> }</div>
+
+                    <h3 class="h6 mb-2">Ítems incluidos</h3>
+                    <ul class="mb-0 ps-3">@foreach (var item in _menu.Items) { <li>@item.Nombre</li> }</ul>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-xl-5">
+            <section class="card" aria-labelledby="dictamen-menu">
+                <div class="card-header"><h2 id="dictamen-menu" class="h5 mb-0">Registrar dictamen</h2></div>
+                <div class="card-body">
+                    <p class="text-muted small">La decisión queda registrada y no podrá modificarse.</p>
+                    <label class="form-label" for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" class="form-control" rows="6" @bind="_formulario.Observaciones" disabled="@_enviando" placeholder="Escribe observaciones clínicas, si son necesarias."></textarea>
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-primary" disabled="@_enviando" @onclick="(() => Dictaminar(true))">Aprobar menú</button>
+                        <button class="btn btn-outline-danger" disabled="@_enviando" @onclick="(() => Dictaminar(false))">Rechazar menú</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private MenuDetalle? _menu;
+    private readonly DictamenFormulario _formulario = new();
+    private string? _error;
+    private string? _exito;
+    private bool _esJefe;
+    private bool _enviando;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var estado = await EstadoDeAutenticacion.GetAuthenticationStateAsync();
+        _esJefe = RolesDeUsuario.EsJefeNutricion(estado.User);
+        if (_esJefe)
+        {
+            await CargarAsync();
+        }
+    }
+
+    private async Task CargarAsync()
+    {
+        _error = null;
+        try { _menu = await Api.ObtenerAsync(Id); }
+        catch (ApiException ex) { _error = ex.Message; }
+    }
+
+    private async Task Dictaminar(bool aprobado)
+    {
+        _error = null;
+        _enviando = true;
+        try
+        {
+            await Api.ValidarAsync(Id, aprobado, _formulario);
+            _exito = aprobado
+                ? "El menú fue aprobado correctamente."
+                : "El menú fue rechazado. Podrás confeccionar su reemplazo desde la gestión de menús cuando se integre ese flujo.";
+        }
+        catch (ApiException ex) { _error = ex.Message; }
+        finally { _enviando = false; }
+    }
+
+    private static string ClaseEstado(string estado) => estado switch
+    {
+        "Final" => "badge-success",
+        "Rechazado" => "badge-danger",
+        _ => "badge-warning",
+    };
+}

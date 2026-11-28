@@ -358,7 +358,7 @@ public sealed class ContratosIATests
 
     /// <summary>
     /// Verifica todos los defaults de <see cref="IAOptions"/>, incluido <see cref="IAOptions.SectionName"/>
-    /// y la ausencia de propiedades <c>Terminos</c>.
+    /// y las confirmaciones de términos inicialmente vacías.
     /// </summary>
     [Fact]
     public void IAOptions_Defaults_Correctos()
@@ -376,10 +376,11 @@ public sealed class ContratosIATests
         Assert.Equal(5, options.KMinimo);
         Assert.Equal("IA", IAOptions.SectionName);
 
-        // Verificar que no existen propiedades Terminos*
-        var propiedadesTerminos = typeof(IAOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.Name.StartsWith("Terminos", StringComparison.OrdinalIgnoreCase));
-        Assert.Empty(propiedadesTerminos);
+        Assert.NotNull(options.Terminos);
+        Assert.Equal(string.Empty, options.Terminos.Version);
+        Assert.Equal(string.Empty, options.Terminos.AceptadoPor);
+        Assert.Null(options.Terminos.Fecha);
+        Assert.False(options.Terminos.RetencionDesactivada);
     }
 
     /// <summary>

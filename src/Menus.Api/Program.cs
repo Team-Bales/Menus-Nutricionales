@@ -7,7 +7,9 @@ using Menus.Api.Errores;
 using Menus.Api.Seguridad;
 using Menus.Application;
 using Menus.Application.Comun;
+using Menus.Application.IA;
 using Menus.Infrastructure;
+using Menus.Api.IA;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -17,6 +19,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// La IA permanece deshabilitada por defecto. Si se habilita un proveedor externo, la aceptación explícita de los
+// términos es obligatoria; ValidateOnStart evita que la API llegue a atender peticiones en una configuración incompleta.
+builder.Services.AddOptions<IAOptions>()
+    .Bind(builder.Configuration.GetSection(IAOptions.SectionName))
+    .Validate(opciones => ValidadorDeConfiguracionIA.TryValidar(opciones, out _), "La configuración de IA externa no cumple los términos de uso.")
+    .ValidateOnStart();
+builder.Services.AddHostedService<RegistroDeTerminosIAHostedService>();
 
 // Capa de aplicación (ADR-010): controladores, errores como ProblemDetails y quién actúa.
 // Sin el [Required] implícito de los tipos no anulables, un campo vacío o ausente llega a FluentValidation y

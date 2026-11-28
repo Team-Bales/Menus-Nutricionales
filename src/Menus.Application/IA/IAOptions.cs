@@ -61,9 +61,31 @@ public sealed class IAOptions
     public int KMinimo { get; set; } = 5;
 
     /// <summary>
+    /// Confirmaciones exigidas antes de habilitar un proveedor de IA externo.
+    /// No se requieren para Ollama local ni cuando <see cref="Habilitada"/> es <see langword="false"/>.
+    /// </summary>
+    public TerminosIAOptions Terminos { get; set; } = new();
+
+    /// <summary>
     /// Devuelve una representación textual que no expone <see cref="ApiKey"/>.
     /// </summary>
     /// <returns>Descripción con valores seguros.</returns>
     public override string ToString()
         => $"IAOptions {{ Habilitada = {Habilitada}, BaseUrl = {BaseUrl}, Model = {Model}, ApiKey = [redacted], TimeoutSegundos = {TimeoutSegundos}, MaxBloques = {MaxBloques}, MaxCaracteresDeContexto = {MaxCaracteresDeContexto}, VersionDePrompt = {VersionDePrompt}, KMinimo = {KMinimo} }}";
+}
+
+/// <summary>Constancia de aceptación de los términos para un proveedor de IA externo.</summary>
+public sealed class TerminosIAOptions
+{
+    /// <summary>Versión de los términos aceptados.</summary>
+    public string Version { get; set; } = string.Empty;
+
+    /// <summary>Persona responsable que aceptó los términos.</summary>
+    public string AceptadoPor { get; set; } = string.Empty;
+
+    /// <summary>Fecha de la aceptación.</summary>
+    public DateOnly? Fecha { get; set; }
+
+    /// <summary>Indica que se desactivaron la retención y el entrenamiento en el proveedor.</summary>
+    public bool RetencionDesactivada { get; set; }
 }

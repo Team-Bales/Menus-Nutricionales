@@ -121,6 +121,16 @@ Para depurar la API o trabajar en el cliente con recarga, se corren los dos con 
 
 El cliente toma la dirección de la API de `src/Menus.Client/wwwroot/appsettings.Development.json` (`http://localhost:5119/`). En Docker usa `appsettings.json`, que apunta al mismo origen, y nginx pasa `/api/` al contenedor de la API.
 
+### Configurar el asistente de IA
+
+La IA queda deshabilitada por defecto. Para desarrollo local con Ollama, configura `IA__Habilitada=true`, una URL local (`IA__BaseUrl=http://localhost:11434/v1`) y el modelo, sin incluir claves en el repositorio. Para una clave local, usa `user-secrets` en vez de archivos versionados:
+
+```bash
+dotnet user-secrets set "IA:ApiKey" "tu-clave-local" --project src/Menus.Api
+```
+
+Un proveedor externo solo puede habilitarse tras aceptar el texto vigente de [los términos de la integración](docs/ia/contrato-iasistenteia.md#81-términos-de-uso-y-condiciones-de-la-configuración-de-ia) y desactivar en ese proveedor la retención y el entrenamiento. Entonces deben definirse `IA__Terminos__Version=1`, `IA__Terminos__AceptadoPor`, `IA__Terminos__Fecha` e `IA__Terminos__RetencionDesactivada=true`. La API falla al arrancar si falta una de esas confirmaciones. No publiques ni compartas la API key.
+
 ### Datos de ejemplo
 
 Para recorrer la aplicación con todos los roles y ejecutar las 6 consultas con resultados, hay un banco de datos completo (dietas, pacientes, menús, consumos, valoraciones, usuarios y fichas de MongoDB) en [`scripts/datos-ejemplo/`](scripts/datos-ejemplo/README.md). Con los contenedores de `postgres` y `mongo` levantados y después de [aplicar las migraciones](#aplicar-las-migraciones):

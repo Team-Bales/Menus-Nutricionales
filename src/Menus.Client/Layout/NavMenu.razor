@@ -38,6 +38,14 @@
                     </NavLink>
                 }
 
+                @if (estado.User.IsInRole(RolesDeUsuario.Nutricionista))
+                {
+                    <span class="sidebar-section-label">Generación</span>
+                    <NavLink class="sidebar-link" href="menus">
+                        <Icon Name="sparkles" /> Menús
+                    </NavLink>
+                }
+
                 @if (estado.User.IsInRole(RolesDeUsuario.Admin))
                 {
                     <span class="sidebar-section-label">Administración</span>

@@ -1,6 +1,7 @@
 using Menus.Application.Catalogo;
 using Menus.Application.Catalogo.Fichas;
 using Menus.Application.Comun;
+using Menus.Application.IA;
 using Menus.Application.Reportes;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
@@ -63,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenEmitter, JwtTokenService>();
         // Puerto de consultas informacionales (reportes)
         services.AddScoped<IConsultasInformacionales, LectorDeConsultasInformacionales>();
+        // Conteo para la regla de combinaciones raras de los proveedores de contexto de IA (#325).
+        services.AddScoped<IConteoDePacientesPorDieta, ConteoDePacientesPorDieta>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         JwtBearerConfiguration.Validate(jwtOptions);

@@ -119,6 +119,11 @@ public sealed class AsistenteIAOpenAICompatibleTests
     [InlineData("{\"choices\":[{\"message\":{\"content\":123}}]}")]
     [InlineData("{\"choices\":[{\"message\":{\"content\":\"\"}}]}")]
     [InlineData("{\"choices\":[{\"message\":{\"content\":\"   \"}}]}")]
+    [InlineData("[]")]
+    [InlineData("\"texto\"")]
+    [InlineData("null")]
+    [InlineData("{\"choices\":[\"x\"]}")]
+    [InlineData("{\"choices\":[{\"message\":\"x\"}]}")]
     public async Task Una_respuesta_vacia_lanza_AsistenteIANoDisponible(string json)
     {
         var handler = new HandlerFalso((_, _) => Task.FromResult(RespuestaCruda(json)));

@@ -99,12 +99,15 @@ public sealed class AsistenteIAOpenAICompatible(HttpClient http, IOptions<IAOpti
         }
     }
 
-    /// <summary>Lee <c>choices[0].message.content</c> sin lanzar si falta o no es una cadena.</summary>
+    /// <summary>
+    /// Lee <c>choices[0].message.content</c> sin lanzar si falta, no es un objeto o no es una cadena.
+    /// </summary>
     private static string? LeerContenido(string json)
     {
         using var documento = JsonDocument.Parse(json);
         var raiz = documento.RootElement;
-        if (!raiz.TryGetProperty("choices", out var elecciones)
+        if (raiz.ValueKind != JsonValueKind.Object
+            || !raiz.TryGetProperty("choices", out var elecciones)
             || elecciones.ValueKind != JsonValueKind.Array
             || elecciones.GetArrayLength() == 0)
         {
@@ -112,7 +115,9 @@ public sealed class AsistenteIAOpenAICompatible(HttpClient http, IOptions<IAOpti
         }
 
         var primera = elecciones[0];
-        if (!primera.TryGetProperty("message", out var mensaje)
+        if (primera.ValueKind != JsonValueKind.Object
+            || !primera.TryGetProperty("message", out var mensaje)
+            || mensaje.ValueKind != JsonValueKind.Object
             || !mensaje.TryGetProperty("content", out var contenido)
             || contenido.ValueKind != JsonValueKind.String)
         {

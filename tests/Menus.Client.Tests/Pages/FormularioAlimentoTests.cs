@@ -133,4 +133,17 @@ public sealed class FormularioAlimentoTests : BunitContext
         cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/alimentos", nav.Uri));
         Assert.Null(api.UltimaClasificacionCreada);
     }
+
+    [Fact]
+    public void Muestra_el_estado_de_carga_hasta_que_llegan_los_nomencladores()
+    {
+        var api = new CatalogoApiPendiente();
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<FormularioAlimento>(ps => ps.Add(p => p.Id, null));
+
+        Assert.Contains("Cargando formulario", cut.Markup);
+        api.Completar();
+        cut.WaitForElement("#nombre");
+    }
 }

@@ -1,0 +1,11 @@
+@* Estado de carga compartido: el mismo spinner y el mismo estilo en todas las páginas. *@
+<div class="loading-state" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>@Texto</span>
+</div>
+
+@code {
+    /// <summary>Texto que se muestra mientras se carga la información.</summary>
+    [Parameter, EditorRequired]
+    public string Texto { get; set; } = string.Empty;
+}

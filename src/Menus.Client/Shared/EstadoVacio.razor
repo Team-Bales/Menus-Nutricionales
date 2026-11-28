@@ -1,0 +1,19 @@
+@* Estado vacío compartido para tablas y listados. Mantiene el mismo mensaje y el mismo
+   estilo en todas las pantallas, sin repetir markup en cada página. *@
+<div class="empty-state">
+    <strong>@Texto</strong>
+    @if (!string.IsNullOrWhiteSpace(Detalle))
+    {
+        <span class="small">@Detalle</span>
+    }
+</div>
+
+@code {
+    /// <summary>Mensaje principal que se muestra cuando no hay resultados.</summary>
+    [Parameter, EditorRequired]
+    public string Texto { get; set; } = string.Empty;
+
+    /// <summary>Explicación opcional que aparece debajo del mensaje principal.</summary>
+    [Parameter]
+    public string? Detalle { get; set; }
+}

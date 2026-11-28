@@ -9,11 +9,15 @@
 
 <PageTitle>@(_esEdicion ? "Editar alimento" : "Nuevo alimento")</PageTitle>
 
-<h1 class="h2 mb-4">@(_esEdicion ? "Editar alimento" : "Nuevo alimento")</h1>
+<div class="page-heading">
+    <div class="page-heading-main">
+        <h1 class="page-title">@(_esEdicion ? "Editar alimento" : "Nuevo alimento")</h1>
+    </div>
+</div>
 
 @if (_cargando)
 {
-    <p class="text-muted">Cargando formulario…</p>
+    <EstadoDeCarga Texto="Cargando formulario…" />
 }
 else
 {

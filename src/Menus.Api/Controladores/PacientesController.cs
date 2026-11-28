@@ -21,8 +21,9 @@ namespace Menus.Api.Controladores;
 /// <remarks>
 /// No hay <c>POST /api/pacientes</c>: el alta se hace con la cuenta del paciente, en
 /// <c>/api/auth/registro/paciente</c> (#70). La gestión es para un nutricionista o el administrador (#74); el detalle
-/// del paciente, los menús asignados (#84) y el histórico de consumo (#85) los ve además el propio paciente. Por eso
-/// la política va en cada acción y no en la clase: la de la clase se sumaría a la de cada acción.
+/// del paciente, los menús asignados (#84) y el histórico de consumo (#85) los ve además el propio paciente. La baja
+/// de una dieta queda reservada al administrador (#77). Por eso la política va en cada acción y no en la clase: la de
+/// la clase se sumaría a la de cada acción.
 /// </remarks>
 [ApiController]
 [Route("api/pacientes")]
@@ -91,12 +92,14 @@ public sealed class PacientesController(IDespachador despachador) : ControllerBa
         return NoContent();
     }
 
-    /// <summary>Retira la inscripción del paciente en una dieta.</summary>
+    /// <summary>Retira la inscripción del paciente en una dieta. Solo el administrador.</summary>
     /// <response code="204">Retirada.</response>
+    /// <response code="403">El token no es de un administrador.</response>
     /// <response code="404">El paciente no existe, o no está inscrito en esa dieta.</response>
-    [Authorize(Policy = Politicas.NutricionistaOAdmin)]
+    [Authorize(Policy = Politicas.SoloAdmin)]
     [HttpDelete("{id:guid}/dietas/{dietaId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DesinscribirDieta(Guid id, Guid dietaId, CancellationToken ct)
     {

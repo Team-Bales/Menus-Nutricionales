@@ -92,7 +92,7 @@ public sealed class AutorizacionEnLaApiTests
         ["GET api/pacientes/{id:guid}"] = PacientePropioOPersonal,
         ["PUT api/pacientes/{id:guid}"] = NutricionistaOAdmin,
         ["POST api/pacientes/{id:guid}/dietas"] = NutricionistaOAdmin,
-        ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
+        ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = SoloAdmin,
         ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
         ["GET api/pacientes/{id:guid}/consumos"] = PacientePropioOPersonal,
 
@@ -269,6 +269,21 @@ public sealed class AutorizacionEnLaApiTests
             HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
 
         Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_nutricionista_no_da_de_baja_una_dieta_y_recibe_403()
+    {
+        // La baja de una dieta queda reservada al Admin (#77): el nutricionista inscribe, pero no desinscribe.
+        using var respuesta = await PedirAsync(
+            HttpMethod.Delete,
+            $"/api/pacientes/{Guid.NewGuid()}/dietas/{Guid.NewGuid()}",
+            ApiEnMemoria.Token(RolesUsuario.Nutricionista, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+        Assert.Equal(
+            RespuestaDeAutorizacion.SinPermisos,
+            (await respuesta.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
     }
 
     [Fact]

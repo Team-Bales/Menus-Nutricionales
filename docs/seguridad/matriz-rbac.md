@@ -145,12 +145,15 @@ Leyenda: ✓ permitido; ✗ 403; — 401 (sin token); · depende de los datos.
 | `GET /api/pacientes/{id}` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 | `PUT /api/pacientes/{id}` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
 | `POST /api/pacientes/{id}/dietas` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
-| `DELETE /api/pacientes/{id}/dietas/{dietaId}` | — | ✗ | ✓ | ✓ | NutricionistaOAdmin |
+| `DELETE /api/pacientes/{id}/dietas/{dietaId}` | — | ✗ | ✗ | ✓ | SoloAdmin |
 | `GET /api/pacientes/{id}/menus` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 | `GET /api/pacientes/{id}/consumos` | — | · | ✓ | ✓ | PacientePropioOPersonal |
 
 > En el detalle (`GET /api/pacientes/{id}`), `menus` y `consumos`, el Paciente solo pasa si el `entidad_id`
 > del token coincide con el `id` de la ruta; si no, 403 (#77, #285).
+>
+> La baja de una dieta (`DELETE /api/pacientes/{id}/dietas/{dietaId}`) queda reservada al Admin (#77): el
+> nutricionista puede inscribir, pero no retirar la inscripción.
 
 ### Salas
 

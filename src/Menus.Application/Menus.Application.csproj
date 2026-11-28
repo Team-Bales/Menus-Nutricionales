@@ -7,6 +7,9 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.2.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
+    <!-- #325: los proveedores de contexto de IA leen IA:KMinimo con IOptions<IAOptions>; el orquestador (#330) también
+         lee IAOptions. Solo la abstracción de opciones, sin dependencia de ASP.NET. -->
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.15" />
   </ItemGroup>
 
   <ItemGroup>

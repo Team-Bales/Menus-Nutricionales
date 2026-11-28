@@ -1,10 +1,12 @@
 using Menus.Application.Catalogo;
 using Menus.Application.Catalogo.Fichas;
 using Menus.Application.Comun;
+using Menus.Application.IA;
 using Menus.Domain.Abstractions;
 using Menus.Domain.Abstractions.Repositories;
 using Menus.Domain.Entidades;
 using Menus.Infrastructure.Cache;
+using Menus.Infrastructure.IA;
 using Menus.Infrastructure.Mongo;
 using Menus.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +24,11 @@ public sealed class DependencyInjectionTests
         string? jwtKey = Key,
         string? mongo = null,
         string? redis = null,
-        bool? conciliacionHabilitada = null)
+        bool? conciliacionHabilitada = null,
+        bool? iaHabilitada = null,
+        string? iaModel = null,
+        string? iaBaseUrl = null,
+        int? iaTimeoutSegundos = null)
     {
         var valores = new Dictionary<string, string?>
         {
@@ -45,6 +51,26 @@ public sealed class DependencyInjectionTests
         if (conciliacionHabilitada is not null)
         {
             valores["Conciliacion:Habilitada"] = conciliacionHabilitada.Value ? "true" : "false";
+        }
+
+        if (iaHabilitada is not null)
+        {
+            valores["IA:Habilitada"] = iaHabilitada.Value ? "true" : "false";
+        }
+
+        if (iaModel is not null)
+        {
+            valores["IA:Model"] = iaModel;
+        }
+
+        if (iaBaseUrl is not null)
+        {
+            valores["IA:BaseUrl"] = iaBaseUrl;
+        }
+
+        if (iaTimeoutSegundos is not null)
+        {
+            valores["IA:TimeoutSegundos"] = iaTimeoutSegundos.Value.ToString();
         }
 
         return new ConfigurationBuilder()
@@ -213,5 +239,71 @@ public sealed class DependencyInjectionTests
         Assert.Contains(
             provider.GetServices<IHostedService>(),
             servicio => servicio is ConciliacionHostedService);
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConIaDeshabilitada_RegistraElAsistenteDeshabilitado()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInfrastructure(CreateConfiguration(iaHabilitada: false));
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<AsistenteIADeshabilitado>(provider.GetRequiredService<IAsistenteIA>());
+        Assert.Null(provider.GetService<IHttpClientFactory>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConIaHabilitada_RegistraElAdaptador()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(iaHabilitada: true, iaModel: "llama3"));
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<AsistenteIAOpenAICompatible>(provider.GetRequiredService<IAsistenteIA>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConProveedorExterno_RegistraElAdaptador()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInfrastructure(CreateConfiguration(
+            iaHabilitada: true,
+            iaModel: "gpt-4o-mini",
+            iaBaseUrl: "https://api.openai.com/v1"));
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.IsType<AsistenteIAOpenAICompatible>(provider.GetRequiredService<IAsistenteIA>());
+    }
+
+    [Fact]
+    public void AddInfrastructure_ConIaHabilitadaSinModelo_Lanza()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<InvalidOperationException>(
+            () => services.AddInfrastructure(CreateConfiguration(iaHabilitada: true)));
+    }
+
+    [Theory]
+    [InlineData("ftp://localhost/v1", 30)]
+    [InlineData("no-es-una-url", 30)]
+    [InlineData("http://localhost:11434/v1", 0)]
+    public void AddInfrastructure_ConIaHabilitadaYConfiguracionInvalida_Lanza(string baseUrl, int timeoutSegundos)
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<InvalidOperationException>(() => services.AddInfrastructure(CreateConfiguration(
+            iaHabilitada: true,
+            iaModel: "llama3",
+            iaBaseUrl: baseUrl,
+            iaTimeoutSegundos: timeoutSegundos)));
     }
 }

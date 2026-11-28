@@ -1,5 +1,5 @@
-﻿@* Menú lateral. Muestra solo los enlaces que permite el rol de la sesión: el catálogo al personal
-   (Admin y nutricionista), la administración al Admin, y el perfil y cerrar sesión a cualquiera
+﻿@* Menú lateral. Muestra solo los enlaces que permite el rol de la sesión: el catálogo y los pacientes al
+   personal (Admin y nutricionista), la administración al Admin, y el perfil y cerrar sesión a cualquiera
    con sesión. Ocultar un enlace no protege la página: cada una declara su propio [Authorize].
    La forma (secciones, iconos y tarjeta de usuario) cambia en el #347; las reglas no. *@
 <div class="sidebar-header">
@@ -36,6 +36,9 @@
                     <NavLink class="sidebar-link" href="catalogo/dietas">
                         <Icon Name="clipboard" /> Dietas
                     </NavLink>
+                    <NavLink class="sidebar-link" href="admin/pacientes">
+                        <Icon Name="users" /> Pacientes
+                    </NavLink>
                 }
 
                 @if (estado.User.IsInRole(RolesDeUsuario.Admin))
@@ -53,7 +56,7 @@
                 }
 
                 <span class="sidebar-section-label">Mi cuenta</span>
-                <NavLink class="sidebar-link" href="perfil">
+                <NavLink class="sidebar-link" href="@(estado.User.IsInRole(RolesDeUsuario.Paciente) ? "mi-perfil" : "perfil")">
                     <Icon Name="user" /> Mi perfil
                 </NavLink>
             </Authorized>

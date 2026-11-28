@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Menus.Api.Auth;
 using Menus.Application.Comun;
+using Menus.Application.Pacientes;
+using Menus.Application.Pacientes.ObtenerPaciente;
 using Menus.Application.Valoraciones;
 using Menus.Application.Valoraciones.ListarValoracionesPorDieta;
 using Menus.Application.Valoraciones.ListarValoracionesPorPaciente;
@@ -87,10 +89,10 @@ public sealed class AutorizacionEnLaApiTests
         ["DELETE api/nomencladores/especialidades/{id:guid}"] = SoloAdmin,
 
         ["GET api/pacientes"] = NutricionistaOAdmin,
-        ["GET api/pacientes/{id:guid}"] = NutricionistaOAdmin,
+        ["GET api/pacientes/{id:guid}"] = PacientePropioOPersonal,
         ["PUT api/pacientes/{id:guid}"] = NutricionistaOAdmin,
         ["POST api/pacientes/{id:guid}/dietas"] = NutricionistaOAdmin,
-        ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = NutricionistaOAdmin,
+        ["DELETE api/pacientes/{id:guid}/dietas/{dietaId:guid}"] = SoloAdmin,
         ["GET api/pacientes/{id:guid}/menus"] = PacientePropioOPersonal,
         ["GET api/pacientes/{id:guid}/consumos"] = PacientePropioOPersonal,
 
@@ -243,6 +245,48 @@ public sealed class AutorizacionEnLaApiTests
     }
 
     [Fact]
+    public async Task Un_paciente_que_pide_su_propia_ficha_la_recibe()
+    {
+        // El detalle del paciente también lo ve su propio paciente (#77, /mi-perfil). El caso de uso se reemplaza
+        // porque aquí no hay base.
+        var paciente = Guid.NewGuid();
+        var obtener = new ObtenerPacienteFalso();
+        await using var api = ApiEnMemoria.Crear().WithWebHostBuilder(builder => builder.ConfigureTestServices(servicios =>
+            servicios.AddScoped<IHandler<ObtenerPacienteQuery, PacienteDetalleDto>>(_ => obtener)));
+        using var peticion = new HttpRequestMessage(HttpMethod.Get, $"/api/pacientes/{paciente}");
+        peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiEnMemoria.Token(RolesUsuario.Paciente, paciente));
+
+        using var respuesta = await api.CreateClient().SendAsync(peticion);
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Equal(paciente, obtener.PacientePedido);
+    }
+
+    [Fact]
+    public async Task Un_paciente_que_pide_la_ficha_de_otro_recibe_403()
+    {
+        using var respuesta = await PedirAsync(
+            HttpMethod.Get, $"/api/pacientes/{Guid.NewGuid()}", ApiEnMemoria.Token(RolesUsuario.Paciente, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+    }
+
+    [Fact]
+    public async Task Un_nutricionista_no_da_de_baja_una_dieta_y_recibe_403()
+    {
+        // La baja de una dieta queda reservada al Admin (#77): el nutricionista inscribe, pero no desinscribe.
+        using var respuesta = await PedirAsync(
+            HttpMethod.Delete,
+            $"/api/pacientes/{Guid.NewGuid()}/dietas/{Guid.NewGuid()}",
+            ApiEnMemoria.Token(RolesUsuario.Nutricionista, Guid.NewGuid()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+        Assert.Equal(
+            RespuestaDeAutorizacion.SinPermisos,
+            (await respuesta.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
+    }
+
+    [Fact]
     public async Task Un_paciente_que_pide_el_historico_de_consumo_de_otro_recibe_403()
     {
         using var respuesta = await PedirAsync(
@@ -378,6 +422,23 @@ public sealed class AutorizacionEnLaApiTests
         using var respuesta = await api.CreateClient().GetAsync("/openapi/v1.json");
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+    }
+
+    /// <summary>Caso de uso del detalle del paciente que no va a la base y recuerda qué se pidió.</summary>
+    private sealed class ObtenerPacienteFalso : IHandler<ObtenerPacienteQuery, PacienteDetalleDto>
+    {
+        public Guid? PacientePedido { get; private set; }
+
+        public Task<PacienteDetalleDto> HandleAsync(ObtenerPacienteQuery solicitud, CancellationToken ct)
+        {
+            PacientePedido = solicitud.Id;
+            return Task.FromResult(new PacienteDetalleDto(
+                solicitud.Id,
+                "Paciente",
+                30,
+                new SalaDelPacienteDto(Guid.NewGuid(), "Sala 101"),
+                []));
+        }
     }
 
     /// <summary>Casos de uso de las listas de valoraciones que no van a la base y recuerdan qué se pidió.</summary>

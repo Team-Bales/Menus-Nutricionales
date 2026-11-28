@@ -1,0 +1,139 @@
+@* Detalle de un paciente (/admin/pacientes/{id}), para Admin y nutricionistas: sus datos, sus dietas
+   inscritas, la inscripción en otra dieta y, solo para el Admin, la baja de una dieta. El nutricionista
+   solo entra si el paciente está en alguna de sus dietas, y solo puede inscribirlo en ellas. Después de
+   cada cambio vuelve a cargar el detalle desde la API. *@
+@page "/admin/pacientes/{Id:guid}"
+@attribute [Authorize(Roles = RolesDeUsuario.Personal)]
+@inject IAdministracionApi Api
+@inject ICatalogoApi Catalogo
+@inject AuthenticationStateProvider Auth
+@inject NavigationManager Navegacion
+
+<PageTitle>Detalle de paciente</PageTitle>
+
+@if (_paciente is not null)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4"><div><h1 class="h2 mb-1">@_paciente.Nombre</h1><p class="text-muted mb-0">@_paciente.Edad años · @_paciente.Sala.Nombre</p></div><button class="btn btn-outline-secondary" @onclick="Volver">Volver a pacientes</button></div>
+    @if (!string.IsNullOrWhiteSpace(_error)) { <div class="alert alert-danger" role="alert">@_error</div> }
+    @if (!string.IsNullOrWhiteSpace(_aviso)) { <div class="alert alert-success" role="alert">@_aviso</div> }
+    <div class="card shadow-sm"><div class="card-body">
+        <h2 class="h5 mb-4">Dietas inscritas</h2>
+        <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Dieta</th><th class="text-end">Acciones</th></tr></thead><tbody>
+            @if (_paciente.Dietas.Count == 0) { <tr><td colspan="2" class="text-center text-muted py-4">No está inscrito en ninguna dieta.</td></tr> }
+            @foreach (var dieta in _paciente.Dietas) { <tr><td>@dieta.Nombre</td><td class="text-end">@if (_esAdmin) { <button class="btn btn-sm btn-outline-danger" @onclick="(() => Desinscribir(dieta.Id))">Desinscribir</button> }</td></tr> }
+        </tbody></table></div>
+        @if (_dietas.Count > 0)
+        {
+            <div class="row g-2 align-items-end"><div class="col"><label class="form-label" for="dieta">Dieta</label><select id="dieta" class="form-select" @bind="_dietaSeleccionada"><option value="@Guid.Empty">Selecciona una dieta</option>@foreach (var dieta in _dietas) { <option value="@dieta.Id">@dieta.Nombre</option> }</select></div><div class="col-auto"><button class="btn btn-primary" @onclick="Inscribir">Inscribir en dieta</button></div></div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">No hay dietas registradas.</p>
+        }
+    </div></div>
+}
+else if (!string.IsNullOrWhiteSpace(_error)) { <div class="alert alert-danger" role="alert">@_error</div> }
+else { <p class="text-muted">Cargando paciente…</p> }
+
+@code {
+    /// <summary>Id del paciente, de la ruta.</summary>
+    [Parameter] public Guid Id { get; set; }
+    private PacienteDetalle? _paciente;
+    private IReadOnlyList<Dieta> _dietas = [];
+    private Guid _dietaSeleccionada;
+    private bool _esAdmin;
+    private bool _esNutricionista;
+    private Guid? _nutricionistaId;
+    private string? _error;
+    private string? _aviso;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var usuario = (await Auth.GetAuthenticationStateAsync()).User;
+        _esAdmin = usuario.IsInRole(RolesDeUsuario.Admin);
+        _esNutricionista = usuario.IsInRole(RolesDeUsuario.Nutricionista);
+        _nutricionistaId = null;
+        if (_esNutricionista && Guid.TryParse(usuario.FindFirst("entidad_id")?.Value, out var nutricionistaId))
+        {
+            _nutricionistaId = nutricionistaId;
+        }
+
+        await Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        _error = null;
+        try
+        {
+            _dietas = await Catalogo.ListarTodasLasDietasAsync();
+            _paciente = await Api.ObtenerPacienteAsync(Id);
+
+            if (_esNutricionista)
+            {
+                if (_nutricionistaId is not { } nutricionistaId)
+                {
+                    _paciente = null;
+                    _error = "La sesión no identifica al nutricionista.";
+                    return;
+                }
+
+                var propio = await Api.ObtenerNutricionistaAsync(nutricionistaId);
+                var autorizadas = propio.DietasAutorizadas.Select(d => d.DietaId).ToHashSet();
+                if (!_paciente.Dietas.Any(d => autorizadas.Contains(d.Id)))
+                {
+                    _paciente = null;
+                    _error = "Este paciente no pertenece a las dietas que atiendes.";
+                    return;
+                }
+
+                _dietas = [.. _dietas.Where(d => autorizadas.Contains(d.Id))];
+            }
+        }
+        catch (ApiException ex)
+        {
+            _paciente = null;
+            _error = ex.Message;
+        }
+    }
+
+    private async Task Inscribir()
+    {
+        if (_dietaSeleccionada == Guid.Empty)
+        {
+            _error = "Selecciona una dieta.";
+            return;
+        }
+
+        _error = null;
+        _aviso = null;
+        if (_paciente!.Dietas.Any(d => d.Id == _dietaSeleccionada))
+        {
+            _aviso = "El paciente ya está inscrito en esa dieta.";
+            return;
+        }
+
+        await EjecutarYRecargar(() => Api.InscribirPacienteEnDietaAsync(Id, _dietaSeleccionada), "Paciente inscrito en la dieta.");
+        _dietaSeleccionada = Guid.Empty;
+    }
+
+    private Task Desinscribir(Guid dietaId) => EjecutarYRecargar(() => Api.DesinscribirPacienteDeDietaAsync(Id, dietaId), "Paciente desinscrito de la dieta.");
+
+    private async Task EjecutarYRecargar(Func<Task> accion, string aviso)
+    {
+        _error = null;
+        _aviso = null;
+        try
+        {
+            await accion();
+            await Cargar();
+            _aviso = aviso;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void Volver() => Navegacion.NavigateTo("/admin/pacientes");
+}

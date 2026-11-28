@@ -1,0 +1,65 @@
+@* Vista de solo lectura del propio paciente (/mi-perfil): su sala y las dietas en las que está
+   inscrito. No permite editar sus datos ni inscribirse o darse de baja. *@
+@page "/mi-perfil"
+@attribute [Authorize(Roles = RolesDeUsuario.Paciente)]
+@inject IAdministracionApi Api
+@inject AuthenticationStateProvider Auth
+
+<PageTitle>Mi perfil</PageTitle>
+
+<h1 class="h2 mb-1">Mi perfil</h1>
+<p class="text-muted mb-4">Tus datos, tu sala y las dietas en las que estás inscrito.</p>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+else if (_paciente is null)
+{
+    <p class="text-muted">Cargando tus datos…</p>
+}
+else
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Nombre</dt><dd class="col-sm-9">@_paciente.Nombre</dd>
+            <dt class="col-sm-3">Edad</dt><dd class="col-sm-9">@_paciente.Edad años</dd>
+            <dt class="col-sm-3">Sala</dt><dd class="col-sm-9">@_paciente.Sala.Nombre</dd>
+            <dt class="col-sm-3">Dietas inscritas</dt>
+            <dd class="col-sm-9">
+                @if (_paciente.Dietas.Count == 0)
+                {
+                    <span class="text-muted">Ninguna.</span>
+                }
+                else
+                {
+                    <ul class="mb-0">@foreach (var dieta in _paciente.Dietas) { <li>@dieta.Nombre</li> }</ul>
+                }
+            </dd>
+        </dl>
+    </div></div>
+}
+
+@code {
+    private PacienteDetalle? _paciente;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var entidad = (await Auth.GetAuthenticationStateAsync()).User.FindFirst("entidad_id")?.Value;
+            if (!Guid.TryParse(entidad, out var pacienteId))
+            {
+                _error = "La sesión no identifica al paciente.";
+                return;
+            }
+
+            _paciente = await Api.ObtenerPacienteAsync(pacienteId);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

@@ -1,0 +1,162 @@
+@* Lista paginada de pacientes (/admin/pacientes), para Admin y nutricionistas. El Admin ve todos y
+   puede filtrar por sala y por dieta; el nutricionista solo ve los de las dietas que atiende, así que
+   el filtro de dieta se limita a las suyas y empieza seleccionado si solo tiene una. La cantidad de
+   dietas inscritas sale del detalle de cada paciente, que se pide fila por fila. *@
+@page "/admin/pacientes"
+@attribute [Authorize(Roles = RolesDeUsuario.Personal)]
+@inject IAdministracionApi Api
+@inject ICatalogoApi Catalogo
+@inject AuthenticationStateProvider Auth
+@inject NavigationManager Navegacion
+
+<PageTitle>Pacientes</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div><h1 class="h2 mb-1">Pacientes</h1><p class="text-muted mb-0">Pacientes ingresados y sus dietas inscritas.</p></div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger" role="alert">@_error</div>
+}
+
+@if (!_esNutricionista || _dietas.Count > 0)
+{
+    <div class="card shadow-sm mb-4"><div class="card-body"><div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4"><label class="form-label" for="sala">Sala</label><select id="sala" class="form-select" @bind="_salaId"><option value="">Todas</option>@foreach (var sala in _salas) { <option value="@sala.Id">@sala.Nombre</option> }</select></div>
+        <div class="col-12 col-md-4"><label class="form-label" for="dieta">Dieta</label><select id="dieta" class="form-select" @bind="_dietaId"><option value="">@(_esNutricionista ? "Selecciona una dieta" : "Todas")</option>@foreach (var dieta in _dietas) { <option value="@dieta.Id">@dieta.Nombre</option> }</select></div>
+        <div class="col-12 col-md-4 d-flex gap-2"><button class="btn btn-outline-primary" @onclick="AplicarFiltros">Filtrar</button><button class="btn btn-outline-secondary" @onclick="LimpiarFiltros">Limpiar</button></div>
+    </div></div></div>
+}
+
+@if (_esNutricionista && _dietas.Count == 0)
+{
+    <p class="text-muted">No tienes dietas asignadas, así que no hay pacientes que mostrar.</p>
+}
+else if (_cargando)
+{
+    <p class="text-muted">Cargando pacientes…</p>
+}
+else if (_esNutricionista && _dietaId is null)
+{
+    <p class="text-muted">Selecciona una de tus dietas para ver sus pacientes.</p>
+}
+else if (_pagina is not null)
+{
+    <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Nombre</th><th>Edad</th><th>Sala</th><th>Dietas inscritas</th><th class="text-end">Acciones</th></tr></thead><tbody>
+        @if (_pagina.Data.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center text-muted py-4">No hay pacientes con esos filtros.</td></tr>
+        }
+        @foreach (var paciente in _pagina.Data)
+        {
+            <tr><td>@paciente.Nombre</td><td>@paciente.Edad</td><td>@NombreSala(paciente.Id)</td><td>@CantidadDietas(paciente.Id)</td><td class="text-end"><button class="btn btn-sm btn-outline-primary" @onclick="(() => VerDetalle(paciente.Id))">Ver detalle</button></td></tr>
+        }
+    </tbody></table></div>
+    <div class="d-flex justify-content-between align-items-center"><span class="text-muted small">@_pagina.Total resultado(s)</span><div class="btn-group" role="group" aria-label="Paginación de pacientes"><button class="btn btn-outline-secondary" disabled="@(_pagina.Page == 1)" @onclick="PaginaAnterior">Anterior</button><button class="btn btn-outline-secondary" disabled="@(_pagina.Page * _pagina.Size >= _pagina.Total)" @onclick="PaginaSiguiente">Siguiente</button></div></div>
+}
+
+@code {
+    private IReadOnlyList<Sala> _salas = [];
+    private IReadOnlyList<Dieta> _dietas = [];
+    private Pagina<Paciente>? _pagina;
+    private Dictionary<Guid, PacienteDetalle> _detalles = [];
+    private Guid? _salaId;
+    private Guid? _dietaId;
+    private bool _esNutricionista;
+    private bool _cargando = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var usuario = (await Auth.GetAuthenticationStateAsync()).User;
+            _esNutricionista = usuario.IsInRole(RolesDeUsuario.Nutricionista);
+            _salas = await Api.ListarSalasAsync();
+            if (_esNutricionista)
+            {
+                var entidad = usuario.FindFirst("entidad_id")?.Value;
+                if (!Guid.TryParse(entidad, out var nutricionistaId))
+                {
+                    _error = "La sesión no identifica al nutricionista.";
+                    _cargando = false;
+                    return;
+                }
+
+                var propio = await Api.ObtenerNutricionistaAsync(nutricionistaId);
+                var autorizadas = propio.DietasAutorizadas.Select(d => d.DietaId).ToHashSet();
+                _dietas = [.. (await Catalogo.ListarTodasLasDietasAsync()).Where(d => autorizadas.Contains(d.Id))];
+                if (_dietas.Count == 1)
+                {
+                    _dietaId = _dietas[0].Id;
+                }
+            }
+            else
+            {
+                _dietas = await Catalogo.ListarTodasLasDietasAsync();
+            }
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+            _cargando = false;
+            return;
+        }
+
+        if (_esNutricionista && _dietaId is null)
+        {
+            _cargando = false;
+            return;
+        }
+
+        await CargarPagina(1);
+    }
+
+    private async Task CargarPagina(int page)
+    {
+        // El nutricionista solo ve pacientes de sus dietas: sin una dieta elegida no se consulta la API, porque
+        // devolvería los de todas las dietas.
+        if (_esNutricionista && _dietaId is null)
+        {
+            _pagina = null;
+            _detalles = [];
+            _cargando = false;
+            _error = null;
+            return;
+        }
+
+        _cargando = true;
+        _error = null;
+        try
+        {
+            _pagina = await Api.ListarPacientesAsync(_salaId, _dietaId, page, 10);
+            var detalles = await Task.WhenAll(_pagina.Data.Select(p => Api.ObtenerPacienteAsync(p.Id)));
+            _detalles = detalles.ToDictionary(p => p.Id);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _cargando = false;
+        }
+    }
+
+    private Task AplicarFiltros() => CargarPagina(1);
+
+    private async Task LimpiarFiltros()
+    {
+        _salaId = null;
+        _dietaId = _esNutricionista ? (_dietas.Count == 1 ? _dietas[0].Id : null) : null;
+        await CargarPagina(1);
+    }
+
+    private Task PaginaAnterior() => CargarPagina(Math.Max(1, _pagina!.Page - 1));
+    private Task PaginaSiguiente() => CargarPagina(_pagina!.Page + 1);
+    private void VerDetalle(Guid id) => Navegacion.NavigateTo($"/admin/pacientes/{id}");
+    private bool TieneDetalle(Guid id) => _detalles.ContainsKey(id);
+    private string NombreSala(Guid id) => TieneDetalle(id) ? _detalles[id].Sala.Nombre : "—";
+    private int CantidadDietas(Guid id) => TieneDetalle(id) ? _detalles[id].Dietas.Count : 0;
+}

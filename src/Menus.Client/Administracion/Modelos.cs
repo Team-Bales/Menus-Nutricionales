@@ -14,6 +14,18 @@ public sealed record DietaAutorizada(Guid DietaId);
 /// <summary>Sala de hospitalización.</summary>
 public sealed record Sala(Guid Id, string Nombre);
 
+/// <summary>Paciente mostrado en la gestión: los datos del listado.</summary>
+public sealed record Paciente(Guid Id, string Nombre, int Edad, Guid SalaId);
+
+/// <summary>Detalle de un paciente, con su sala y sus dietas inscritas.</summary>
+public sealed record PacienteDetalle(Guid Id, string Nombre, int Edad, SalaDelPaciente Sala, IReadOnlyList<DietaInscrita> Dietas);
+
+/// <summary>Sala de un paciente, con su nombre.</summary>
+public sealed record SalaDelPaciente(Guid Id, string Nombre);
+
+/// <summary>Dieta en la que está inscrito un paciente, con su nombre.</summary>
+public sealed record DietaInscrita(Guid Id, string Nombre);
+
 /// <summary>Datos editables de una sala.</summary>
 public sealed class SalaFormulario
 {

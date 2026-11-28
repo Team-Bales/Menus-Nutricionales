@@ -52,6 +52,14 @@
                     </NavLink>
                 }
 
+                @if (estado.User.IsInRole(RolesDeUsuario.Nutricionista))
+                {
+                    <span class="sidebar-section-label">Herramientas</span>
+                    <NavLink class="sidebar-link" href="asistente-ia">
+                        <Icon Name="sparkles" /> Asistente de IA
+                    </NavLink>
+                }
+
                 <span class="sidebar-section-label">Mi cuenta</span>
                 <NavLink class="sidebar-link" href="perfil">
                     <Icon Name="user" /> Mi perfil

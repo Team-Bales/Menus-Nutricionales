@@ -37,5 +37,6 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<ICatalogoApi, CatalogoApi>();
 builder.Services.AddScoped<IAdministracionApi, AdministracionApi>();
 builder.Services.AddScoped<IAutenticacionApi, AutenticacionApi>();
+builder.Services.AddScoped<IAsistenteIAApi, AsistenteIAApi>();
 
 await builder.Build().RunAsync();

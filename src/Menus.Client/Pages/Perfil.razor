@@ -8,7 +8,12 @@
 
 <PageTitle>Mi perfil</PageTitle>
 
-<h1 class="h2 mb-3">Mi perfil</h1>
+<div class="page-heading">
+    <div class="page-heading-main">
+        <h1 class="page-title">Mi perfil</h1>
+        <p class="page-subtitle">Datos de la sesión actual.</p>
+    </div>
+</div>
 
 @if (!string.IsNullOrWhiteSpace(_error))
 {
@@ -16,7 +21,7 @@
 }
 else if (_perfil is null)
 {
-    <p class="text-muted">Cargando perfil…</p>
+    <EstadoDeCarga Texto="Cargando perfil…" />
 }
 else
 {

@@ -150,4 +150,17 @@ public sealed class DetallePlatoTests : BunitContext
         cut.Find("button.btn-outline-secondary").Click();
         cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/platos", nav.Uri));
     }
+
+    [Fact]
+    public void Muestra_el_estado_de_carga_hasta_que_llega_el_plato()
+    {
+        var api = new CatalogoApiPendiente();
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<DetallePlato>(ps => ps.Add(p => p.Id, CatalogoApiFalsa.PlatoId));
+
+        Assert.Contains("Cargando plato", cut.Markup);
+        api.Completar();
+        cut.WaitForAssertion(() => Assert.Contains("Avena con leche", cut.Markup));
+    }
 }

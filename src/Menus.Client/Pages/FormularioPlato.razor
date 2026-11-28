@@ -10,9 +10,13 @@
 
 <PageTitle>@(_esEdicion ? "Editar plato" : "Nuevo plato")</PageTitle>
 
-<h1 class="h2 mb-4">@(_esEdicion ? "Editar plato" : "Nuevo plato")</h1>
+<div class="page-heading">
+    <div class="page-heading-main">
+        <h1 class="page-title">@(_esEdicion ? "Editar plato" : "Nuevo plato")</h1>
+    </div>
+</div>
 
-@if (_cargando) { <p class="text-muted">Cargando formulario…</p> }
+@if (_cargando) { <EstadoDeCarga Texto="Cargando formulario…" /> }
 else
 {
     @if (!string.IsNullOrWhiteSpace(_error)) { <div class="alert alert-danger" role="alert">@_error</div> }

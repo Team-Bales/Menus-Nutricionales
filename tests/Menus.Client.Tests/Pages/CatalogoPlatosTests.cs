@@ -67,7 +67,12 @@ public sealed class CatalogoPlatosTests : BunitContext
         cut.WaitForAssertion(() => Assert.Contains("Avena con leche", cut.Markup));
 
         cut.FindAll("button").Single(b => b.TextContent == "Siguiente").Click();
-        cut.WaitForAssertion(() => Assert.Equal(2, api.UltimaConsultaPlatos!.Value.Page));
+        // La consulta sale antes de que la página termine de cargar: hasta entonces no están los botones (#366).
+        cut.WaitForAssertion(() =>
+        {
+            Assert.Equal(2, api.UltimaConsultaPlatos!.Value.Page);
+            Assert.DoesNotContain("Cargando", cut.Markup);
+        });
 
         cut.FindAll("button").Single(b => b.TextContent == "Anterior").Click();
         cut.WaitForAssertion(() => Assert.Equal(1, api.UltimaConsultaPlatos!.Value.Page));

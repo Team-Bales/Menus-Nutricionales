@@ -10,9 +10,6 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas de <see cref="FormularioAlimento"/> (alta y edición, issue #65).</summary>
 public sealed class FormularioAlimentoTests : BunitContext
 {
-    // El formulario encadena varias llamadas al catálogo; 1 s por defecto es poco cuando la suite corre en paralelo.
-    public FormularioAlimentoTests() => DefaultWaitTimeout = TimeSpan.FromSeconds(5);
-
     [Fact]
     public void Nuevo_crea_el_alimento_con_la_clasificacion_elegida_y_vuelve_al_listado()
     {
@@ -135,5 +132,18 @@ public sealed class FormularioAlimentoTests : BunitContext
 
         cut.WaitForAssertion(() => Assert.EndsWith("/catalogo/alimentos", nav.Uri));
         Assert.Null(api.UltimaClasificacionCreada);
+    }
+
+    [Fact]
+    public void Muestra_el_estado_de_carga_hasta_que_llegan_los_nomencladores()
+    {
+        var api = new CatalogoApiPendiente();
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<FormularioAlimento>(ps => ps.Add(p => p.Id, null));
+
+        Assert.Contains("Cargando formulario", cut.Markup);
+        api.Completar();
+        cut.WaitForElement("#nombre");
     }
 }

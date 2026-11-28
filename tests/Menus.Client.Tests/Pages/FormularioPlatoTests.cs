@@ -9,9 +9,6 @@ namespace Menus.Client.Tests.Pages;
 /// <summary>Pruebas de <see cref="FormularioPlato"/> (alta y edición, issue #65).</summary>
 public sealed class FormularioPlatoTests : BunitContext
 {
-    // El formulario encadena varias llamadas al catálogo; 1 s por defecto es poco cuando la suite corre en paralelo.
-    public FormularioPlatoTests() => DefaultWaitTimeout = TimeSpan.FromSeconds(5);
-
     [Fact]
     public void Nuevo_crea_el_plato_con_la_clasificacion_y_el_ingrediente_elegidos()
     {
@@ -149,5 +146,18 @@ public sealed class FormularioPlatoTests : BunitContext
         cut.Find("form").Submit();
 
         cut.WaitForAssertion(() => Assert.Contains("No se pudo crear el plato.", cut.Markup));
+    }
+
+    [Fact]
+    public void Muestra_el_estado_de_carga_hasta_que_llegan_los_datos()
+    {
+        var api = new CatalogoApiPendiente();
+        Services.AddSingleton<ICatalogoApi>(api);
+
+        var cut = Render<FormularioPlato>(ps => ps.Add(p => p.Id, null));
+
+        Assert.Contains("Cargando formulario", cut.Markup);
+        api.Completar();
+        cut.WaitForElement("#nombre");
     }
 }
